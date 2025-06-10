@@ -1,15 +1,17 @@
 use crate::BlockDirection;
+use crate::block_properties::Instrument;
 
 #[derive(Clone, Debug)]
 pub struct BlockState {
     pub id: u16,
     pub state_flags: u8,
     pub side_flags: u8,
-    pub instrument: &'static str,
+    pub instrument: Instrument,
     pub luminance: u8,
     pub piston_behavior: PistonBehavior,
     pub hardness: f32,
     pub collision_shapes: &'static [u16],
+    pub outline_shapes: &'static [u16],
     /// u8::MAX is used as None
     pub opacity: u8,
     /// u16::MAX is used as None
@@ -17,6 +19,7 @@ pub struct BlockState {
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[repr(u8)]
 pub enum PistonBehavior {
     Normal,
     Destroy,

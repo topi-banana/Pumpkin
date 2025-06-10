@@ -3,9 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState,
-    block_properties::{
-        BlockProperties, HorizontalFacing, get_block_by_state_id, get_state_by_state_id,
-    },
+    block_properties::{BlockProperties, HorizontalFacing, get_block_by_state_id},
     item::Item,
 };
 use pumpkin_macros::pumpkin_block;
@@ -45,14 +43,12 @@ impl PumpkinBlock for TripwireBlock {
         }
         props.powered = true;
 
-        let Some(state) = get_state_by_state_id(props.to_state_id(&block)) else {
-            return;
-        };
+        let state_id = props.to_state_id(&block);
         world
-            .set_block_state(&pos, state.id, BlockFlags::NOTIFY_ALL)
+            .set_block_state(&pos, state_id, BlockFlags::NOTIFY_ALL)
             .await;
 
-        Self::update(world, &pos, &state).await;
+        Self::update(world, &pos, state_id).await;
 
         world
             .schedule_block_tick(&block, pos, 10, TickPriority::Normal)
@@ -109,9 +105,7 @@ impl PumpkinBlock for TripwireBlock {
                 return;
             }
         }
-        if let Some(state) = get_state_by_state_id(state_id) {
-            Self::update(world, pos, &state).await;
-        }
+        Self::update(world, pos, state_id).await;
     }
 
     async fn broken(
@@ -177,13 +171,11 @@ impl PumpkinBlock for TripwireBlock {
             && world.get_players_at_box(&aabb).await.is_empty()
         {
             props.powered = false;
-            let Some(state) = get_state_by_state_id(props.to_state_id(block)) else {
-                return;
-            };
+            let state_id = props.to_state_id(block);
             world
-                .set_block_state(pos, state.id, BlockFlags::NOTIFY_ALL)
+                .set_block_state(pos, state_id, BlockFlags::NOTIFY_ALL)
                 .await;
-            Self::update(world, pos, &state).await;
+            Self::update(world, pos, state_id).await;
         } else {
             world
                 .schedule_block_tick(block, *pos, 10, TickPriority::Normal)
@@ -203,30 +195,31 @@ impl PumpkinBlock for TripwireBlock {
         {
             return;
         }
-        let state = world.get_block_state(&location).await;
-        Self::update(world, &location, &state).await;
+        let state_id = world.get_block_state_id(&location).await;
+        Self::update(world, &location, state_id).await;
     }
 }
 
 impl TripwireBlock {
-    async fn update(world: &Arc<World>, pos: &BlockPos, state: &BlockState) {
+    async fn update(world: &Arc<World>, pos: &BlockPos, state_id: BlockStateId) {
+        let props = TripwireProperties::from_state_id(state_id, &Block::TRIPWIRE);
         for dir in [BlockDirection::South, BlockDirection::West] {
             for i in 1..42 {
                 let current_pos = pos.offset_dir(dir.to_offset(), i);
                 let (current_block, current_state) =
                     world.get_block_and_block_state(&current_pos).await;
                 if current_block == Block::TRIPWIRE_HOOK {
-                    let props =
+                    let current_props =
                         TripwireHookProperties::from_state_id(current_state.id, &current_block);
-                    if props.facing == dir.opposite().to_horizontal_facing().unwrap() {
+                    if current_props.facing == dir.opposite().to_horizontal_facing().unwrap() {
                         TripwireHookBlock::update(
                             world,
-                            &current_pos,
-                            state,
+                            current_pos,
+                            current_state.id,
                             false,
                             true,
                             i,
-                            Some(state),
+                            Some(props),
                         )
                         .await;
                     }

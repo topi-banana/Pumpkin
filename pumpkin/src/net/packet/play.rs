@@ -46,6 +46,7 @@ use pumpkin_world::block::entities::sign::SignBlockEntity;
 use pumpkin_world::item::ItemStack;
 use pumpkin_world::world::BlockFlags;
 
+use crate::PLUGIN_MANAGER;
 use crate::block::registry::BlockActionResult;
 use crate::block::{self, BlockIsReplacing};
 use crate::command::CommandSender;
@@ -55,6 +56,7 @@ use crate::error::PumpkinError;
 use crate::net::PlayerConfig;
 use crate::plugin::player::player_chat::PlayerChatEvent;
 use crate::plugin::player::player_command_send::PlayerCommandSendEvent;
+use crate::plugin::player::player_interact_event::PlayerInteractEvent;
 use crate::plugin::player::player_move::PlayerMoveEvent;
 use crate::server::{Server, seasonal_events};
 use crate::world::{World, chunker};
@@ -1019,6 +1021,21 @@ impl Player {
             self.kick(TextComponent::text("Invalid action type")).await;
             return;
         };
+
+        if let Some(player) = self.world().await.get_player_by_id(self.entity_id()).await {
+            let event = PLUGIN_MANAGER
+                .read()
+                .await
+                .fire(PlayerInteractEvent::new(
+                    player,
+                    action.clone(),
+                    interact.target_position,
+                ))
+                .await;
+            if event.cancelled {
+                return;
+            }
+        }
 
         match action {
             ActionType::Attack => {

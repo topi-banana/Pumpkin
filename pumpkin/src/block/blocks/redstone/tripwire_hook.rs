@@ -45,11 +45,9 @@ impl PumpkinBlock for TripwireHookBlock {
         let mut props = TripwireHookProperties::default(block);
         props.powered = false;
         props.attached = false;
-        if let Some(facing) = face.to_horizontal_facing() {
-            props.facing = facing.opposite();
-            if Self::can_place_at(world, block_pos, face).await {
-                return props.to_state_id(block);
-            }
+        if Self::can_place_at(world, block_pos, face).await {
+            props.facing = face.opposite().to_cardinal_direction();
+            return props.to_state_id(block);
         }
         block.default_state_id
     }
@@ -170,7 +168,7 @@ impl TripwireHookBlock {
         if !face.is_horizontal() {
             return false;
         }
-        let place_block_pos = block_pos.offset(face.opposite().to_offset());
+        let place_block_pos = block_pos.offset(face.to_offset());
         let place_block = world.get_block(&place_block_pos).await;
         // TODO isSideSolidFullSquare
         if place_block == Block::AIR {

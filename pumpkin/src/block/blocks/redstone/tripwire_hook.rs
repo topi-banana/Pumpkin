@@ -70,6 +70,18 @@ impl PumpkinBlock for TripwireHookBlock {
         }
     }
 
+    async fn player_placed(
+        &self,
+        world: &Arc<World>,
+        _block: &Block,
+        state_id: u16,
+        pos: &BlockPos,
+        _face: BlockDirection,
+        _player: &Player,
+    ) {
+        Self::update(world, *pos, state_id, false, false, -1, None).await;
+    }
+
     async fn get_state_for_neighbor_update(
         &self,
         world: &World,

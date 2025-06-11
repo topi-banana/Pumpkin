@@ -202,15 +202,16 @@ impl PumpkinBlock for TripwireBlock {
 
 impl TripwireBlock {
     async fn update(world: &Arc<World>, pos: &BlockPos, state_id: BlockStateId) {
-        let props = TripwireProperties::from_state_id(state_id, &Block::TRIPWIRE);
         for dir in [BlockDirection::South, BlockDirection::West] {
             for i in 1..42 {
                 let current_pos = pos.offset_dir(dir.to_offset(), i);
                 let (current_block, current_state) =
                     world.get_block_and_block_state(&current_pos).await;
                 if current_block == Block::TRIPWIRE_HOOK {
-                    let current_props =
-                        TripwireHookProperties::from_state_id(current_state.id, &current_block);
+                    let current_props = TripwireHookProperties::from_state_id(
+                        current_state.id,
+                        &Block::TRIPWIRE_HOOK,
+                    );
                     if current_props.facing == dir.opposite().to_horizontal_facing().unwrap() {
                         TripwireHookBlock::update(
                             world,
@@ -219,7 +220,7 @@ impl TripwireBlock {
                             false,
                             true,
                             i,
-                            Some(props),
+                            Some(state_id),
                         )
                         .await;
                     }

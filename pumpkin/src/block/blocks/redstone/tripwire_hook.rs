@@ -179,123 +179,141 @@ impl TripwireHookBlock {
         true
     }
 
-    #[allow(clippy::similar_names)]
     #[allow(clippy::too_many_lines)]
     pub async fn update(
         world: &Arc<World>,
-        pos: BlockPos,
-        state_id: BlockStateId,
-        bl: bool,
-        bl2: bool,
-        i: i32,
-        arg4: Option<TripwireProperties>,
+        start_hook_pos: BlockPos,
+        start_hook_state_id: BlockStateId,
+        skip_state_update: bool,
+        notify_neighbors: bool,
+        raw_wire_index: i32,
+        raw_wire_state: Option<BlockStateId>,
     ) {
-        let props = TripwireHookProperties::from_state_id(state_id, &Block::TRIPWIRE_HOOK);
-        let lv = props.facing;
-        let bl3 = props.attached;
-        let bl4 = props.powered;
-        let lv2 = world.get_block(&pos).await;
-        let mut bl5 = !bl;
-        let mut n = false;
+        let start_hook_props =
+            TripwireHookProperties::from_state_id(start_hook_state_id, &Block::TRIPWIRE_HOOK);
+        let mut can_attach = !skip_state_update;
+        let mut wire_attached = false;
         let mut j = 0;
-        let mut lvs: Vec<Option<TripwireProperties>> = vec![None; 42];
+        let mut wires_props: Vec<Option<TripwireProperties>> = vec![None; 42];
 
         for k in 1..42 {
-            let lv3 = pos.offset_dir(lv.to_offset(), k);
-            let lv4 = world.get_block(&lv3).await;
-            if lv4 == Block::TRIPWIRE_HOOK {
-                let current_props = {
-                    let state_id = world.get_block_state_id(&lv3).await;
-                    TripwireHookProperties::from_state_id(state_id, &lv4)
+            let current_pos = start_hook_pos.offset_dir(start_hook_props.facing.to_offset(), k);
+            let current_block = world.get_block(&current_pos).await;
+            if current_block == Block::TRIPWIRE_HOOK {
+                let current_hook_props = {
+                    let state_id = world.get_block_state_id(&current_pos).await;
+                    TripwireHookProperties::from_state_id(state_id, &Block::TRIPWIRE_HOOK)
                 };
-                if current_props.facing == lv.opposite() {
+                if current_hook_props.facing == start_hook_props.facing.opposite() {
                     j = k;
                 }
                 break;
             }
-            if lv4 == Block::TRIPWIRE || k == i {
-                let mut current_props = {
-                    let state_id = world.get_block_state_id(&lv3).await;
-                    TripwireProperties::from_state_id(state_id, &lv4)
+            if current_block == Block::TRIPWIRE || k == raw_wire_index {
+                let current_wire_props = {
+                    let ro_state_id = world.get_block_state_id(&current_pos).await;
+                    let state_id = if k == raw_wire_index {
+                        raw_wire_state.unwrap_or(ro_state_id)
+                    } else {
+                        ro_state_id
+                    };
+                    TripwireProperties::from_state_id(state_id, &Block::TRIPWIRE)
                 };
-                if k == i {
-                    current_props = arg4.unwrap_or(current_props);
-                }
-                let bl7 = !current_props.disarmed;
-                let bl8 = current_props.powered;
-                n |= bl7 && bl8;
-                lvs[k as usize] = Some(current_props);
-                if k == i {
+                wire_attached |= (!current_wire_props.disarmed) && current_wire_props.powered;
+                wires_props[k as usize] = Some(current_wire_props);
+                if k == raw_wire_index {
                     world
-                        .schedule_block_tick(&lv2, pos, 10, TickPriority::Normal)
+                        .schedule_block_tick(
+                            &Block::TRIPWIRE_HOOK,
+                            start_hook_pos,
+                            10,
+                            TickPriority::Normal,
+                        )
                         .await;
-                    bl5 &= bl7;
+                    can_attach &= !current_wire_props.disarmed;
                 }
             } else {
-                lvs[k as usize] = None;
-                bl5 = false;
+                wires_props[k as usize] = None;
+                can_attach = false;
             }
         }
 
-        let m = bl5 & (j > 1);
-        n &= m;
-        let mut lv5 = TripwireHookProperties::default(&lv2);
-        lv5.attached = m;
-        lv5.powered = n;
+        let future_attached = can_attach & (j > 1);
+        let future_powered = wire_attached & future_attached;
+        let mut future_hook_state = TripwireHookProperties::default(&Block::TRIPWIRE_HOOK);
+        future_hook_state.attached = future_attached;
+        future_hook_state.powered = future_powered;
 
         if j > 0 {
-            let lv3 = pos.offset_dir(lv.to_offset(), j);
-            let lv6 = lv.opposite();
-            let mut lv5_clone = lv5;
-            lv5_clone.facing = lv6;
+            let end_hook_pos = start_hook_pos.offset_dir(start_hook_props.facing.to_offset(), j);
+            let future_hook_facing = start_hook_props.facing.opposite();
+            let mut future_end_hook_state = future_hook_state;
+            future_end_hook_state.facing = future_hook_facing;
             world
                 .set_block_state(
-                    &lv3,
-                    lv5_clone.to_state_id(&Block::TRIPWIRE_HOOK),
+                    &end_hook_pos,
+                    future_end_hook_state.to_state_id(&Block::TRIPWIRE_HOOK),
                     BlockFlags::NOTIFY_ALL,
                 )
                 .await;
             Self::update_neighbors_on_axis(
-                &lv2,
+                &Block::TRIPWIRE_HOOK,
                 world,
-                lv3,
-                BlockDirection::from_cardinal_direction(lv6),
+                end_hook_pos,
+                BlockDirection::from_cardinal_direction(future_hook_facing),
             )
             .await;
-            Self::play_sound(world, &lv3, m, n, bl3, bl4).await;
+            Self::play_sound(
+                world,
+                &end_hook_pos,
+                future_attached,
+                future_powered,
+                start_hook_props.attached,
+                start_hook_props.powered,
+            )
+            .await;
         }
 
-        Self::play_sound(world, &pos, m, n, bl3, bl4).await;
+        Self::play_sound(
+            world,
+            &start_hook_pos,
+            future_attached,
+            future_powered,
+            start_hook_props.attached,
+            start_hook_props.powered,
+        )
+        .await;
 
-        if !bl {
-            let mut lv5_clone = lv5;
-            lv5_clone.facing = lv;
+        if !skip_state_update {
+            let mut future_start_hook_state = future_hook_state;
+            future_start_hook_state.facing = start_hook_props.facing;
             world
                 .set_block_state(
-                    &pos,
-                    lv5_clone.to_state_id(&Block::TRIPWIRE_HOOK),
+                    &start_hook_pos,
+                    future_start_hook_state.to_state_id(&Block::TRIPWIRE_HOOK),
                     BlockFlags::NOTIFY_ALL,
                 )
                 .await;
-            if bl2 {
+            if notify_neighbors {
                 Self::update_neighbors_on_axis(
-                    &lv2,
+                    &Block::TRIPWIRE_HOOK,
                     world,
-                    pos,
-                    BlockDirection::from_cardinal_direction(lv),
+                    start_hook_pos,
+                    BlockDirection::from_cardinal_direction(start_hook_props.facing),
                 )
                 .await;
             }
         }
 
-        if bl3 != m {
+        if start_hook_props.attached != future_attached {
             for l in 1..j {
-                let lv7 = pos.offset_dir(lv.to_offset(), l);
-                if let Some(mut lv8) = lvs[l as usize] {
-                    lv8.attached = m;
+                let current_wrie_pos =
+                    start_hook_pos.offset_dir(start_hook_props.facing.to_offset(), l);
+                if let Some(mut lv8) = wires_props[l as usize] {
+                    lv8.attached = future_attached;
                     world
                         .set_block_state(
-                            &lv7,
+                            &current_wrie_pos,
                             lv8.to_state_id(&Block::TRIPWIRE),
                             BlockFlags::NOTIFY_ALL,
                         )

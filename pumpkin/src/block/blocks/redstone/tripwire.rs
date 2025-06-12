@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState,
-    block_properties::{BlockProperties, HorizontalFacing, get_block_by_state_id},
+    block_properties::{BlockProperties, HorizontalFacing},
     item::Item,
 };
 use pumpkin_macros::pumpkin_block;
@@ -191,7 +191,7 @@ impl PumpkinBlock for TripwireBlock {
         old_state_id: BlockStateId,
         moved: bool,
     ) {
-        if moved || get_block_by_state_id(old_state_id).is_some_and(|old_block| old_block == *block)
+        if moved || Block::from_state_id(old_state_id).is_some_and(|old_block| old_block == *block)
         {
             return;
         }
@@ -235,7 +235,7 @@ impl TripwireBlock {
 
     #[must_use]
     pub fn should_connect_to(state_id: BlockStateId, facing: BlockDirection) -> bool {
-        get_block_by_state_id(state_id).is_some_and(|block| {
+        Block::from_state_id(state_id).is_some_and(|block| {
             if block == Block::TRIPWIRE_HOOK {
                 let props = TripwireHookProperties::from_state_id(state_id, &block);
                 Some(props.facing) == facing.opposite().to_horizontal_facing()

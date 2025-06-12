@@ -3,7 +3,7 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState,
-    block_properties::{BlockProperties, get_block_by_state_id},
+    block_properties::BlockProperties,
     sound::{Sound, SoundCategory},
 };
 use pumpkin_macros::pumpkin_block;
@@ -116,7 +116,7 @@ impl PumpkinBlock for TripwireHookBlock {
         old_state_id: BlockStateId,
         moved: bool,
     ) {
-        if moved || get_block_by_state_id(old_state_id).is_some_and(|old_block| old_block == *block)
+        if moved || Block::from_state_id(old_state_id).is_some_and(|old_block| old_block == *block)
         {
             return;
         }

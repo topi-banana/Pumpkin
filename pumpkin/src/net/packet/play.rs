@@ -46,7 +46,6 @@ use pumpkin_world::block::entities::sign::SignBlockEntity;
 use pumpkin_world::item::ItemStack;
 use pumpkin_world::world::BlockFlags;
 
-use crate::PLUGIN_MANAGER;
 use crate::block::registry::BlockActionResult;
 use crate::block::{self, BlockIsReplacing};
 use crate::command::CommandSender;
@@ -56,7 +55,7 @@ use crate::error::PumpkinError;
 use crate::net::PlayerConfig;
 use crate::plugin::player::player_chat::PlayerChatEvent;
 use crate::plugin::player::player_command_send::PlayerCommandSendEvent;
-use crate::plugin::player::player_interact_event::PlayerInteractEvent;
+use crate::plugin::player::player_interact_event::{InteractAction, PlayerInteractEvent};
 use crate::plugin::player::player_move::PlayerMoveEvent;
 use crate::server::{Server, seasonal_events};
 use crate::world::{World, chunker};
@@ -669,7 +668,7 @@ impl Player {
         }
     }
 
-    pub async fn handle_swing_arm(&self, swing_arm: SSwingArm) {
+    pub async fn handle_swing_arm(self: &Arc<Self>, swing_arm: SSwingArm) {
         let animation = match swing_arm.hand.0 {
             0 => Animation::SwingMainArm,
             1 => Animation::SwingOffhand,
@@ -690,12 +689,48 @@ impl Player {
 
         let id = self.entity_id();
         let world = self.world().await;
-        world
-            .broadcast_packet_except(
-                &[self.gameprofile.id],
-                &CEntityAnimation::new(id.into(), animation),
+
+        let inventory = self.inventory();
+        let item = inventory.held_item();
+
+        let (yaw, pitch) = self.rotation();
+        let hit_result = self
+            .world()
+            .await
+            .raycast(
+                self.eye_position(),
+                self.eye_position()
+                    .add(&(Vector3::rotation_vector(f64::from(pitch), f64::from(yaw)) * 4.5)),
+                async |pos, world| {
+                    let block = world.get_block(pos).await;
+                    block != Block::AIR && block != Block::WATER && block != Block::LAVA
+                },
             )
             .await;
+
+        let event = if let Some((hit_pos, _hit_dir)) = hit_result {
+            PlayerInteractEvent::new(
+                self,
+                InteractAction::LeftClickBlock,
+                &item,
+                self.world().await.get_block(&hit_pos).await,
+                Some(hit_pos),
+            )
+        } else {
+            PlayerInteractEvent::new(self, InteractAction::LeftClickAir, &item, Block::AIR, None)
+        };
+
+        send_cancellable! {{
+            event;
+            'after: {
+                world
+                    .broadcast_packet_except(
+                        &[self.gameprofile.id],
+                        &CEntityAnimation::new(id.into(), animation),
+                    )
+                    .await;
+            }
+        }}
     }
 
     pub async fn handle_chat_message(self: &Arc<Self>, chat_message: SChatMessage) {
@@ -1021,21 +1056,6 @@ impl Player {
             self.kick(TextComponent::text("Invalid action type")).await;
             return;
         };
-
-        if let Some(player) = self.world().await.get_player_by_id(self.entity_id()).await {
-            let event = PLUGIN_MANAGER
-                .read()
-                .await
-                .fire(PlayerInteractEvent::new(
-                    player,
-                    action.clone(),
-                    interact.target_position,
-                ))
-                .await;
-            if event.cancelled {
-                return;
-            }
-        }
 
         match action {
             ActionType::Attack => {
@@ -1427,17 +1447,57 @@ impl Player {
         world.add_block_entity(Arc::new(updated_sign)).await;
     }
 
-    pub async fn handle_use_item(&self, use_item: &SUseItem, server: &Server) {
+    pub async fn handle_use_item(self: &Arc<Self>, use_item: &SUseItem, server: &Server) {
         if !self.has_client_loaded() {
             return;
         }
+
         let inventory = self.inventory();
         let binding = inventory.held_item();
-        let held = binding.lock().await;
-        let item = held.item;
-        drop(held);
-        server.item_registry.on_use(item, self).await;
-        self.update_sequence(use_item.sequence.0);
+
+        let hit_result = self
+            .world()
+            .await
+            .raycast(
+                self.eye_position(),
+                self.eye_position().add(
+                    &(Vector3::rotation_vector(f64::from(use_item.pitch), f64::from(use_item.yaw)) * 4.5),
+                ),
+                async |pos, world| {
+                    let block = world.get_block(pos).await;
+                    block != Block::AIR && block != Block::WATER && block != Block::LAVA
+                },
+            )
+            .await;
+
+        let event = if let Some((hit_pos, _hit_dir)) = hit_result {
+            PlayerInteractEvent::new(
+                self,
+                InteractAction::RightClickBlock,
+                &binding,
+                self.world().await.get_block(&hit_pos).await,
+                Some(hit_pos),
+            )
+        } else {
+            PlayerInteractEvent::new(
+                self,
+                InteractAction::RightClickAir,
+                &binding,
+                Block::AIR,
+                None,
+            )
+        };
+
+        send_cancellable! {{
+            event;
+            'after: {
+                let held = binding.lock().await;
+                let item = held.item;
+                drop(held);
+                server.item_registry.on_use(item, self).await;
+                self.update_sequence(use_item.sequence.0);
+            }
+        }}
     }
 
     pub async fn handle_set_held_item(&self, held: SSetHeldItem) {

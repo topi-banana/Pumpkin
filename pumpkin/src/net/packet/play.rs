@@ -1461,7 +1461,8 @@ impl Player {
             .raycast(
                 self.eye_position(),
                 self.eye_position().add(
-                    &(Vector3::rotation_vector(f64::from(use_item.pitch), f64::from(use_item.yaw)) * 4.5),
+                    &(Vector3::rotation_vector(f64::from(use_item.pitch), f64::from(use_item.yaw))
+                        * 4.5),
                 ),
                 async |pos, world| {
                     let block = world.get_block(pos).await;

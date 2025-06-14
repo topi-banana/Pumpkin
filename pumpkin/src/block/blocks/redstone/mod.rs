@@ -10,6 +10,7 @@ use pumpkin_util::math::position::BlockPos;
 use crate::world::World;
 
 pub mod buttons;
+pub mod comparator;
 pub mod lever;
 pub mod observer;
 pub mod pressure_plate;

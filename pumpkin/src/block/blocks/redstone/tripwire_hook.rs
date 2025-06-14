@@ -14,7 +14,7 @@ use pumpkin_world::{
     chunk::TickPriority,
     world::{BlockAccessor, BlockFlags},
 };
-use rand::{Rng, thread_rng};
+use rand::{Rng, rng};
 
 use crate::{
     block::{BlockIsReplacing, pumpkin_block::PumpkinBlock},
@@ -357,7 +357,7 @@ impl TripwireHookBlock {
                 .await;
             // TODO world.emitGameEvent((Entity)null, GameEvent.BLOCK_ATTACH, pos);
         } else if !attached && detached {
-            let pitch = 1.2 / (thread_rng().r#gen::<f32>() * 0.2 + 0.9);
+            let pitch = 1.2 / (rng().random::<f32>() * 0.2 + 0.9);
             world
                 .play_sound_raw(Sound::BlockTripwireDetach as u16, cat, &pos, 0.4, pitch)
                 .await;

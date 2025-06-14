@@ -181,12 +181,8 @@ impl TripwireHookBlock {
             return false;
         }
         let place_block_pos = block_pos.offset(face.to_offset());
-        let place_block = world.get_block(&place_block_pos).await;
-        // TODO isSideSolidFullSquare
-        if place_block == Block::AIR {
-            return false;
-        }
-        true
+        let place_block_state = world.get_block_state(&place_block_pos).await;
+        place_block_state.is_side_solid(face)
     }
 
     #[allow(clippy::too_many_lines)]

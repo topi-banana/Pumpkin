@@ -1245,8 +1245,11 @@ impl Player {
                 Status::DropItemStack => {
                     self.drop_held_item(true).await;
                 }
-                Status::ShootArrowOrFinishEating | Status::SwapItem => {
+                Status::ShootArrowOrFinishEating => {
                     log::debug!("todo");
+                }
+                Status::SwapItem => {
+                    self.swap_item().await;
                 }
             },
             Err(_) => self.kick(TextComponent::text("Invalid status")).await,
@@ -1548,7 +1551,7 @@ impl Player {
     }
 
     const WORLD_LOWEST_Y: i8 = -64;
-    const WORLD_MAX_Y: u16 = 384;
+    const WORLD_MAX_Y: u16 = 320;
 
     #[allow(clippy::too_many_lines)]
     async fn run_is_block_place(

@@ -1346,18 +1346,6 @@ impl Player {
             return Ok(());
         }
         if !sneaking {
-            server
-                .item_registry
-                .use_on_block(
-                    held_item.lock().await.item,
-                    self,
-                    location,
-                    face,
-                    &block,
-                    server,
-                )
-                .await;
-            self.update_sequence(use_item_on.sequence.0);
             let item_stack = held_item.lock().await;
             let item = item_stack.item;
             drop(item_stack);
@@ -1371,6 +1359,18 @@ impl Player {
                     return Ok(());
                 }
             }
+            server
+                .item_registry
+                .use_on_block(
+                    held_item.lock().await.item,
+                    self,
+                    location,
+                    face,
+                    &block,
+                    server,
+                )
+                .await;
+            self.update_sequence(use_item_on.sequence.0);
         }
 
         // Check if the item is a block, because not every item can be placed :D
@@ -1459,9 +1459,7 @@ impl Player {
                 .await
                 .set_stack(item_stack)
                 .await;
-            player_screen_handler
-                .set_received_stack(packet.slot as usize, item_stack)
-                .await;
+            player_screen_handler.set_received_stack(packet.slot as usize, item_stack);
             player_screen_handler.send_content_updates().await;
         } else if is_negative && is_legal {
             // Item drop

@@ -417,27 +417,26 @@ impl ComparatorBlock {
     }
 
     async fn update(&self, world: &Arc<World>, pos: BlockPos, state: &BlockState, block: &Block) {
-        let i = i32::from(self.calculate_output_signal(world, pos, state, block).await);
-        let lv = world.get_block_entity(&pos).await;
-        let mut j = 0;
-        if let Some((nbt, blockentity)) = lv {
+        let future_level = i32::from(self.calculate_output_signal(world, pos, state, block).await);
+        let mut now_level = 0;
+        if let Some((nbt, blockentity)) = world.get_block_entity(&pos).await {
             if blockentity.identifier() == ComparatorBlockEntity::ID {
                 let mut comparator = ComparatorBlockEntity::from_nbt(&nbt, pos);
-                j = comparator.output_signal;
-                comparator.output_signal = i;
+                now_level = comparator.output_signal;
+                comparator.output_signal = future_level;
                 world.add_block_entity(Arc::new(comparator)).await;
             }
         }
         let mut props = ComparatorLikeProperties::from_state_id(state.id, block);
-        if j != i || props.mode == ComparatorMode::Compare {
-            let bl = self.has_power(world, pos, state, block).await;
-            let bl2 = props.powered;
-            if bl2 && !bl {
+        if now_level != future_level || props.mode == ComparatorMode::Compare {
+            let future_power = self.has_power(world, pos, state, block).await;
+            let now_power = props.powered;
+            if now_power && !future_power {
                 props.powered = false;
                 world
                     .set_block_state(&pos, props.to_state_id(block), BlockFlags::NOTIFY_LISTENERS)
                     .await;
-            } else if !bl2 && bl {
+            } else if !now_power && future_power {
                 props.powered = true;
                 world
                     .set_block_state(&pos, props.to_state_id(block), BlockFlags::NOTIFY_LISTENERS)

@@ -2,6 +2,7 @@ use blocks::bamboo::BambooBlock;
 use blocks::barrel::BarrelBlock;
 use blocks::bed::BedBlock;
 use blocks::cactus::CactusBlock;
+use blocks::carpet::{CarpetBlock, MossCarpetBlock, PaleMossCarpetBlock};
 use blocks::command::CommandBlock;
 use blocks::dirt_path::DirtPathBlock;
 use blocks::doors::DoorBlock;
@@ -48,6 +49,7 @@ use blocks::redstone::repeater::RepeaterBlock;
 use blocks::redstone::target_block::TargetBlock;
 use blocks::redstone::tripwire::TripwireBlock;
 use blocks::redstone::tripwire_hook::TripwireHookBlock;
+use blocks::sea_pickles::SeaPickleBlock;
 use blocks::signs::SignBlock;
 use blocks::slabs::SlabBlock;
 use blocks::stairs::StairBlock;
@@ -96,6 +98,9 @@ pub fn default_registry() -> Arc<BlockRegistry> {
     manager.register(BedBlock);
     manager.register(SaplingBlock);
     manager.register(CactusBlock);
+    manager.register(CarpetBlock);
+    manager.register(MossCarpetBlock);
+    manager.register(PaleMossCarpetBlock);
     manager.register(ChestBlock);
     manager.register(CraftingTableBlock);
     manager.register(DirtPathBlock);
@@ -136,6 +141,7 @@ pub fn default_registry() -> Arc<BlockRegistry> {
     manager.register(WeightedPressurePlateBlock);
     manager.register(EndPortalBlock);
     manager.register(EndPortalFrameBlock);
+    manager.register(SeaPickleBlock);
 
     // Fire
     manager.register(SoulFireBlock);

@@ -234,8 +234,8 @@ impl RedstoneGateBlockProperties for ComparatorLikeProperties {
 impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
     async fn get_output_level(&self, world: &World, pos: BlockPos) -> u8 {
         if let Some((nbt, raw_blockentity)) = world.get_block_entity(&pos).await {
-            let comparator = ComparatorBlockEntity::from_nbt(&nbt, pos);
-            if raw_blockentity.identifier() == comparator.identifier() {
+            if raw_blockentity.resource_location() == ComparatorBlockEntity::ID {
+                let comparator = ComparatorBlockEntity::from_nbt(&nbt, pos);
                 return comparator.output_signal as u8;
             }
         }
@@ -420,7 +420,7 @@ impl ComparatorBlock {
         let future_level = i32::from(self.calculate_output_signal(world, pos, state, block).await);
         let mut now_level = 0;
         if let Some((nbt, blockentity)) = world.get_block_entity(&pos).await {
-            if blockentity.identifier() == ComparatorBlockEntity::ID {
+            if blockentity.resource_location() == ComparatorBlockEntity::ID {
                 let mut comparator = ComparatorBlockEntity::from_nbt(&nbt, pos);
                 now_level = comparator.output_signal;
                 comparator.output_signal = future_level;

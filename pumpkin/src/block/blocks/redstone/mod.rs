@@ -25,6 +25,9 @@ pub mod tripwire;
 pub mod tripwire_hook;
 pub mod turbo;
 
+// abstruct
+pub mod abstruct_redstone_gate;
+
 pub async fn update_wire_neighbors(world: &Arc<World>, pos: &BlockPos) {
     for direction in BlockDirection::all() {
         let neighbor_pos = pos.offset(direction.to_offset());

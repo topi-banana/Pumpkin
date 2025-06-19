@@ -151,7 +151,7 @@ impl PumpkinBlock for ComparatorBlock {
     ) -> BlockStateId {
         if direction == BlockDirection::Down {
             if let Some(neighbor_state) = get_state_by_state_id(neighbor_state_id) {
-                if RedstoneGateBlock::can_place_above(self, world, *neighbor_pos, &neighbor_state)
+                if !RedstoneGateBlock::can_place_above(self, world, *neighbor_pos, &neighbor_state)
                     .await
                 {
                     return Block::AIR.default_state_id;
@@ -261,7 +261,7 @@ impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
                 .schedule_block_tick(
                     block,
                     pos,
-                    RedstoneGateBlock::get_update_delay_internal(self, state, block),
+                    RedstoneGateBlock::get_update_delay_internal(self, state.id, block),
                     if RedstoneGateBlock::is_target_not_aligned(self, world, pos, state, block)
                         .await
                     {
@@ -286,7 +286,7 @@ impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
             return false;
         }
         let j = self
-            .get_max_input_level_sides(world, pos, state, block)
+            .get_max_input_level_sides(world, pos, state.id, block, false)
             .await;
         if i > j {
             true
@@ -345,7 +345,7 @@ impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
         redstone_level
     }
 
-    fn get_update_delay_internal(&self, _state: &BlockState, _block: &Block) -> u16 {
+    fn get_update_delay_internal(&self, _state_id: BlockStateId, _block: &Block) -> u16 {
         2
     }
 }
@@ -380,7 +380,7 @@ impl ComparatorBlock {
     ) -> u8 {
         let power = self.get_power(world, pos, state, block).await;
         let sub_power = self
-            .get_max_input_level_sides(world, pos, state, block)
+            .get_max_input_level_sides(world, pos, state.id, block, false)
             .await;
         if sub_power >= power {
             return 0;

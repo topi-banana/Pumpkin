@@ -17,7 +17,7 @@ use pumpkin_world::{
 
 use crate::{entity::player::Player, world::World};
 
-use super::get_redstone_power;
+use super::{get_redstone_power, is_diode};
 
 pub trait RedstoneGateBlockProperties {
     fn is_powered(&self) -> bool;
@@ -116,19 +116,20 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
         get_power::<T>(world, pos, state.id, block).await
     }
 
-    // TODO onlyGate
     async fn get_max_input_level_sides(
         &self,
         world: &World,
         pos: BlockPos,
-        state: &BlockState,
+        state_id: BlockStateId,
         block: &Block,
+        only_gate: bool,
     ) -> u8 {
-        let props = T::from_state_id(state.id, block);
+        let props = T::from_state_id(state_id, block);
         let facing = props.get_facing();
 
-        let power_left = get_power_on_side(world, &pos, facing.rotate_clockwise()).await;
-        let power_right = get_power_on_side(world, &pos, facing.rotate_counter_clockwise()).await;
+        let power_left = get_power_on_side(world, &pos, facing.rotate_clockwise(), only_gate).await;
+        let power_right =
+            get_power_on_side(world, &pos, facing.rotate_counter_clockwise(), only_gate).await;
 
         std::cmp::max(power_left, power_right)
     }
@@ -217,7 +218,7 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
         }
     }
 
-    fn get_update_delay_internal(&self, _state: &BlockState, _block: &Block) -> u16;
+    fn get_update_delay_internal(&self, state_id: BlockStateId, block: &Block) -> u16;
 }
 
 pub async fn get_power<T: BlockProperties + RedstoneGateBlockProperties + Send>(
@@ -250,17 +251,26 @@ pub async fn get_power<T: BlockProperties + RedstoneGateBlockProperties + Send>(
     }
 }
 
-async fn get_power_on_side(world: &World, pos: &BlockPos, side: HorizontalFacing) -> u8 {
+async fn get_power_on_side(
+    world: &World,
+    pos: &BlockPos,
+    side: HorizontalFacing,
+    only_gate: bool,
+) -> u8 {
     let side_pos = pos.offset(side.to_block_direction().to_offset());
     let (side_block, side_state) = world.get_block_and_block_state(&side_pos).await;
-    world
-        .block_registry
-        .get_weak_redstone_power(
-            &side_block,
-            world,
-            &side_pos,
-            &side_state,
-            side.to_block_direction(),
-        )
-        .await
+    if !only_gate || is_diode(&side_block) {
+        world
+            .block_registry
+            .get_weak_redstone_power(
+                &side_block,
+                world,
+                &side_pos,
+                &side_state,
+                side.to_block_direction(),
+            )
+            .await
+    } else {
+        0
+    }
 }

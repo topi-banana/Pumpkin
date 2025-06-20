@@ -1766,6 +1766,7 @@ impl World {
 
         if new_state_id != block_state.id {
             self.set_block_state(block_pos, new_state_id, flags).await;
+            block::drop_loot(self, &block, block_pos, true, block_state.id).await;
         }
     }
 

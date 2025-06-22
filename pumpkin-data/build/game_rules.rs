@@ -14,37 +14,40 @@ pub(crate) fn build() -> TokenStream {
 
     let mut variants = TokenStream::new();
     let mut defaults = TokenStream::new();
+    let mut default_fns = TokenStream::new();
 
     for (raw_name, raw_value) in game_rules.iter() {
-        let name = format_ident!("{}", raw_name.to_snake_case());
-
-        match raw_value {
-            Value::Bool(b) => {
-                variants.extend(quote! {
-                    #[serde(rename = #raw_name)]
-                    #[serde(with = "as_string")]
-                    pub #name: bool,
-                });
-                defaults.extend(quote! {
-                    #name: #b,
-                });
-            }
+        let (ty, value) = match raw_value {
+            Value::Bool(b) => (quote! { bool }, quote! { #b }),
             Value::Number(n) => {
                 if let Some(i) = n.as_i64() {
-                    variants.extend(quote! {
-                        #[serde(rename = #raw_name)]
-                        #[serde(with = "as_string")]
-                        pub #name: i64,
-                    });
-                    defaults.extend(quote! {
-                        #name: #i,
-                    });
+                    (quote! { i64 }, quote! { #i })
                 } else {
                     panic!("Expected integer for rule '{}'", raw_name);
                 }
             }
             _ => panic!("Unsupported value type for key '{}'", raw_name),
-        }
+        };
+
+        let name = format_ident!("{}", raw_name.to_snake_case());
+        let default_fn = format!("default_{}", name);
+
+        variants.extend(quote! {
+            #[serde(rename = #raw_name)]
+            #[serde(default = #default_fn)]
+            #[serde(with = "as_string")]
+            pub #name: #ty,
+        });
+        defaults.extend(quote! {
+            #name: #value,
+        });
+
+        let default_fn = format_ident!("default_{}", name);
+        default_fns.extend(quote! {
+            fn #default_fn() -> #ty {
+                GameRules::default().#name
+            }
+        });
     }
 
     quote! {
@@ -62,6 +65,8 @@ pub(crate) fn build() -> TokenStream {
                 }
             }
         }
+
+        #default_fns
 
         mod as_string {
             use serde::{Serializer, Deserializer, Deserialize};

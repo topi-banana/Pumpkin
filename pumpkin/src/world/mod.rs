@@ -1786,8 +1786,12 @@ impl World {
             .await;
 
         if new_state_id != block_state.id {
-            self.set_block_state(block_pos, new_state_id, flags).await;
-            block::drop_loot(self, &block, block_pos, true, block_state.id).await;
+            let flags = flags & !BlockFlags::SKIP_DROPS;
+            if Block::from_state_id(new_state_id) == Some(Block::AIR) {
+                self.break_block(block_pos, None, flags).await;
+            } else {
+                self.set_block_state(block_pos, new_state_id, flags).await;
+            }
         }
     }
 

@@ -8,7 +8,6 @@ pub mod explosion;
 pub mod portal;
 pub mod time;
 
-use crate::block::BlockEvent;
 use crate::{
     PLUGIN_MANAGER,
     block::{self, registry::BlockRegistry},
@@ -21,6 +20,10 @@ use crate::{
         world::{chunk_load::ChunkLoad, chunk_save::ChunkSave, chunk_send::ChunkSend},
     },
     server::Server,
+};
+use crate::{
+    block::{BlockEvent, loot::LootContextParameters},
+    entity::item::ItemEntity,
 };
 use async_trait::async_trait;
 use border::Worldborder;
@@ -44,7 +47,6 @@ use pumpkin_data::{BlockDirection, block_properties::get_block_outline_shapes};
 use pumpkin_inventory::equipment_slot::EquipmentSlot;
 use pumpkin_macros::send_cancellable;
 use pumpkin_nbt::{compound::NbtCompound, to_bytes_unnamed};
-use pumpkin_protocol::codec::identifier::Identifier;
 use pumpkin_protocol::ser::serializer::Serializer;
 use pumpkin_protocol::{
     ClientPacket, IdOr, SoundEvent,
@@ -68,8 +70,9 @@ use pumpkin_protocol::{
     },
     codec::var_int::VarInt,
 };
-use pumpkin_registry::DimensionType;
+use pumpkin_registry::VanillaDimensionType;
 use pumpkin_util::math::{position::chunk_section_from_pos, vector2::Vector2};
+use pumpkin_util::resource_location::ResourceLocation;
 use pumpkin_util::text::{TextComponent, color::NamedColor};
 use pumpkin_util::{
     Difficulty,
@@ -77,6 +80,7 @@ use pumpkin_util::{
 };
 use pumpkin_world::{
     BlockStateId, GENERATION_SETTINGS, GeneratorSetting, biome, block::entities::BlockEntity,
+    item::ItemStack,
 };
 use pumpkin_world::{chunk::ChunkData, world::BlockAccessor};
 use pumpkin_world::{chunk::TickPriority, level::Level};
@@ -141,7 +145,7 @@ pub struct World {
     /// The world's time, including counting ticks for weather, time cycles, and statistics.
     pub level_time: Mutex<LevelTime>,
     /// The type of dimension the world is in.
-    pub dimension_type: DimensionType,
+    pub dimension_type: VanillaDimensionType,
     pub sea_level: i32,
     /// The world's weather, including rain and thunder levels.
     pub weather: Mutex<Weather>,
@@ -157,17 +161,21 @@ impl World {
     pub fn load(
         level: Level,
         level_info: LevelData,
-        dimension_type: DimensionType,
+        dimension_type: VanillaDimensionType,
         block_registry: Arc<BlockRegistry>,
     ) -> Self {
         // TODO
         let generation_settings = match dimension_type {
-            DimensionType::Overworld => GENERATION_SETTINGS
+            VanillaDimensionType::Overworld => GENERATION_SETTINGS
                 .get(&GeneratorSetting::Overworld)
                 .unwrap(),
-            DimensionType::OverworldCaves => todo!(),
-            DimensionType::TheEnd => GENERATION_SETTINGS.get(&GeneratorSetting::End).unwrap(),
-            DimensionType::TheNether => GENERATION_SETTINGS.get(&GeneratorSetting::Nether).unwrap(),
+            VanillaDimensionType::OverworldCaves => todo!(),
+            VanillaDimensionType::TheEnd => {
+                GENERATION_SETTINGS.get(&GeneratorSetting::End).unwrap()
+            }
+            VanillaDimensionType::TheNether => {
+                GENERATION_SETTINGS.get(&GeneratorSetting::Nether).unwrap()
+            }
         };
 
         Self {
@@ -506,9 +514,7 @@ impl World {
         }
 
         for scheduled_tick in fluids_to_tick {
-            let Ok(fluid) = self.get_fluid(&scheduled_tick.block_pos).await else {
-                continue;
-            };
+            let fluid = self.get_fluid(&scheduled_tick.block_pos).await;
             if let Some(pumpkin_fluid) = self.block_registry.get_pumpkin_fluid(&fluid) {
                 pumpkin_fluid
                     .on_scheduled_tick(self, &fluid, &scheduled_tick.block_pos)
@@ -521,12 +527,16 @@ impl World {
     pub async fn get_top_block(&self, position: Vector2<i32>) -> i32 {
         // TODO: this is bad
         let generation_settings = match self.dimension_type {
-            DimensionType::Overworld => GENERATION_SETTINGS
+            VanillaDimensionType::Overworld => GENERATION_SETTINGS
                 .get(&GeneratorSetting::Overworld)
                 .unwrap(),
-            DimensionType::OverworldCaves => todo!(),
-            DimensionType::TheEnd => GENERATION_SETTINGS.get(&GeneratorSetting::End).unwrap(),
-            DimensionType::TheNether => GENERATION_SETTINGS.get(&GeneratorSetting::Nether).unwrap(),
+            VanillaDimensionType::OverworldCaves => todo!(),
+            VanillaDimensionType::TheEnd => {
+                GENERATION_SETTINGS.get(&GeneratorSetting::End).unwrap()
+            }
+            VanillaDimensionType::TheNether => {
+                GENERATION_SETTINGS.get(&GeneratorSetting::Nether).unwrap()
+            }
         };
         for y in (i32::from(generation_settings.shape.min_y)
             ..=i32::from(generation_settings.shape.height))
@@ -549,8 +559,11 @@ impl World {
         player: Arc<Player>,
         server: &Server,
     ) {
-        let dimensions: Vec<Identifier> =
-            server.dimensions.iter().map(DimensionType::name).collect();
+        let dimensions: Vec<ResourceLocation> = server
+            .dimensions
+            .iter()
+            .map(VanillaDimensionType::resource_location)
+            .collect();
 
         // This code follows the vanilla packet order
         let entity_id = player.entity_id();
@@ -575,7 +588,7 @@ impl World {
                 true,
                 false,
                 (self.dimension_type as u8).into(),
-                self.dimension_type.name(),
+                self.dimension_type.resource_location(),
                 biome::hash_seed(self.level.seed.0), // seed
                 gamemode as u8,
                 player
@@ -941,7 +954,7 @@ impl World {
 
     pub async fn respawn_player(&self, player: &Arc<Player>, alive: bool) {
         let last_pos = player.living_entity.last_pos.load();
-        let death_dimension = player.world().await.dimension_type.name();
+        let death_dimension = player.world().await.dimension_type.resource_location();
         let death_location = BlockPos(Vector3::new(
             last_pos.x.round() as i32,
             last_pos.y.round() as i32,
@@ -956,7 +969,7 @@ impl World {
             .client
             .enqueue_packet(&CRespawn::new(
                 (self.dimension_type as u8).into(),
-                self.dimension_type.name(),
+                self.dimension_type.resource_location(),
                 biome::hash_seed(self.level.seed.0), // seed
                 player.gamemode.load() as u8,
                 player.gamemode.load() as i8,
@@ -1456,7 +1469,7 @@ impl World {
 
         let block_state = self.get_block_state(position).await;
         let new_block = Block::from_state_id(block_state_id).unwrap();
-        let new_fluid = self.get_fluid(position).await.unwrap_or(Fluid::EMPTY);
+        let new_fluid = self.get_fluid(position).await;
 
         // WorldChunk.java line 318
         if !flags.contains(BlockFlags::SKIP_BLOCK_ADDED_CALLBACK) && new_block != old_block {
@@ -1598,7 +1611,11 @@ impl World {
             );
 
             if !flags.contains(BlockFlags::SKIP_DROPS) {
-                block::drop_loot(self, &broken_block, position, true, broken_state_id).await;
+                let params = LootContextParameters {
+                    block_state: get_state_by_state_id(broken_state_id),
+                    ..Default::default()
+                };
+                block::drop_loot(self, &broken_block, position, true, params).await;
             }
 
             match cause {
@@ -1609,6 +1626,19 @@ impl World {
                 None => self.broadcast_packet_all(&particles_packet).await,
             }
         }
+    }
+
+    pub async fn drop_stack(self: &Arc<Self>, pos: &BlockPos, stack: ItemStack) {
+        let height = EntityType::ITEM.dimension[1] / 2.0;
+        let pos = Vector3::new(
+            f64::from(pos.0.x) + 0.5 + rand::rng().random_range(-0.25..0.25),
+            f64::from(pos.0.y) + 0.5 + rand::rng().random_range(-0.25..0.25) - f64::from(height),
+            f64::from(pos.0.z) + 0.5 + rand::rng().random_range(-0.25..0.25),
+        );
+
+        let entity = self.create_entity(pos, EntityType::ITEM);
+        let item_entity = Arc::new(ItemEntity::new(entity, stack).await);
+        self.spawn_entity(item_entity).await;
     }
 
     pub async fn sync_world_event(&self, world_event: WorldEvent, position: BlockPos, data: i32) {
@@ -1622,16 +1652,13 @@ impl World {
         get_block_by_state_id(id).unwrap_or(Block::AIR)
     }
 
-    pub async fn get_fluid(
-        &self,
-        position: &BlockPos,
-    ) -> Result<pumpkin_data::fluid::Fluid, GetBlockError> {
+    pub async fn get_fluid(&self, position: &BlockPos) -> pumpkin_data::fluid::Fluid {
         let id = self.get_block_state_id(position).await;
-        let fluid = Fluid::from_state_id(id).ok_or(GetBlockError::InvalidBlockId);
+        let fluid = Fluid::from_state_id(id).ok_or(Fluid::EMPTY);
         if let Ok(fluid) = fluid {
-            return Ok(fluid);
+            return fluid;
         }
-        let block = get_block_by_state_id(id).ok_or(GetBlockError::InvalidBlockId)?;
+        let block = get_block_by_state_id(id).unwrap_or(Block::AIR);
         block
             .properties(id)
             .and_then(|props| {
@@ -1641,13 +1668,13 @@ impl World {
                     .find(|p| p.0 == "waterlogged")
                     .map(|(_, value)| {
                         if value == true.to_string() {
-                            Ok(Fluid::FLOWING_WATER)
+                            Fluid::FLOWING_WATER
                         } else {
-                            Err(GetBlockError::InvalidBlockId)
+                            Fluid::EMPTY
                         }
                     })
             })
-            .unwrap_or(Err(GetBlockError::InvalidBlockId))
+            .unwrap_or(Fluid::EMPTY)
     }
 
     pub async fn get_block_state_id(&self, position: &BlockPos) -> BlockStateId {
@@ -1697,14 +1724,12 @@ impl World {
                     .await;
             }
 
-            if let Ok(neighbor_fluid) = neighbor_fluid {
-                if let Some(neighbor_pumpkin_fluid) =
-                    self.block_registry.get_pumpkin_fluid(&neighbor_fluid)
-                {
-                    neighbor_pumpkin_fluid
-                        .on_neighbor_update(self, &neighbor_fluid, &neighbor_pos, false)
-                        .await;
-                }
+            if let Some(neighbor_pumpkin_fluid) =
+                self.block_registry.get_pumpkin_fluid(&neighbor_fluid)
+            {
+                neighbor_pumpkin_fluid
+                    .on_neighbor_update(self, &neighbor_fluid, &neighbor_pos, false)
+                    .await;
             }
         }
     }
@@ -1761,7 +1786,12 @@ impl World {
             .await;
 
         if new_state_id != block_state.id {
-            self.set_block_state(block_pos, new_state_id, flags).await;
+            let flags = flags & !BlockFlags::SKIP_DROPS;
+            if get_state_by_state_id(new_state_id).is_some_and(|new_state| new_state.is_air()) {
+                self.break_block(block_pos, None, flags).await;
+            } else {
+                self.set_block_state(block_pos, new_state_id, flags).await;
+            }
         }
     }
 

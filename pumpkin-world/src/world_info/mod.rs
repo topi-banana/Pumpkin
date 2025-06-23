@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use pumpkin_config::BASIC_CONFIG;
-use pumpkin_data::game_rules::GameRules;
+use pumpkin_data::game_rules::GameRuleRegistry;
 use pumpkin_util::{Difficulty, serde_enum_as_integer};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -66,7 +66,7 @@ pub struct LevelData {
     // TODO: DimensionData
 
     // Gamerules
-    pub game_rules: GameRules,
+    pub game_rules: GameRuleRegistry,
 
     // the generation settings for each dimension.
     pub world_gen_settings: WorldGenSettings,
@@ -164,7 +164,7 @@ impl Default for LevelData {
             day_time: 0,
             difficulty: Difficulty::Normal,
             difficulty_locked: false,
-            game_rules: GameRules::default(),
+            game_rules: GameRuleRegistry::default(),
             world_gen_settings: Default::default(),
             last_played: -1,
             level_name: "world".to_string(),

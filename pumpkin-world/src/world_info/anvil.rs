@@ -118,7 +118,7 @@ mod test {
     use std::{fs, sync::LazyLock};
 
     use flate2::read::GzDecoder;
-    use pumpkin_data::game_rules::GameRules;
+    use pumpkin_data::game_rules::GameRuleRegistry;
     use pumpkin_nbt::{deserializer::from_bytes, serializer::to_bytes};
     use pumpkin_util::Difficulty;
     use temp_dir::TempDir;
@@ -173,7 +173,7 @@ mod test {
             day_time: 1727,
             difficulty: Difficulty::Normal,
             difficulty_locked: false,
-            game_rules: GameRules {
+            game_rules: GameRuleRegistry {
                 announce_advancements: true,
                 block_explosion_drop_decay: true,
                 command_block_output: true,

@@ -7,6 +7,7 @@ use pumpkin_data::{
     composter_increase_chance::get_composter_increase_chance_from_item_id,
     entity::EntityType,
     item::Item,
+    world::WorldEvent,
 };
 use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
@@ -60,6 +61,9 @@ impl PumpkinBlock for ComposterBlock {
             if let Some(chance) = get_composter_increase_chance_from_item_id(item.id) {
                 if level == 0 || rand::rng().random_bool(f64::from(chance)) {
                     self.update_level_composter(world, location, state_id, block, level + 1)
+                        .await;
+                    world
+                        .sync_world_event(WorldEvent::ComposterUsed, location, 1)
                         .await;
                 }
             }

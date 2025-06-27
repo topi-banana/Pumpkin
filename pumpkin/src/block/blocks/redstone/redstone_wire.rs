@@ -17,7 +17,11 @@ use pumpkin_world::world::{BlockAccessor, BlockFlags};
 use crate::block::BlockIsReplacing;
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
-use crate::{block::pumpkin_block::PumpkinBlock, server::Server, world::World};
+use crate::{
+    block::pumpkin_block::{NormalUseArgs, PumpkinBlock},
+    server::Server,
+    world::World,
+};
 
 use super::turbo::RedstoneWireTurbo;
 use super::{get_redstone_power_no_dust, update_wire_neighbors};
@@ -162,17 +166,10 @@ impl PumpkinBlock for RedstoneWireBlock {
         }
     }
 
-    async fn normal_use(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        let state = world.get_block_state(&location).await;
-        let wire = RedstoneWireProperties::from_state_id(state.id, block);
-        on_use(wire, world, &location).await;
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        let state = args.world.get_block_state(args.location).await;
+        let wire = RedstoneWireProperties::from_state_id(state.id, args.block);
+        on_use(wire, args.world, args.location).await;
     }
 
     async fn use_with_item(

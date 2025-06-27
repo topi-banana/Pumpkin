@@ -15,6 +15,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::BlockIsReplacing;
+use super::pumpkin_block::NormalUseArgs;
 use super::pumpkin_fluid::PumpkinFluid;
 
 pub enum BlockActionResult {
@@ -115,14 +116,20 @@ impl BlockRegistry {
         &self,
         block: &Block,
         player: &Player,
-        location: BlockPos,
+        location: &BlockPos,
         server: &Server,
         world: &Arc<World>,
     ) {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             pumpkin_block
-                .normal_use(block, player, location, server, world)
+                .normal_use(NormalUseArgs {
+                    block,
+                    player,
+                    location,
+                    server,
+                    world,
+                })
                 .await;
         }
     }

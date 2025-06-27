@@ -27,15 +27,7 @@ pub trait BlockMetadata {
 
 #[async_trait]
 pub trait PumpkinBlock: Send + Sync {
-    async fn normal_use(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        _location: BlockPos,
-        _server: &Server,
-        _world: &Arc<World>,
-    ) {
-    }
+    async fn normal_use<'a>(&self, _args: NormalUseArgs<'a>) {}
 
     async fn use_with_item(
         &self,
@@ -251,4 +243,178 @@ pub trait PumpkinBlock: Send + Sync {
     ) -> Option<u8> {
         None
     }
+}
+
+pub struct NormalUseArgs<'a> {
+    pub block: &'a Block,
+    pub player: &'a Player,
+    pub location: &'a BlockPos,
+    pub server: &'a Server,
+    pub world: &'a Arc<World>,
+}
+
+pub struct UseWithItemArgs<'a> {
+    pub block: &'a Block,
+    pub player: &'a Player,
+    pub location: &'a BlockPos,
+    pub item: &'a Item,
+    pub server: &'a Server,
+    pub world: &'a Arc<World>,
+}
+
+pub struct OnEntityCollisionArgs<'a> {
+    pub world: &'a Arc<World>,
+    pub entity: &'a dyn EntityBase,
+    pub pos: &'a BlockPos,
+    pub block: &'a Block,
+    pub state: &'a BlockState,
+    pub server: &'a Server,
+}
+
+pub struct ExplodeArgs<'a> {
+    pub block: &'a Block,
+    pub world: &'a Arc<World>,
+    pub location: &'a BlockPos,
+}
+
+pub struct OnSyncedBlockEventArgs<'a> {
+    pub block: &'a Block,
+    pub world: &'a Arc<World>,
+    pub pos: &'a BlockPos,
+    pub r#type: u8,
+    pub data: u8,
+}
+
+pub struct OnPlaceArgs<'a> {
+    pub server: &'a Server,
+    pub world: &'a World,
+    pub player: &'a Player,
+    pub block: &'a Block,
+    pub block_pos: &'a BlockPos,
+    pub face: &'a BlockDirection,
+    pub replacing: BlockIsReplacing,
+    pub use_item_on: &'a SUseItemOn,
+}
+
+pub struct RandomTickArgs<'a> {
+    pub block: &'a Block,
+    pub world: &'a Arc<World>,
+    pub pos: &'a BlockPos,
+}
+
+pub struct CanPlaceAtArgs<'a> {
+    pub server: Option<&'a Server>,
+    pub world: Option<&'a World>,
+    pub block_accessor: &'a dyn BlockAccessor,
+    pub player: Option<&'a Player>,
+    pub block: &'a Block,
+    pub block_pos: &'a BlockPos,
+    pub face: &'a BlockDirection,
+    pub use_item_on: Option<&'a SUseItemOn>,
+}
+
+pub struct CanUpdateAtArgs<'a> {
+    pub world: &'a World,
+    pub block: &'a Block,
+    pub state_id: BlockStateId,
+    pub block_pos: &'a BlockPos,
+    pub face: &'a BlockDirection,
+    pub use_item_on: &'a SUseItemOn,
+    pub player: &'a Player,
+}
+
+pub struct PlacedArgs<'a> {
+    pub world: &'a Arc<World>,
+    pub block: &'a Block,
+    pub state_id: BlockStateId,
+    pub pos: &'a BlockPos,
+    pub old_state_id: BlockStateId,
+    pub notify: bool,
+}
+
+pub struct PlayerPlacedArgs<'a> {
+    pub world: &'a Arc<World>,
+    pub block: &'a Block,
+    pub state_id: BlockStateId,
+    pub pos: &'a BlockPos,
+    pub face: &'a BlockDirection,
+    pub player: &'a Player,
+}
+
+pub struct BrokenArgs<'a> {
+    pub block: &'a Block,
+    pub player: &'a Arc<Player>,
+    pub location: &'a BlockPos,
+    pub server: &'a Server,
+    pub world: &'a Arc<World>,
+    pub state: &'a BlockState,
+}
+
+pub struct OnNeighborUpdateArgs<'a> {
+    pub world: &'a Arc<World>,
+    pub block: &'a Block,
+    pub pos: &'a BlockPos,
+    pub source_block: &'a Block,
+    pub notify: bool,
+}
+
+pub struct PrepareArgs<'a> {
+    pub world: &'a Arc<World>,
+    pub pos: &'a BlockPos,
+    pub block: &'a Block,
+    pub state_id: BlockStateId,
+    pub flags: BlockFlags,
+}
+
+pub struct GetStateForNeighborUpdateArgs<'a> {
+    pub world: &'a World,
+    pub block: &'a Block,
+    pub state: BlockStateId,
+    pub pos: &'a BlockPos,
+    pub direction: &'a BlockDirection,
+    pub neighbor_pos: &'a BlockPos,
+    pub neighbor_state: BlockStateId,
+}
+
+pub struct OnScheduledTickArgs<'a> {
+    pub world: &'a Arc<World>,
+    pub block: &'a Block,
+    pub pos: &'a BlockPos,
+}
+
+pub struct OnStateReplacedArgs<'a> {
+    pub world: &'a Arc<World>,
+    pub block: &'a Block,
+    pub location: &'a BlockPos,
+    pub old_state_id: BlockStateId,
+    pub moved: bool,
+}
+
+pub struct EmitsRedstonePowerArgs<'a> {
+    pub block: &'a Block,
+    pub state: &'a BlockState,
+    pub direction: &'a BlockDirection,
+}
+
+pub struct GetWeakRedstonePowerArgs<'a> {
+    pub block: &'a Block,
+    pub world: &'a World,
+    pub pos: &'a BlockPos,
+    pub state: &'a BlockState,
+    pub direction: &'a BlockDirection,
+}
+
+pub struct GetStrongRedstonePowerArgs<'a> {
+    pub block: &'a Block,
+    pub world: &'a World,
+    pub pos: &'a BlockPos,
+    pub state: &'a BlockState,
+    pub direction: &'a BlockDirection,
+}
+
+pub struct GetComparatorOutputArgs<'a> {
+    pub block: &'a Block,
+    pub world: &'a World,
+    pub pos: &'a BlockPos,
+    pub state: &'a BlockState,
 }

@@ -22,7 +22,7 @@ type ButtonLikeProperties = pumpkin_data::block_properties::LeverLikeProperties;
 use crate::block::BlockIsReplacing;
 use crate::block::blocks::abstruct_wall_mounting::WallMountedBlock;
 use crate::block::blocks::redstone::lever::LeverLikePropertiesExt;
-use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
+use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::server::Server;
@@ -63,15 +63,8 @@ impl BlockMetadata for ButtonBlock {
 
 #[async_trait]
 impl PumpkinBlock for ButtonBlock {
-    async fn normal_use(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        click_button(world, &location).await;
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        click_button(args.world, args.location).await;
     }
 
     async fn use_with_item(

@@ -1400,7 +1400,7 @@ impl Player {
                 // Using block with empty hand
                 server
                     .block_registry
-                    .on_use(&block, self, location, server, world)
+                    .on_use(&block, self, &location, server, world)
                     .await;
             }
             return Ok(());

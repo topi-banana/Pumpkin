@@ -19,7 +19,10 @@ use pumpkin_world::{
 };
 
 use crate::{
-    block::{pumpkin_block::PumpkinBlock, registry::BlockActionResult},
+    block::{
+        pumpkin_block::{NormalUseArgs, PumpkinBlock},
+        registry::BlockActionResult,
+    },
     server::Server,
     world::World,
 };
@@ -58,15 +61,8 @@ impl PumpkinBlock for LeverBlock {
         BlockActionResult::Consume
     }
 
-    async fn normal_use(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        toggle_lever(world, &location).await;
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        toggle_lever(args.world, args.location).await;
     }
 
     async fn emits_redstone_power(

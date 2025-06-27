@@ -20,6 +20,7 @@ use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
 use crate::block::blocks::redstone::block_receives_redstone_power;
+use crate::block::pumpkin_block::NormalUseArgs;
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
@@ -251,16 +252,9 @@ impl PumpkinBlock for DoorBlock {
         BlockActionResult::Consume
     }
 
-    async fn normal_use(
-        &self,
-        block: &Block,
-        player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        if can_open_door(block) {
-            toggle_door(player, world, &location).await;
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        if can_open_door(args.block) {
+            toggle_door(args.player, args.world, args.location).await;
         }
     }
 

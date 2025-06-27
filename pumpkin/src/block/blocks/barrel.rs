@@ -14,11 +14,14 @@ use pumpkin_world::block::entities::barrel::BarrelBlockEntity;
 use pumpkin_world::inventory::Inventory;
 use tokio::sync::Mutex;
 
-use crate::world::World;
 use crate::{
-    block::{pumpkin_block::PumpkinBlock, registry::BlockActionResult},
+    block::{
+        pumpkin_block::{NormalUseArgs, PumpkinBlock},
+        registry::BlockActionResult,
+    },
     entity::player::Player,
     server::Server,
+    world::World,
 };
 
 struct BarrelScreenFactory(Arc<dyn Inventory>);
@@ -48,17 +51,10 @@ pub struct BarrelBlock;
 
 #[async_trait]
 impl PumpkinBlock for BarrelBlock {
-    async fn normal_use(
-        &self,
-        _block: &Block,
-        player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        if let Some(block_entity) = world.get_block_entity(&location).await {
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        if let Some(block_entity) = args.world.get_block_entity(args.location).await {
             if let Some(inventory) = block_entity.1.get_inventory() {
-                player
+                args.player
                     .open_handled_screen(&BarrelScreenFactory(inventory))
                     .await;
             }

@@ -17,7 +17,7 @@ use pumpkin_world::world::BlockAccessor;
 use pumpkin_world::world::BlockFlags;
 
 use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
+use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::entity::{Entity, EntityBase};
 use crate::server::Server;
@@ -138,47 +138,53 @@ impl PumpkinBlock for BedBlock {
             .await;
     }
 
-    async fn normal_use(
-        &self,
-        block: &Block,
-        player: &Player,
-        block_pos: BlockPos,
-        server: &Server,
-        world: &Arc<World>,
-    ) {
-        let state_id = world.get_block_state_id(&block_pos).await;
-        let bed_props = BedProperties::from_state_id(state_id, block);
+    #[allow(clippy::too_many_lines)]
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        let state_id = args.world.get_block_state_id(args.location).await;
+        let bed_props = BedProperties::from_state_id(state_id, args.block);
 
         let (bed_head_pos, bed_foot_pos) = if bed_props.part == BedPart::Head {
             (
-                block_pos,
-                block_pos.offset(bed_props.facing.opposite().to_offset()),
+                *args.location,
+                args.location
+                    .offset(bed_props.facing.opposite().to_offset()),
             )
         } else {
-            (block_pos.offset(bed_props.facing.to_offset()), block_pos)
+            (
+                args.location.offset(bed_props.facing.to_offset()),
+                *args.location,
+            )
         };
 
         // Explode if not in the overworld
-        if world.dimension_type != VanillaDimensionType::Overworld {
-            world
+        if args.world.dimension_type != VanillaDimensionType::Overworld {
+            args.world
                 .break_block(&bed_head_pos, None, BlockFlags::SKIP_DROPS)
                 .await;
-            world
+            args.world
                 .break_block(&bed_foot_pos, None, BlockFlags::SKIP_DROPS)
                 .await;
 
-            world
-                .explode(server, bed_head_pos.to_centered_f64(), 5.0)
+            args.world
+                .explode(args.server, bed_head_pos.to_centered_f64(), 5.0)
                 .await;
 
             return;
         }
 
         // Make sure the bed is not obstructed
-        if world.get_block_state(&bed_head_pos.up()).await.is_solid()
-            || world.get_block_state(&bed_head_pos.up()).await.is_solid()
+        if args
+            .world
+            .get_block_state(&bed_head_pos.up())
+            .await
+            .is_solid()
+            || args
+                .world
+                .get_block_state(&bed_head_pos.up())
+                .await
+                .is_solid()
         {
-            player
+            args.player
                 .send_system_message_raw(
                     &TextComponent::translate("block.minecraft.bed.obstructed", []),
                     true,
@@ -191,7 +197,7 @@ impl PumpkinBlock for BedBlock {
         if bed_props.occupied {
             // TODO: Wake up villager
 
-            player
+            args.player
                 .send_system_message_raw(
                     &TextComponent::translate("block.minecraft.bed.occupied", []),
                     true,
@@ -201,14 +207,16 @@ impl PumpkinBlock for BedBlock {
         }
 
         // Make sure player is close enough
-        if !player
+        if !args
+            .player
             .position()
             .is_within_bounds(bed_head_pos.to_f64(), 3.0, 3.0, 3.0)
-            && !player
+            && !args
+                .player
                 .position()
                 .is_within_bounds(bed_foot_pos.to_f64(), 3.0, 3.0, 3.0)
         {
-            player
+            args.player
                 .send_system_message_raw(
                     &TextComponent::translate("block.minecraft.bed.too_far_away", []),
                     true,
@@ -218,22 +226,23 @@ impl PumpkinBlock for BedBlock {
         }
 
         // Set respawn point
-        if player
+        if args
+            .player
             .set_respawn_point(
-                world.dimension_type,
+                args.world.dimension_type,
                 bed_head_pos,
-                player.get_entity().yaw.load(),
+                args.player.get_entity().yaw.load(),
             )
             .await
         {
-            player
+            args.player
                 .send_system_message(&TextComponent::translate("block.minecraft.set_spawn", []))
                 .await;
         }
 
         // Make sure the time and weather allows sleep
-        if !can_sleep(world).await {
-            player
+        if !can_sleep(args.world).await {
+            args.player
                 .send_system_message_raw(
                     &TextComponent::translate("block.minecraft.bed.no_sleep", []),
                     true,
@@ -243,7 +252,7 @@ impl PumpkinBlock for BedBlock {
         }
 
         // Make sure there are no monsters nearby
-        for entity in world.entities.read().await.values() {
+        for entity in args.world.entities.read().await.values() {
             if !entity_prevents_sleep(entity.get_entity()) {
                 continue;
             }
@@ -252,7 +261,7 @@ impl PumpkinBlock for BedBlock {
             if pos.is_within_bounds(bed_head_pos.to_f64(), 8.0, 5.0, 8.0)
                 || pos.is_within_bounds(bed_foot_pos.to_f64(), 8.0, 5.0, 8.0)
             {
-                player
+                args.player
                     .send_system_message_raw(
                         &TextComponent::translate("block.minecraft.bed.not_safe", []),
                         true,
@@ -262,8 +271,8 @@ impl PumpkinBlock for BedBlock {
             }
         }
 
-        player.sleep(bed_head_pos).await;
-        Self::set_occupied(true, world, block, &block_pos, state_id).await;
+        args.player.sleep(bed_head_pos).await;
+        Self::set_occupied(true, args.world, args.block, args.location, state_id).await;
     }
 }
 

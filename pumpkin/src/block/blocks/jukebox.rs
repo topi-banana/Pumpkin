@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::PumpkinBlock;
+use crate::block::pumpkin_block::{NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::server::Server;
@@ -49,17 +49,10 @@ impl JukeboxBlock {
 
 #[async_trait]
 impl PumpkinBlock for JukeboxBlock {
-    async fn normal_use(
-        &self,
-        block: &Block,
-        player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        _world: &Arc<World>,
-    ) {
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
         // For now just stop the music at this position
-        let world = &player.living_entity.entity.world.read().await;
-        self.stop_music(block, location, world).await;
+        let world = &args.player.living_entity.entity.world.read().await;
+        self.stop_music(args.block, *args.location, world).await;
     }
 
     async fn use_with_item(

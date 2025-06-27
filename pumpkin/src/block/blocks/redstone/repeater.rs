@@ -15,7 +15,11 @@ use pumpkin_world::world::{BlockAccessor, BlockFlags};
 use pumpkin_world::{BlockStateId, chunk::TickPriority};
 
 use crate::{
-    block::{BlockIsReplacing, pumpkin_block::PumpkinBlock, registry::BlockActionResult},
+    block::{
+        BlockIsReplacing,
+        pumpkin_block::{NormalUseArgs, PumpkinBlock},
+        registry::BlockActionResult,
+    },
     entity::player::Player,
     server::Server,
     world::World,
@@ -121,17 +125,11 @@ impl PumpkinBlock for RepeaterBlock {
         }
     }
 
-    async fn normal_use(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        let state = world.get_block_state(&location).await;
-        let props = RepeaterProperties::from_state_id(state.id, block);
-        self.on_use(props, world, location, block).await;
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        let state = args.world.get_block_state(args.location).await;
+        let props = RepeaterProperties::from_state_id(state.id, args.block);
+        self.on_use(props, args.world, *args.location, args.block)
+            .await;
     }
 
     async fn use_with_item(

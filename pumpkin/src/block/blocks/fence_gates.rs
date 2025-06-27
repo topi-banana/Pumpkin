@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::NormalUseArgs;
 use crate::entity::player::Player;
 use async_trait::async_trait;
 use pumpkin_data::Block;
@@ -96,14 +97,7 @@ impl PumpkinBlock for FenceGateBlock {
         BlockActionResult::Consume
     }
 
-    async fn normal_use(
-        &self,
-        _block: &Block,
-        player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        toggle_fence_gate(world, &location, player).await;
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        toggle_fence_gate(args.world, args.location, args.player).await;
     }
 }

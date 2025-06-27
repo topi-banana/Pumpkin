@@ -1,6 +1,6 @@
 use crate::block::BlockIsReplacing;
 use crate::block::blocks::redstone::block_receives_redstone_power;
-use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
+use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::server::Server;
@@ -72,16 +72,9 @@ impl BlockMetadata for TrapDoorBlock {
 
 #[async_trait]
 impl PumpkinBlock for TrapDoorBlock {
-    async fn normal_use(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        if can_open_trapdoor(block) {
-            toggle_trapdoor(world, &location).await;
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        if can_open_trapdoor(args.block) {
+            toggle_trapdoor(args.world, args.location).await;
         }
     }
 

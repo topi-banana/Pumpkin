@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::NormalUseArgs;
 use crate::server::Server;
 use crate::{block::registry::BlockActionResult, entity::player::Player};
 use async_trait::async_trait;
@@ -85,16 +86,9 @@ impl PumpkinBlock for NoteBlock {
         }
     }
 
-    async fn normal_use(
-        &self,
-        block: &Block,
-        _player: &Player,
-        pos: BlockPos,
-        _server: &Server,
-        world: &Arc<World>,
-    ) {
-        let block_state = world.get_block_state(&pos).await;
-        let mut note_props = NoteBlockLikeProperties::from_state_id(block_state.id, block);
+    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+        let block_state = args.world.get_block_state(args.location).await;
+        let mut note_props = NoteBlockLikeProperties::from_state_id(block_state.id, args.block);
         let next_index = note_props.note.to_index() + 1;
         // Increment and check if max
         note_props.note = if next_index >= Integer0To24::variant_count() {
@@ -102,10 +96,14 @@ impl PumpkinBlock for NoteBlock {
         } else {
             Integer0To24::from_index(next_index)
         };
-        world
-            .set_block_state(&pos, note_props.to_state_id(block), BlockFlags::NOTIFY_ALL)
+        args.world
+            .set_block_state(
+                args.location,
+                note_props.to_state_id(args.block),
+                BlockFlags::NOTIFY_ALL,
+            )
             .await;
-        Self::play_note(&note_props, world, &pos).await;
+        Self::play_note(&note_props, args.world, args.location).await;
     }
 
     async fn use_with_item(

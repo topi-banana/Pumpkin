@@ -66,9 +66,8 @@ impl PumpkinBlock for TNTBlock {
         _server: &Server,
         _world: &Arc<World>,
     ) -> BlockActionResult {
-        if item_stack.lock().await.item != &Item::FLINT_AND_STEEL
-            || item_stack.lock().await.item == &Item::FIRE_CHARGE
-        {
+        let held_item = item_stack.lock().await.item;
+        if held_item != &Item::FLINT_AND_STEEL || held_item == &Item::FIRE_CHARGE {
             return BlockActionResult::Continue;
         }
         let world = player.world().await;

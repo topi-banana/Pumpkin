@@ -39,7 +39,7 @@ pub trait PumpkinBlock: Send + Sync {
         true
     }
 
-    async fn explode(&self, _block: &Block, _world: &Arc<World>, _location: BlockPos) {}
+    async fn explode<'a>(&self, _args: ExplodeArgs<'a>) {}
 
     /// Handles the block event, which is an event specific to a block with an integer ID and data.
     ///

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::{PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{ExplodeArgs, PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::Entity;
 use crate::entity::tnt::TNTEntity;
@@ -90,11 +90,11 @@ impl PumpkinBlock for TNTBlock {
         }
     }
 
-    async fn explode(&self, _block: &Block, world: &Arc<World>, location: BlockPos) {
+    async fn explode<'a>(&self, args: ExplodeArgs<'a>) {
         let entity = Entity::new(
             Uuid::new_v4(),
-            world.clone(),
-            location.to_f64(),
+            args.world.clone(),
+            args.location.to_f64(),
             EntityType::TNT,
             false,
         );
@@ -104,7 +104,7 @@ impl PumpkinBlock for TNTBlock {
             .await;
         let fuse = rand::rng().random_range(0..DEFAULT_FUSE / 4) + DEFAULT_FUSE / 8;
         let tnt = Arc::new(TNTEntity::new(entity, DEFAULT_POWER, fuse));
-        world.spawn_entity(tnt).await;
+        args.world.spawn_entity(tnt).await;
     }
 
     fn should_drop_items_on_explosion(&self) -> bool {

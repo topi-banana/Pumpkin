@@ -17,11 +17,10 @@ use uuid::Uuid;
 
 use crate::{
     block::{
-        pumpkin_block::{NormalUseArgs, PumpkinBlock},
+        pumpkin_block::{NormalUseArgs, PumpkinBlock, UseWithItemArgs},
         registry::BlockActionResult,
     },
-    entity::{Entity, item::ItemEntity, player::Player},
-    server::Server,
+    entity::{Entity, item::ItemEntity},
     world::World,
 };
 
@@ -39,29 +38,27 @@ impl PumpkinBlock for ComposterBlock {
         }
     }
 
-    async fn use_with_item(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        let state_id = world.get_block_state_id(&location).await;
-        let props = ComposterLikeProperties::from_state_id(state_id, block);
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        let state_id = args.world.get_block_state_id(args.location).await;
+        let props = ComposterLikeProperties::from_state_id(state_id, args.block);
         let level = props.get_level();
         if level == 8 {
-            self.clear_composter(world, &location, state_id, block)
+            self.clear_composter(args.world, args.location, state_id, args.block)
                 .await;
         }
         if level < 7 {
-            if let Some(chance) = get_composter_increase_chance_from_item_id(item.id) {
+            if let Some(chance) = get_composter_increase_chance_from_item_id(args.item.id) {
                 if level == 0 || rand::rng().random_bool(f64::from(chance)) {
-                    self.update_level_composter(world, &location, state_id, block, level + 1)
-                        .await;
-                    world
-                        .sync_world_event(WorldEvent::ComposterUsed, location, 1)
+                    self.update_level_composter(
+                        args.world,
+                        args.location,
+                        state_id,
+                        args.block,
+                        level + 1,
+                    )
+                    .await;
+                    args.world
+                        .sync_world_event(WorldEvent::ComposterUsed, *args.location, 1)
                         .await;
                 }
             }

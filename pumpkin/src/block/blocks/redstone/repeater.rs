@@ -6,7 +6,6 @@ use pumpkin_data::{
     block_properties::{
         BlockProperties, EnumVariants, HorizontalFacing, Integer1To4, get_state_by_state_id,
     },
-    item::Item,
 };
 use pumpkin_macros::pumpkin_block;
 use pumpkin_protocol::server::play::SUseItemOn;
@@ -17,7 +16,7 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 use crate::{
     block::{
         BlockIsReplacing,
-        pumpkin_block::{NormalUseArgs, PumpkinBlock},
+        pumpkin_block::{NormalUseArgs, PumpkinBlock, UseWithItemArgs},
         registry::BlockActionResult,
     },
     entity::player::Player,
@@ -132,18 +131,11 @@ impl PumpkinBlock for RepeaterBlock {
             .await;
     }
 
-    async fn use_with_item(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        let state = world.get_block_state(&location).await;
-        let props = RepeaterProperties::from_state_id(state.id, block);
-        self.on_use(props, world, location, block).await;
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        let state = args.world.get_block_state(args.location).await;
+        let props = RepeaterProperties::from_state_id(state.id, args.block);
+        self.on_use(props, args.world, *args.location, args.block)
+            .await;
         BlockActionResult::Consume
     }
 

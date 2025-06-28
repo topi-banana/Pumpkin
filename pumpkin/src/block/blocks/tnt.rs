@@ -1,11 +1,9 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::PumpkinBlock;
+use crate::block::pumpkin_block::{PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::Entity;
-use crate::entity::player::Player;
 use crate::entity::tnt::TNTEntity;
-use crate::server::Server;
 use crate::world::World;
 use async_trait::async_trait;
 use pumpkin_data::Block;
@@ -55,20 +53,12 @@ const DEFAULT_POWER: f32 = 4.0;
 
 #[async_trait]
 impl PumpkinBlock for TNTBlock {
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        player: &Player,
-        location: BlockPos,
-        item: &Item,
-        _server: &Server,
-        _world: &Arc<World>,
-    ) -> BlockActionResult {
-        if *item != Item::FLINT_AND_STEEL || *item == Item::FIRE_CHARGE {
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        if args.item != &Item::FLINT_AND_STEEL || args.item == &Item::FIRE_CHARGE {
             return BlockActionResult::Continue;
         }
-        let world = player.world().await;
-        Self::prime(&world, &location).await;
+        let world = args.player.world().await;
+        Self::prime(&world, args.location).await;
 
         BlockActionResult::Consume
     }

@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::{NormalUseArgs, PumpkinBlock};
+use crate::block::pumpkin_block::{NormalUseArgs, PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
 use async_trait::async_trait;
-use pumpkin_data::item::Item;
 use pumpkin_data::world::WorldEvent;
 use pumpkin_data::{
     Block, BlockState,
@@ -21,8 +20,8 @@ use pumpkin_world::world::BlockFlags;
 pub struct JukeboxBlock;
 
 impl JukeboxBlock {
-    async fn has_record(&self, block: &Block, location: BlockPos, world: &World) -> bool {
-        let state_id = world.get_block_state(&location).await.id;
+    async fn has_record(&self, block: &Block, location: &BlockPos, world: &World) -> bool {
+        let state_id = world.get_block_state(location).await.id;
         JukeboxLikeProperties::from_state_id(state_id, block).has_record
     }
 
@@ -30,19 +29,19 @@ impl JukeboxBlock {
         &self,
         has_record: bool,
         block: &Block,
-        location: BlockPos,
+        location: &BlockPos,
         world: &Arc<World>,
     ) {
         let new_state = JukeboxLikeProperties { has_record };
         world
-            .set_block_state(&location, new_state.to_state_id(block), BlockFlags::empty())
+            .set_block_state(location, new_state.to_state_id(block), BlockFlags::empty())
             .await;
     }
 
-    async fn stop_music(&self, block: &Block, position: BlockPos, world: &Arc<World>) {
+    async fn stop_music(&self, block: &Block, position: &BlockPos, world: &Arc<World>) {
         self.set_record(false, block, position, world).await;
         world
-            .sync_world_event(WorldEvent::JukeboxStopsPlaying, position, 0)
+            .sync_world_event(WorldEvent::JukeboxStopsPlaying, *position, 0)
             .await;
     }
 }
@@ -52,27 +51,19 @@ impl PumpkinBlock for JukeboxBlock {
     async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
         // For now just stop the music at this position
         let world = &args.player.living_entity.entity.world.read().await;
-        self.stop_music(args.block, *args.location, world).await;
+        self.stop_music(args.block, args.location, world).await;
     }
 
-    async fn use_with_item(
-        &self,
-        block: &Block,
-        player: &Player,
-        location: BlockPos,
-        item: &Item,
-        _server: &Server,
-        _world: &Arc<World>,
-    ) -> BlockActionResult {
-        let world = &player.living_entity.entity.world.read().await;
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        let world = &args.player.living_entity.entity.world.read().await;
 
         // if the jukebox already has a record, stop playing
-        if self.has_record(block, location, world).await {
-            self.stop_music(block, location, world).await;
+        if self.has_record(args.block, args.location, world).await {
+            self.stop_music(args.block, args.location, world).await;
             return BlockActionResult::Consume;
         }
 
-        let Some(jukebox_playable) = &item.components.jukebox_playable else {
+        let Some(jukebox_playable) = &args.item.components.jukebox_playable else {
             return BlockActionResult::Continue;
         };
 
@@ -87,11 +78,12 @@ impl PumpkinBlock for JukeboxBlock {
 
         //TODO: Update block nbt
 
-        self.set_record(true, block, location, world).await;
+        self.set_record(true, args.block, args.location, world)
+            .await;
         world
             .sync_world_event(
                 WorldEvent::JukeboxStartsPlaying,
-                location,
+                *args.location,
                 jukebox_song as i32,
             )
             .await;

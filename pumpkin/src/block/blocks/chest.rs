@@ -5,7 +5,6 @@ use pumpkin_data::block_properties::{
     BlockProperties, ChestLikeProperties, ChestType, HorizontalFacing,
 };
 use pumpkin_data::entity::EntityPose;
-use pumpkin_data::item::Item;
 use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_protocol::server::play::SUseItemOn;
@@ -15,6 +14,7 @@ use pumpkin_world::block::entities::chest::ChestBlockEntity;
 use pumpkin_world::world::BlockFlags;
 
 use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::entity::EntityBase;
 use crate::world::World;
 use crate::{
@@ -102,15 +102,7 @@ impl PumpkinBlock for ChestBlock {
         world.remove_block_entity(&location).await;
     }
 
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        _location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        _world: &Arc<World>,
-    ) -> BlockActionResult {
+    async fn use_with_item<'a>(&self, _args: UseWithItemArgs<'a>) -> BlockActionResult {
         BlockActionResult::Consume
     }
 

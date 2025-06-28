@@ -6,7 +6,6 @@ use pumpkin_data::block_properties::{
     ObserverLikeProperties, RedstoneWireLikeProperties, RepeaterLikeProperties,
     SouthWireConnection, WestWireConnection,
 };
-use pumpkin_data::item::Item;
 use pumpkin_data::{Block, BlockDirection, BlockState, HorizontalFacingExt};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_protocol::server::play::SUseItemOn;
@@ -15,6 +14,7 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
 use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::{
@@ -172,18 +172,10 @@ impl PumpkinBlock for RedstoneWireBlock {
         on_use(wire, args.world, args.location).await;
     }
 
-    async fn use_with_item(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        let state = world.get_block_state(&location).await;
-        let wire = RedstoneWireProperties::from_state_id(state.id, block);
-        if on_use(wire, world, &location).await {
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        let state = args.world.get_block_state(args.location).await;
+        let wire = RedstoneWireProperties::from_state_id(state.id, args.block);
+        if on_use(wire, args.world, args.location).await {
             BlockActionResult::Consume
         } else {
             BlockActionResult::Continue

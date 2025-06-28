@@ -29,15 +29,7 @@ pub trait BlockMetadata {
 pub trait PumpkinBlock: Send + Sync {
     async fn normal_use<'a>(&self, _args: NormalUseArgs<'a>) {}
 
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        _location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        _world: &Arc<World>,
-    ) -> BlockActionResult {
+    async fn use_with_item<'a>(&self, _args: UseWithItemArgs<'a>) -> BlockActionResult {
         BlockActionResult::Continue
     }
 
@@ -246,40 +238,40 @@ pub trait PumpkinBlock: Send + Sync {
 }
 
 pub struct NormalUseArgs<'a> {
-    pub block: &'a Block,
-    pub player: &'a Player,
-    pub location: &'a BlockPos,
     pub server: &'a Server,
     pub world: &'a Arc<World>,
+    pub block: &'a Block,
+    pub location: &'a BlockPos,
+    pub player: &'a Player,
 }
 
 pub struct UseWithItemArgs<'a> {
-    pub block: &'a Block,
-    pub player: &'a Player,
-    pub location: &'a BlockPos,
-    pub item: &'a Item,
     pub server: &'a Server,
     pub world: &'a Arc<World>,
+    pub block: &'a Block,
+    pub location: &'a BlockPos,
+    pub player: &'a Player,
+    pub item: &'a Item,
 }
 
 pub struct OnEntityCollisionArgs<'a> {
+    pub server: &'a Server,
     pub world: &'a Arc<World>,
-    pub entity: &'a dyn EntityBase,
-    pub pos: &'a BlockPos,
     pub block: &'a Block,
     pub state: &'a BlockState,
-    pub server: &'a Server,
+    pub pos: &'a BlockPos,
+    pub entity: &'a dyn EntityBase,
 }
 
 pub struct ExplodeArgs<'a> {
-    pub block: &'a Block,
     pub world: &'a Arc<World>,
+    pub block: &'a Block,
     pub location: &'a BlockPos,
 }
 
 pub struct OnSyncedBlockEventArgs<'a> {
-    pub block: &'a Block,
     pub world: &'a Arc<World>,
+    pub block: &'a Block,
     pub pos: &'a BlockPos,
     pub r#type: u8,
     pub data: u8,
@@ -288,17 +280,17 @@ pub struct OnSyncedBlockEventArgs<'a> {
 pub struct OnPlaceArgs<'a> {
     pub server: &'a Server,
     pub world: &'a World,
-    pub player: &'a Player,
     pub block: &'a Block,
     pub block_pos: &'a BlockPos,
     pub face: &'a BlockDirection,
+    pub player: &'a Player,
     pub replacing: BlockIsReplacing,
     pub use_item_on: &'a SUseItemOn,
 }
 
 pub struct RandomTickArgs<'a> {
-    pub block: &'a Block,
     pub world: &'a Arc<World>,
+    pub block: &'a Block,
     pub pos: &'a BlockPos,
 }
 
@@ -306,10 +298,10 @@ pub struct CanPlaceAtArgs<'a> {
     pub server: Option<&'a Server>,
     pub world: Option<&'a World>,
     pub block_accessor: &'a dyn BlockAccessor,
-    pub player: Option<&'a Player>,
     pub block: &'a Block,
     pub block_pos: &'a BlockPos,
     pub face: &'a BlockDirection,
+    pub player: Option<&'a Player>,
     pub use_item_on: Option<&'a SUseItemOn>,
 }
 

@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use pumpkin_data::Block;
-use pumpkin_data::item::Item;
 use pumpkin_inventory::generic_container_screen_handler::create_generic_9x3;
 use pumpkin_inventory::player::player_inventory::PlayerInventory;
 use pumpkin_inventory::screen_handler::{InventoryPlayer, ScreenHandler, ScreenHandlerFactory};
@@ -14,13 +13,12 @@ use pumpkin_world::block::entities::barrel::BarrelBlockEntity;
 use pumpkin_world::inventory::Inventory;
 use tokio::sync::Mutex;
 
+use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::{
     block::{
         pumpkin_block::{NormalUseArgs, PumpkinBlock},
         registry::BlockActionResult,
     },
-    entity::player::Player,
-    server::Server,
     world::World,
 };
 
@@ -61,18 +59,10 @@ impl PumpkinBlock for BarrelBlock {
         }
     }
 
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        if let Some(block_entity) = world.get_block_entity(&location).await {
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        if let Some(block_entity) = args.world.get_block_entity(args.location).await {
             if let Some(inventory) = block_entity.1.get_inventory() {
-                player
+                args.player
                     .open_handled_screen(&BarrelScreenFactory(inventory))
                     .await;
             }

@@ -1,5 +1,5 @@
 use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::PumpkinBlock;
+use crate::block::pumpkin_block::{PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::EntityBase;
 use crate::entity::player::Player;
@@ -17,7 +17,6 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 use rand::Rng;
-use std::sync::Arc;
 
 type SeaPickleProperties = pumpkin_data::block_properties::SeaPickleLikeProperties;
 
@@ -27,23 +26,19 @@ pub struct SeaPickleBlock;
 #[async_trait]
 impl PumpkinBlock for SeaPickleBlock {
     #[allow(clippy::many_single_char_names)]
-    async fn use_with_item(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        if item != &Item::BONE_MEAL
-            || !world
-                .get_block(&location.down())
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        if args.item != &Item::BONE_MEAL
+            || !args
+                .world
+                .get_block(&args.location.down())
                 .await
                 .is_tagged_with("minecraft:coral_blocks")
                 .unwrap()
-            || !SeaPickleProperties::from_state_id(world.get_block_state_id(&location).await, block)
-                .waterlogged
+            || !SeaPickleProperties::from_state_id(
+                args.world.get_block_state_id(args.location).await,
+                args.block,
+            )
+            .waterlogged
         {
             return BlockActionResult::Continue;
         }
@@ -53,18 +48,20 @@ impl PumpkinBlock for SeaPickleBlock {
 
         //let mut j = 1;
         let mut count = 0;
-        let base_x = location.0.x - 2;
+        let base_x = args.location.0.x - 2;
         let mut removed_z = 0;
         for added_x in 0..5 {
             for added_z in 0..1 {
-                let temp_y = 2 + location.0.y - 1;
+                let temp_y = 2 + args.location.0.y - 1;
                 for y in (temp_y - 2)..temp_y {
                     //let mut lv2: BlockState;
-                    let lv = BlockPos::new(base_x + added_x, y, location.0.z - removed_z + added_z);
-                    if lv == location
+                    let lv =
+                        BlockPos::new(base_x + added_x, y, args.location.0.z - removed_z + added_z);
+                    if &lv == args.location
                         || rand::rng().random_range(0..6) != 0
-                        || !world.get_block(&lv).await.eq(&Block::WATER)
-                        || !world
+                        || !args.world.get_block(&lv).await.eq(&Block::WATER)
+                        || !args
+                            .world
                             .get_block(&lv.down())
                             .await
                             .is_tagged_with("minecraft:coral_blocks")
@@ -72,7 +69,7 @@ impl PumpkinBlock for SeaPickleBlock {
                     {
                         continue;
                     }
-                    let mut sea_pickle_prop = SeaPickleProperties::default(block);
+                    let mut sea_pickle_prop = SeaPickleProperties::default(args.block);
 
                     sea_pickle_prop.pickles = match rand::rng().random_range(0..4) + 1 {
                         1 => Integer1To4::L1,
@@ -80,10 +77,10 @@ impl PumpkinBlock for SeaPickleBlock {
                         3 => Integer1To4::L3,
                         _ => Integer1To4::L4,
                     };
-                    world
+                    args.world
                         .set_block_state(
                             &lv,
-                            sea_pickle_prop.to_state_id(block),
+                            sea_pickle_prop.to_state_id(args.block),
                             BlockFlags::NOTIFY_ALL,
                         )
                         .await;
@@ -98,12 +95,12 @@ impl PumpkinBlock for SeaPickleBlock {
             }
             count += 1;
         }
-        let mut sea_pickle_prop = SeaPickleProperties::default(block);
+        let mut sea_pickle_prop = SeaPickleProperties::default(args.block);
         sea_pickle_prop.pickles = Integer1To4::L4;
-        world
+        args.world
             .set_block_state(
-                &location,
-                sea_pickle_prop.to_state_id(block),
+                args.location,
+                sea_pickle_prop.to_state_id(args.block),
                 BlockFlags::NOTIFY_LISTENERS,
             )
             .await;

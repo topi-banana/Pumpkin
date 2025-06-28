@@ -7,7 +7,6 @@ use pumpkin_data::BlockState;
 use pumpkin_data::HorizontalFacingExt;
 use pumpkin_data::block_properties::BlockFace;
 use pumpkin_data::block_properties::BlockProperties;
-use pumpkin_data::item::Item;
 use pumpkin_data::tag::RegistryKey;
 use pumpkin_data::tag::get_tag_values;
 use pumpkin_protocol::server::play::SUseItemOn;
@@ -22,6 +21,7 @@ type ButtonLikeProperties = pumpkin_data::block_properties::LeverLikeProperties;
 use crate::block::BlockIsReplacing;
 use crate::block::blocks::abstruct_wall_mounting::WallMountedBlock;
 use crate::block::blocks::redstone::lever::LeverLikePropertiesExt;
+use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
@@ -67,16 +67,8 @@ impl PumpkinBlock for ButtonBlock {
         click_button(args.world, args.location).await;
     }
 
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        click_button(world, &location).await;
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        click_button(args.world, args.location).await;
         BlockActionResult::Consume
     }
 

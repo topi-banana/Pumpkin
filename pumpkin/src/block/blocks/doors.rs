@@ -21,10 +21,10 @@ use std::sync::Arc;
 use crate::block::BlockIsReplacing;
 use crate::block::blocks::redstone::block_receives_redstone_power;
 use crate::block::pumpkin_block::NormalUseArgs;
+use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
-use pumpkin_data::item::Item;
 use pumpkin_protocol::server::play::SUseItemOn;
 
 use crate::server::Server;
@@ -234,20 +234,12 @@ impl PumpkinBlock for DoorBlock {
             .await;
     }
 
-    async fn use_with_item(
-        &self,
-        block: &Block,
-        player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        if !can_open_door(block) {
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        if !can_open_door(args.block) {
             return BlockActionResult::Continue;
         }
 
-        toggle_door(player, world, &location).await;
+        toggle_door(args.player, args.world, args.location).await;
 
         BlockActionResult::Consume
     }

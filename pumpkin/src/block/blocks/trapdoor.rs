@@ -1,6 +1,6 @@
 use crate::block::BlockIsReplacing;
 use crate::block::blocks::redstone::block_receives_redstone_power;
-use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
+use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::server::Server;
@@ -9,7 +9,6 @@ use async_trait::async_trait;
 use pumpkin_data::Block;
 use pumpkin_data::BlockDirection;
 use pumpkin_data::block_properties::{BlockHalf, BlockProperties};
-use pumpkin_data::item::Item;
 use pumpkin_data::sound::{Sound, SoundCategory};
 use pumpkin_data::tag::{RegistryKey, Tagable, get_tag_values};
 use pumpkin_protocol::server::play::SUseItemOn;
@@ -78,20 +77,12 @@ impl PumpkinBlock for TrapDoorBlock {
         }
     }
 
-    async fn use_with_item(
-        &self,
-        block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        if !can_open_trapdoor(block) {
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        if !can_open_trapdoor(args.block) {
             return BlockActionResult::Continue;
         }
 
-        toggle_trapdoor(world, &location).await;
+        toggle_trapdoor(args.world, args.location).await;
 
         BlockActionResult::Consume
     }

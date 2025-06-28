@@ -1,14 +1,16 @@
 use std::sync::Arc;
 
 use crate::{
-    block::{BlockIsReplacing, blocks::abstruct_wall_mounting::WallMountedBlock},
+    block::{
+        BlockIsReplacing, blocks::abstruct_wall_mounting::WallMountedBlock,
+        pumpkin_block::UseWithItemArgs,
+    },
     entity::player::Player,
 };
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState, HorizontalFacingExt,
     block_properties::{BlockFace, BlockProperties, LeverLikeProperties},
-    item::Item,
 };
 use pumpkin_macros::pumpkin_block;
 use pumpkin_protocol::server::play::SUseItemOn;
@@ -48,16 +50,8 @@ pub struct LeverBlock;
 
 #[async_trait]
 impl PumpkinBlock for LeverBlock {
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        toggle_lever(world, &location).await;
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        toggle_lever(args.world, args.location).await;
         BlockActionResult::Consume
     }
 

@@ -1411,7 +1411,7 @@ impl Player {
             drop(item_stack);
             let action_result = server
                 .block_registry
-                .use_with_item(&block, self, location, item, server, world)
+                .use_with_item(&block, self, &location, item, server, world)
                 .await;
             match action_result {
                 BlockActionResult::Continue => {}

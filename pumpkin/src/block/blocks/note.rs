@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::NormalUseArgs;
+use crate::block::pumpkin_block::{NormalUseArgs, UseWithItemArgs};
 use crate::server::Server;
 use crate::{block::registry::BlockActionResult, entity::player::Player};
 use async_trait::async_trait;
 use pumpkin_data::block_properties::Axis;
-use pumpkin_data::item::Item;
 use pumpkin_data::sound::{Sound, SoundCategory};
 use pumpkin_data::{
     Block, BlockDirection,
@@ -106,15 +105,7 @@ impl PumpkinBlock for NoteBlock {
         Self::play_note(&note_props, args.world, args.location).await;
     }
 
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        _player: &Player,
-        _location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        _world: &Arc<World>,
-    ) -> BlockActionResult {
+    async fn use_with_item<'a>(&self, _args: UseWithItemArgs<'a>) -> BlockActionResult {
         // TODO
         BlockActionResult::Continue
     }

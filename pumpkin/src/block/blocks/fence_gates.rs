@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
 use crate::block::pumpkin_block::NormalUseArgs;
+use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::entity::player::Player;
 use async_trait::async_trait;
 use pumpkin_data::Block;
@@ -18,7 +19,6 @@ use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::server::Server;
 use crate::world::World;
-use pumpkin_data::item::Item;
 
 type FenceGateProperties = pumpkin_data::block_properties::OakFenceGateLikeProperties;
 
@@ -84,16 +84,8 @@ impl PumpkinBlock for FenceGateBlock {
         fence_gate_props.to_state_id(block)
     }
 
-    async fn use_with_item(
-        &self,
-        _block: &Block,
-        player: &Player,
-        location: BlockPos,
-        _item: &Item,
-        _server: &Server,
-        world: &Arc<World>,
-    ) -> BlockActionResult {
-        toggle_fence_gate(world, &location, player).await;
+    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+        toggle_fence_gate(args.world, args.location, args.player).await;
         BlockActionResult::Consume
     }
 

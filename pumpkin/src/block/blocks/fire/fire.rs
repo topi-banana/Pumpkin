@@ -17,8 +17,7 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 
 use crate::block::blocks::tnt::TNTBlock;
-use crate::block::pumpkin_block::PumpkinBlock;
-use crate::entity::EntityBase;
+use crate::block::pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
@@ -205,16 +204,8 @@ impl PumpkinBlock for FireBlock {
             .await;
     }
 
-    async fn on_entity_collision(
-        &self,
-        _world: &Arc<World>,
-        entity: &dyn EntityBase,
-        _pos: BlockPos,
-        _block: Block,
-        _state: BlockState,
-        _server: &Server,
-    ) {
-        let base_entity = entity.get_entity();
+    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+        let base_entity = args.entity.get_entity();
         if !base_entity.entity_type.fire_immune {
             let ticks = base_entity.fire_ticks.load(Ordering::Relaxed);
             if ticks < 0 {

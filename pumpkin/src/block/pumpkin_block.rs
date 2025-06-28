@@ -33,16 +33,7 @@ pub trait PumpkinBlock: Send + Sync {
         BlockActionResult::Continue
     }
 
-    async fn on_entity_collision(
-        &self,
-        _world: &Arc<World>,
-        _entity: &dyn EntityBase,
-        _pos: BlockPos,
-        _block: Block,
-        _state: BlockState,
-        _server: &Server,
-    ) {
-    }
+    async fn on_entity_collision<'a>(&self, _args: OnEntityCollisionArgs<'a>) {}
 
     fn should_drop_items_on_explosion(&self) -> bool {
         true
@@ -259,7 +250,7 @@ pub struct OnEntityCollisionArgs<'a> {
     pub world: &'a Arc<World>,
     pub block: &'a Block,
     pub state: &'a BlockState,
-    pub pos: &'a BlockPos,
+    pub location: &'a BlockPos,
     pub entity: &'a dyn EntityBase,
 }
 

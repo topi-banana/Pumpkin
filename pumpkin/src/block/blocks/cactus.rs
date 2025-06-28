@@ -6,7 +6,7 @@ use pumpkin_data::block_properties::{
 };
 use pumpkin_data::damage::DamageType;
 use pumpkin_data::tag::Tagable;
-use pumpkin_data::{Block, BlockDirection, BlockState};
+use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
@@ -14,8 +14,7 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::pumpkin_block::PumpkinBlock;
-use crate::entity::EntityBase;
+use crate::block::pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
@@ -56,16 +55,8 @@ impl PumpkinBlock for CactusBlock {
         }
     }
 
-    async fn on_entity_collision(
-        &self,
-        _world: &Arc<World>,
-        entity: &dyn EntityBase,
-        _pos: BlockPos,
-        _block: Block,
-        _state: BlockState,
-        _server: &Server,
-    ) {
-        entity.damage(1.0, DamageType::CACTUS).await;
+    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+        args.entity.damage(1.0, DamageType::CACTUS).await;
     }
 
     async fn get_state_for_neighbor_update(

@@ -12,8 +12,11 @@ use pumpkin_util::math::{boundingbox::BoundingBox, position::BlockPos};
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
 use crate::{
-    block::{BlockIsReplacing, pumpkin_block::PumpkinBlock},
-    entity::{EntityBase, player::Player},
+    block::{
+        BlockIsReplacing,
+        pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock},
+    },
+    entity::player::Player,
     server::Server,
     world::World,
 };
@@ -28,30 +31,22 @@ pub struct TripwireBlock;
 
 #[async_trait]
 impl PumpkinBlock for TripwireBlock {
-    async fn on_entity_collision(
-        &self,
-        world: &Arc<World>,
-        _entity: &dyn EntityBase,
-        pos: BlockPos,
-        block: Block,
-        state: BlockState,
-        _server: &Server,
-    ) {
-        let mut props = TripwireProperties::from_state_id(state.id, &block);
+    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+        let mut props = TripwireProperties::from_state_id(args.state.id, args.block);
         if props.powered {
             return;
         }
         props.powered = true;
 
-        let state_id = props.to_state_id(&block);
-        world
-            .set_block_state(&pos, state_id, BlockFlags::NOTIFY_ALL)
+        let state_id = props.to_state_id(args.block);
+        args.world
+            .set_block_state(args.location, state_id, BlockFlags::NOTIFY_ALL)
             .await;
 
-        Self::update(world, &pos, state_id).await;
+        Self::update(args.world, args.location, state_id).await;
 
-        world
-            .schedule_block_tick(&block, pos, 10, TickPriority::Normal)
+        args.world
+            .schedule_block_tick(args.block, *args.location, 10, TickPriority::Normal)
             .await;
     }
 

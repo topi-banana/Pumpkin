@@ -1,11 +1,10 @@
 use std::sync::Arc;
 
+use crate::block::pumpkin_block::OnEntityCollisionArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
-use crate::entity::EntityBase;
-use crate::server::Server;
 use crate::world::World;
 use async_trait::async_trait;
-use pumpkin_data::{Block, BlockState};
+use pumpkin_data::Block;
 use pumpkin_macros::pumpkin_block;
 use pumpkin_registry::VanillaDimensionType;
 use pumpkin_util::math::position::BlockPos;
@@ -16,25 +15,20 @@ pub struct EndPortalBlock;
 
 #[async_trait]
 impl PumpkinBlock for EndPortalBlock {
-    async fn on_entity_collision(
-        &self,
-        world: &Arc<World>,
-        entity: &dyn EntityBase,
-        pos: BlockPos,
-        _block: Block,
-        _state: BlockState,
-        server: &Server,
-    ) {
-        let world = if world.dimension_type == VanillaDimensionType::TheEnd {
-            server
+    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+        let world = if args.world.dimension_type == VanillaDimensionType::TheEnd {
+            args.server
                 .get_world_from_dimension(VanillaDimensionType::Overworld)
                 .await
         } else {
-            server
+            args.server
                 .get_world_from_dimension(VanillaDimensionType::TheEnd)
                 .await
         };
-        entity.get_entity().try_use_portal(0, world, pos).await;
+        args.entity
+            .get_entity()
+            .try_use_portal(0, world, *args.location)
+            .await;
     }
 
     async fn placed(

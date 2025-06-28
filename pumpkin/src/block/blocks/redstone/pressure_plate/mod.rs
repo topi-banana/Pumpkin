@@ -4,22 +4,16 @@ use pumpkin_data::{Block, BlockState};
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
-use crate::world::World;
+use crate::{block::pumpkin_block::OnEntityCollisionArgs, world::World};
 
 pub mod plate;
 pub mod weighted;
 
 pub(crate) trait PressurePlate {
-    async fn on_entity_collision_pp(
-        &self,
-        world: &Arc<World>,
-        pos: BlockPos,
-        block: Block,
-        state: BlockState,
-    ) {
-        let output = self.get_redstone_output(&block, state.id);
+    async fn on_entity_collision_pp(&self, args: OnEntityCollisionArgs<'_>) {
+        let output = self.get_redstone_output(args.block, args.state.id);
         if output == 0 {
-            self.update_plate_state(world, pos, &block, state, output)
+            self.update_plate_state(args.world, args.location, args.block, args.state, output)
                 .await;
         }
     }
@@ -28,7 +22,7 @@ pub(crate) trait PressurePlate {
         let state = world.get_block_state(pos).await;
         let output = self.get_redstone_output(block, state.id);
         if output > 0 {
-            self.update_plate_state(world, *pos, block, state, output)
+            self.update_plate_state(world, pos, block, &state, output)
                 .await;
         }
     }
@@ -50,24 +44,24 @@ pub(crate) trait PressurePlate {
     async fn update_plate_state(
         &self,
         world: &Arc<World>,
-        pos: BlockPos,
+        pos: &BlockPos,
         block: &Block,
-        state: BlockState,
+        state: &BlockState,
         output: u8,
     ) {
-        let calc_output = self.calculate_redstone_output(world, block, &pos).await;
+        let calc_output = self.calculate_redstone_output(world, block, pos).await;
         let has_output = calc_output > 0;
         if calc_output != output {
-            let state = self.set_redstone_output(block, &state, calc_output);
+            let state = self.set_redstone_output(block, state, calc_output);
             world
-                .set_block_state(&pos, state, BlockFlags::NOTIFY_LISTENERS)
+                .set_block_state(pos, state, BlockFlags::NOTIFY_LISTENERS)
                 .await;
-            world.update_neighbors(&pos, None).await;
+            world.update_neighbors(pos, None).await;
             world.update_neighbors(&pos.down(), None).await;
         }
         if has_output {
             world
-                .schedule_block_tick(block, pos, self.tick_rate(), TickPriority::Normal)
+                .schedule_block_tick(block, *pos, self.tick_rate(), TickPriority::Normal)
                 .await;
         }
     }

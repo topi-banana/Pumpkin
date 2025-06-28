@@ -1,14 +1,13 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::PumpkinBlock;
+use crate::block::pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock};
 use crate::entity::EntityBase;
-use crate::server::Server;
 use crate::world::World;
 use crate::world::portal::nether::NetherPortal;
 use async_trait::async_trait;
 use pumpkin_data::block_properties::{Axis, BlockProperties, NetherPortalLikeProperties};
 use pumpkin_data::entity::EntityType;
-use pumpkin_data::{Block, BlockDirection, BlockState};
+use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_registry::VanillaDimensionType;
 use pumpkin_util::GameMode;
@@ -61,30 +60,22 @@ impl PumpkinBlock for NetherPortalBlock {
         Block::AIR.default_state.id
     }
 
-    async fn on_entity_collision(
-        &self,
-        world: &Arc<World>,
-        entity: &dyn EntityBase,
-        pos: BlockPos,
-        _block: Block,
-        _state: BlockState,
-        server: &Server,
-    ) {
-        let target_world = if world.dimension_type == VanillaDimensionType::TheNether {
-            server
+    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+        let target_world = if args.world.dimension_type == VanillaDimensionType::TheNether {
+            args.server
                 .get_world_from_dimension(VanillaDimensionType::Overworld)
                 .await
         } else {
-            server
+            args.server
                 .get_world_from_dimension(VanillaDimensionType::TheNether)
                 .await
         };
 
-        let portal_delay = Self::get_portal_time(world, entity).await;
+        let portal_delay = Self::get_portal_time(args.world, args.entity).await;
 
-        entity
+        args.entity
             .get_entity()
-            .try_use_portal(portal_delay, target_world, pos)
+            .try_use_portal(portal_delay, target_world, *args.location)
             .await;
     }
 }

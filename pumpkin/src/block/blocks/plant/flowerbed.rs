@@ -5,13 +5,12 @@ use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, world::BlockAccessor};
 
-use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
+use crate::block::pumpkin_block::{BlockMetadata, OnPlaceArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
 
-use super::segmented::{PlaceContext, Segmented, UpdateContext};
+use super::segmented::{Segmented, UpdateContext};
 
 type FlowerbedProperties = pumpkin_data::block_properties::PinkPetalsLikeProperties;
 
@@ -66,28 +65,8 @@ impl PumpkinBlock for FlowerbedBlock {
         Segmented::can_update_at(self, &ctx).await
     }
 
-    async fn on_place(
-        &self,
-        server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        face: BlockDirection,
-        replacing: BlockIsReplacing,
-        use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let ctx = PlaceContext {
-            server,
-            world,
-            player,
-            block,
-            block_pos,
-            face,
-            replacing,
-            use_item_on,
-        };
-        Segmented::on_place(self, &ctx).await
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        Segmented::on_place(self, args).await
     }
 
     async fn get_state_for_neighbor_update(

@@ -17,7 +17,7 @@ use pumpkin_world::{
 use rand::{Rng, rng};
 
 use crate::{
-    block::{BlockIsReplacing, pumpkin_block::PumpkinBlock},
+    block::pumpkin_block::{OnPlaceArgs, PumpkinBlock},
     entity::player::Player,
     server::Server,
     world::World,
@@ -31,25 +31,15 @@ pub struct TripwireHookBlock;
 
 #[async_trait]
 impl PumpkinBlock for TripwireHookBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        _player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut props = TripwireHookProperties::default(block);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut props = TripwireHookProperties::default(args.block);
         props.powered = false;
         props.attached = false;
-        if Self::can_place_at(world, block_pos, face).await {
-            props.facing = face.opposite().to_cardinal_direction();
-            return props.to_state_id(block);
+        if Self::can_place_at(args.world, args.location, args.direction).await {
+            props.facing = args.direction.opposite().to_cardinal_direction();
+            return props.to_state_id(args.block);
         }
-        block.default_state.id
+        args.block.default_state.id
     }
 
     async fn can_place_at(
@@ -64,7 +54,7 @@ impl PumpkinBlock for TripwireHookBlock {
         _use_item_on: Option<&SUseItemOn>,
     ) -> bool {
         if let Some(world) = world {
-            Self::can_place_at(world, block_pos, face).await
+            Self::can_place_at(world, block_pos, &face).await
         } else {
             false
         }
@@ -95,7 +85,7 @@ impl PumpkinBlock for TripwireHookBlock {
         if direction.to_horizontal_facing().is_some_and(|facing| {
             let props = TripwireHookProperties::from_state_id(state, block);
             facing.opposite() == props.facing
-        }) && !Self::can_place_at(world, pos, direction).await
+        }) && !Self::can_place_at(world, pos, &direction).await
         {
             Block::AIR.default_state.id
         } else {
@@ -176,13 +166,13 @@ impl PumpkinBlock for TripwireHookBlock {
 }
 
 impl TripwireHookBlock {
-    pub async fn can_place_at(world: &World, block_pos: &BlockPos, face: BlockDirection) -> bool {
+    pub async fn can_place_at(world: &World, block_pos: &BlockPos, face: &BlockDirection) -> bool {
         if !face.is_horizontal() {
             return false;
         }
         let place_block_pos = block_pos.offset(face.to_offset());
         let place_block_state = world.get_block_state(&place_block_pos).await;
-        place_block_state.is_side_solid(face)
+        place_block_state.is_side_solid(*face)
     }
 
     #[allow(clippy::too_many_lines)]

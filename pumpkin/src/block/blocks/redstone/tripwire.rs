@@ -7,15 +7,11 @@ use pumpkin_data::{
     item::Item,
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::{boundingbox::BoundingBox, position::BlockPos};
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
 use crate::{
-    block::{
-        BlockIsReplacing,
-        pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock},
-    },
+    block::pumpkin_block::{OnEntityCollisionArgs, OnPlaceArgs, PumpkinBlock},
     entity::player::Player,
     server::Server,
     world::World,
@@ -50,17 +46,7 @@ impl PumpkinBlock for TripwireBlock {
             .await;
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        _player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
         let [connect_north, connect_east, connect_south, connect_west] = [
             BlockDirection::North,
             BlockDirection::East,
@@ -68,19 +54,19 @@ impl PumpkinBlock for TripwireBlock {
             BlockDirection::West,
         ]
         .map(async |dir| {
-            let current_pos = block_pos.offset(dir.to_offset());
-            let state_id = world.get_block_state_id(&current_pos).await;
+            let current_pos = args.location.offset(dir.to_offset());
+            let state_id = args.world.get_block_state_id(&current_pos).await;
             Self::should_connect_to(state_id, dir)
         });
 
-        let mut props = TripwireProperties::from_state_id(block.default_state.id, block);
+        let mut props = TripwireProperties::from_state_id(args.block.default_state.id, args.block);
 
         props.north = connect_north.await;
         props.south = connect_south.await;
         props.west = connect_west.await;
         props.east = connect_east.await;
 
-        props.to_state_id(block)
+        props.to_state_id(args.block)
     }
 
     async fn placed(

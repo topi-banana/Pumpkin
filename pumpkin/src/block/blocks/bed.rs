@@ -16,8 +16,7 @@ use pumpkin_world::block::entities::bed::BedBlockEntity;
 use pumpkin_world::world::BlockAccessor;
 use pumpkin_world::world::BlockFlags;
 
-use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
+use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, OnPlaceArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::entity::{Entity, EntityBase};
 use crate::server::Server;
@@ -61,23 +60,13 @@ impl PumpkinBlock for BedBlock {
         false
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut bed_props = BedProperties::default(block);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut bed_props = BedProperties::default(args.block);
 
-        bed_props.facing = player.living_entity.entity.get_horizontal_facing();
+        bed_props.facing = args.player.living_entity.entity.get_horizontal_facing();
         bed_props.part = BedPart::Foot;
 
-        bed_props.to_state_id(block)
+        bed_props.to_state_id(args.block)
     }
 
     async fn placed(

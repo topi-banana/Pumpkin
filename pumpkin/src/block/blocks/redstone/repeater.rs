@@ -15,8 +15,7 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 
 use crate::{
     block::{
-        BlockIsReplacing,
-        pumpkin_block::{NormalUseArgs, PumpkinBlock, UseWithItemArgs},
+        pumpkin_block::{NormalUseArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs},
         registry::BlockActionResult,
     },
     entity::player::Player,
@@ -33,23 +32,15 @@ pub struct RepeaterBlock;
 
 #[async_trait]
 impl PumpkinBlock for RepeaterBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let state_id = RedstoneGateBlock::on_place(self, player, block).await;
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let state_id = RedstoneGateBlock::on_place(self, args.player, args.block).await;
 
-        let mut props = RepeaterProperties::from_state_id(state_id, block);
-        props.locked = self.is_locked(world, *block_pos, state_id, block).await;
+        let mut props = RepeaterProperties::from_state_id(state_id, args.block);
+        props.locked = self
+            .is_locked(args.world, *args.location, state_id, args.block)
+            .await;
 
-        props.to_state_id(block)
+        props.to_state_id(args.block)
     }
 
     async fn on_neighbor_update(

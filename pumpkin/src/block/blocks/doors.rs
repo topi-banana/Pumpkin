@@ -18,9 +18,9 @@ use pumpkin_world::world::BlockAccessor;
 use pumpkin_world::world::BlockFlags;
 use std::sync::Arc;
 
-use crate::block::BlockIsReplacing;
 use crate::block::blocks::redstone::block_receives_redstone_power;
 use crate::block::pumpkin_block::NormalUseArgs;
+use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
@@ -172,31 +172,21 @@ impl BlockMetadata for DoorBlock {
 
 #[async_trait]
 impl PumpkinBlock for DoorBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let powered = block_receives_redstone_power(world, block_pos).await
-            || block_receives_redstone_power(world, &block_pos.up()).await;
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let powered = block_receives_redstone_power(args.world, args.location).await
+            || block_receives_redstone_power(args.world, &args.location.up()).await;
 
-        let direction = player.living_entity.entity.get_horizontal_facing();
-        let hinge = get_hinge(world, block_pos, use_item_on, direction).await;
+        let direction = args.player.living_entity.entity.get_horizontal_facing();
+        let hinge = get_hinge(args.world, args.location, args.use_item_on, direction).await;
 
-        let mut door_props = DoorProperties::default(block);
+        let mut door_props = DoorProperties::default(args.block);
         door_props.half = DoubleBlockHalf::Lower;
         door_props.facing = direction;
         door_props.hinge = hinge;
         door_props.powered = powered;
         door_props.open = powered;
 
-        door_props.to_state_id(block)
+        door_props.to_state_id(args.block)
     }
 
     async fn can_place_at(

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
 use crate::entity::player::Player;
 use crate::server::Server;
@@ -28,21 +28,11 @@ impl PumpkinBlock for FarmLandBlock {
             .await;
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        _player_direction: &Player,
-        block: &Block,
-        pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        if !can_place_at(world, pos).await {
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        if !can_place_at(args.world, args.location).await {
             return Block::DIRT.default_state.id;
         }
-        block.default_state.id
+        args.block.default_state.id
     }
 
     async fn get_state_for_neighbor_update(

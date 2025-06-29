@@ -1,5 +1,5 @@
 use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{OnPlaceArgs, PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::EntityBase;
 use crate::entity::player::Player;
@@ -108,20 +108,10 @@ impl PumpkinBlock for SeaPickleBlock {
         BlockActionResult::Consume
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        if player.get_entity().pose.load() != EntityPose::Crouching {
-            if let BlockIsReplacing::Itself(state_id) = replacing {
-                let mut sea_pickle_prop = SeaPickleProperties::from_state_id(state_id, block);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        if args.player.get_entity().pose.load() != EntityPose::Crouching {
+            if let BlockIsReplacing::Itself(state_id) = args.replacing {
+                let mut sea_pickle_prop = SeaPickleProperties::from_state_id(state_id, args.block);
                 if sea_pickle_prop.pickles != Integer1To4::L4 {
                     sea_pickle_prop.pickles = match sea_pickle_prop.pickles {
                         Integer1To4::L1 => Integer1To4::L2,
@@ -129,13 +119,13 @@ impl PumpkinBlock for SeaPickleBlock {
                         _ => Integer1To4::L4,
                     };
                 }
-                return sea_pickle_prop.to_state_id(block);
+                return sea_pickle_prop.to_state_id(args.block);
             }
         }
 
-        let mut sea_pickle_prop = SeaPickleProperties::default(block);
-        sea_pickle_prop.waterlogged = replacing.water_source();
-        sea_pickle_prop.to_state_id(block)
+        let mut sea_pickle_prop = SeaPickleProperties::default(args.block);
+        sea_pickle_prop.waterlogged = args.replacing.water_source();
+        sea_pickle_prop.to_state_id(args.block)
     }
 
     async fn can_place_at(

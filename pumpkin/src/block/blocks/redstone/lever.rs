@@ -2,8 +2,8 @@ use std::sync::Arc;
 
 use crate::{
     block::{
-        BlockIsReplacing, blocks::abstruct_wall_mounting::WallMountedBlock,
-        pumpkin_block::UseWithItemArgs,
+        blocks::abstruct_wall_mounting::WallMountedBlock,
+        pumpkin_block::{OnPlaceArgs, UseWithItemArgs},
     },
     entity::player::Player,
 };
@@ -112,21 +112,12 @@ impl PumpkinBlock for LeverBlock {
         }
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        direction: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut props = LeverLikeProperties::from_state_id(block.default_state.id, block);
-        (props.face, props.facing) = WallMountedBlock::get_placement_face(self, player, direction);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut props = LeverLikeProperties::from_state_id(args.block.default_state.id, args.block);
+        (props.face, props.facing) =
+            WallMountedBlock::get_placement_face(self, args.player, args.direction);
 
-        props.to_state_id(block)
+        props.to_state_id(args.block)
     }
 
     async fn can_place_at(

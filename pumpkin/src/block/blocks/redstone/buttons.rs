@@ -18,9 +18,9 @@ use pumpkin_world::world::BlockFlags;
 
 type ButtonLikeProperties = pumpkin_data::block_properties::LeverLikeProperties;
 
-use crate::block::BlockIsReplacing;
 use crate::block::blocks::abstruct_wall_mounting::WallMountedBlock;
 use crate::block::blocks::redstone::lever::LeverLikePropertiesExt;
+use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
@@ -135,21 +135,13 @@ impl PumpkinBlock for ButtonBlock {
         }
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        direction: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut props = ButtonLikeProperties::from_state_id(block.default_state.id, block);
-        (props.face, props.facing) = WallMountedBlock::get_placement_face(self, player, direction);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut props =
+            ButtonLikeProperties::from_state_id(args.block.default_state.id, args.block);
+        (props.face, props.facing) =
+            WallMountedBlock::get_placement_face(self, args.player, args.direction);
 
-        props.to_state_id(block)
+        props.to_state_id(args.block)
     }
 
     async fn can_place_at(

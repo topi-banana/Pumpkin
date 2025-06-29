@@ -48,20 +48,9 @@ pub trait PumpkinBlock: Send + Sync {
         false
     }
 
-    #[allow(clippy::too_many_arguments)]
     /// getPlacementState in source code
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        _player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        block.default_state.id
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        args.block.default_state.id
     }
 
     async fn random_tick(&self, _block: &Block, _world: &Arc<World>, _pos: &BlockPos) {}
@@ -265,8 +254,8 @@ pub struct OnPlaceArgs<'a> {
     pub server: &'a Server,
     pub world: &'a World,
     pub block: &'a Block,
-    pub block_pos: &'a BlockPos,
-    pub face: &'a BlockDirection,
+    pub location: &'a BlockPos,
+    pub direction: &'a BlockDirection,
     pub player: &'a Player,
     pub replacing: BlockIsReplacing,
     pub use_item_on: &'a SUseItemOn,

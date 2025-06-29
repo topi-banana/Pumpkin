@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::entity::EntityBase;
 use crate::entity::player::Player;
 use async_trait::async_trait;
@@ -41,27 +42,21 @@ impl BlockMetadata for RedstoneTorchBlock {
 
 #[async_trait]
 impl PumpkinBlock for RedstoneTorchBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        face: BlockDirection,
-        replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        if face == BlockDirection::Down {
-            let support_block = world.get_block_state(&block_pos.down()).await;
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let world = args.world;
+        let block = args.block;
+        let location = args.location;
+
+        if args.direction == &BlockDirection::Down {
+            let support_block = world.get_block_state(&location.down()).await;
             if support_block.is_center_solid(BlockDirection::Up) {
                 return block.default_state.id;
             }
         }
-        let mut directions = player.get_entity().get_entity_facing_order();
+        let mut directions = args.player.get_entity().get_entity_facing_order();
 
-        if replacing == BlockIsReplacing::None {
-            let face = face.to_facing();
+        if args.replacing == BlockIsReplacing::None {
+            let face = args.direction.to_facing();
             let mut i = 0;
             while i < directions.len() && directions[i] != face {
                 i += 1;
@@ -72,7 +67,7 @@ impl PumpkinBlock for RedstoneTorchBlock {
                 directions[0] = face;
             }
         } else if directions[0] == Facing::Down {
-            let support_block = world.get_block_state(&block_pos.down()).await;
+            let support_block = world.get_block_state(&location.down()).await;
             if support_block.is_center_solid(BlockDirection::Up) {
                 return block.default_state.id;
             }
@@ -81,7 +76,7 @@ impl PumpkinBlock for RedstoneTorchBlock {
         for dir in directions {
             if dir != Facing::Up
                 && dir != Facing::Down
-                && can_place_at(world, block_pos, dir.to_block_direction()).await
+                && can_place_at(world, location, dir.to_block_direction()).await
             {
                 let mut torch_props = RWallTorchProps::default(&Block::REDSTONE_WALL_TORCH);
                 torch_props.facing = dir
@@ -93,7 +88,7 @@ impl PumpkinBlock for RedstoneTorchBlock {
             }
         }
 
-        let support_block = world.get_block_state(&block_pos.down()).await;
+        let support_block = world.get_block_state(&location.down()).await;
         if support_block.is_center_solid(BlockDirection::Up) {
             block.default_state.id
         } else {

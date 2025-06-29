@@ -9,7 +9,6 @@ use pumpkin_data::{
     },
     block_state::PistonBehavior,
 };
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{
     BlockStateId,
@@ -19,12 +18,9 @@ use pumpkin_world::{
 
 use crate::{
     block::{
-        BlockIsReplacing,
         blocks::redstone::is_emitting_redstone_power,
-        pumpkin_block::{BlockMetadata, OnSyncedBlockEventArgs, PumpkinBlock},
+        pumpkin_block::{BlockMetadata, OnPlaceArgs, OnSyncedBlockEventArgs, PumpkinBlock},
     },
-    entity::player::Player,
-    server::Server,
     world::World,
 };
 
@@ -88,21 +84,11 @@ impl PistonBlock {
 
 #[async_trait]
 impl PumpkinBlock for PistonBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut props = PistonProps::default(block);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut props = PistonProps::default(args.block);
         props.extended = false;
-        props.facing = player.living_entity.entity.get_facing().opposite();
-        props.to_state_id(block)
+        props.facing = args.player.living_entity.entity.get_facing().opposite();
+        props.to_state_id(args.block)
     }
 
     async fn placed(

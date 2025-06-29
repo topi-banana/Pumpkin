@@ -11,7 +11,7 @@ use pumpkin_world::world::BlockAccessor;
 use pumpkin_world::world::BlockFlags;
 use std::sync::Arc;
 
-use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
 use crate::entity::player::Player;
 use crate::server::Server;
@@ -26,19 +26,11 @@ pub struct RailBlock;
 
 #[async_trait]
 impl PumpkinBlock for RailBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut rail_props = RailProperties::default(block);
-        rail_props.set_waterlogged(replacing.water_source());
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let world = args.world;
+        let block_pos = args.location;
+        let mut rail_props = RailProperties::default(args.block);
+        rail_props.set_waterlogged(args.replacing.water_source());
 
         let shape = if let Some(east_rail) =
             Rail::find_if_unlocked(world, block_pos, HorizontalFacing::East).await
@@ -107,7 +99,7 @@ impl PumpkinBlock for RailBlock {
                 RailShape::NorthSouth
             }
         } else {
-            player
+            args.player
                 .living_entity
                 .entity
                 .get_horizontal_facing()
@@ -116,7 +108,7 @@ impl PumpkinBlock for RailBlock {
         };
 
         rail_props.set_shape(shape);
-        rail_props.to_state_id(block)
+        rail_props.to_state_id(args.block)
     }
 
     async fn placed(

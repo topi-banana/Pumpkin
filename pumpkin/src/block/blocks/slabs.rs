@@ -10,9 +10,10 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 
 use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
+use crate::entity::player::Player;
 use crate::world::World;
-use crate::{entity::player::Player, server::Server};
 
 type SlabProperties = pumpkin_data::block_properties::ResinBrickSlabLikeProperties;
 
@@ -30,36 +31,26 @@ impl BlockMetadata for SlabBlock {
 
 #[async_trait]
 impl PumpkinBlock for SlabBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        _player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        face: BlockDirection,
-        replacing: BlockIsReplacing,
-        use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        if let BlockIsReplacing::Itself(state_id) = replacing {
-            let mut slab_props = SlabProperties::from_state_id(state_id, block);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        if let BlockIsReplacing::Itself(state_id) = args.replacing {
+            let mut slab_props = SlabProperties::from_state_id(state_id, args.block);
             slab_props.r#type = SlabType::Double;
             slab_props.waterlogged = false;
-            return slab_props.to_state_id(block);
+            return slab_props.to_state_id(args.block);
         }
 
-        let mut slab_props = SlabProperties::default(block);
-        slab_props.waterlogged = replacing.water_source();
-        slab_props.r#type = match face {
+        let mut slab_props = SlabProperties::default(args.block);
+        slab_props.waterlogged = args.replacing.water_source();
+        slab_props.r#type = match args.direction {
             BlockDirection::Up => SlabType::Top,
             BlockDirection::Down => SlabType::Bottom,
-            _ => match use_item_on.cursor_pos.y {
+            _ => match args.use_item_on.cursor_pos.y {
                 0.0...0.5 => SlabType::Bottom,
                 _ => SlabType::Top,
             },
         };
 
-        slab_props.to_state_id(block)
+        slab_props.to_state_id(args.block)
     }
 
     #[allow(clippy::too_many_arguments)]

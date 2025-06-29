@@ -1,9 +1,7 @@
 use std::sync::Arc;
 
-use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{NormalUseArgs, UseWithItemArgs};
-use crate::server::Server;
-use crate::{block::registry::BlockActionResult, entity::player::Player};
+use crate::block::pumpkin_block::{NormalUseArgs, OnPlaceArgs, UseWithItemArgs};
+use crate::block::registry::BlockActionResult;
 use async_trait::async_trait;
 use pumpkin_data::block_properties::Axis;
 use pumpkin_data::sound::{Sound, SoundCategory};
@@ -14,7 +12,6 @@ use pumpkin_data::{
     },
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockFlags;
@@ -136,18 +133,14 @@ impl PumpkinBlock for NoteBlock {
         true
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        _player: &Player,
-        block: &Block,
-        pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        Self::get_state_with_instrument(world, pos, Block::NOTE_BLOCK.default_state.id, block).await
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        Self::get_state_with_instrument(
+            args.world,
+            args.location,
+            Block::NOTE_BLOCK.default_state.id,
+            args.block,
+        )
+        .await
     }
 
     async fn get_state_for_neighbor_update(

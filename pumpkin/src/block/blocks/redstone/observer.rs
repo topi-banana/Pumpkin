@@ -1,37 +1,26 @@
 use std::sync::Arc;
 
-use crate::{block::BlockIsReplacing, entity::player::Player};
+use crate::block::pumpkin_block::OnPlaceArgs;
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState, FacingExt,
     block_properties::{BlockProperties, ObserverLikeProperties},
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
-use crate::{block::pumpkin_block::PumpkinBlock, server::Server, world::World};
+use crate::{block::pumpkin_block::PumpkinBlock, world::World};
 
 #[pumpkin_block("minecraft:observer")]
 pub struct ObserverBlock;
 
 #[async_trait]
 impl PumpkinBlock for ObserverBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut props = ObserverLikeProperties::default(block);
-        props.facing = player.living_entity.entity.get_facing();
-        props.to_state_id(block)
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut props = ObserverLikeProperties::default(args.block);
+        props.facing = args.player.living_entity.entity.get_facing();
+        props.to_state_id(args.block)
     }
 
     async fn on_neighbor_update(

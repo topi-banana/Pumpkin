@@ -7,14 +7,12 @@ use pumpkin_data::block_properties::{
 use pumpkin_data::entity::EntityPose;
 use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::block::entities::chest::ChestBlockEntity;
 use pumpkin_world::world::BlockFlags;
 
-use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::UseWithItemArgs;
+use crate::block::pumpkin_block::{OnPlaceArgs, UseWithItemArgs};
 use crate::entity::EntityBase;
 use crate::world::World;
 use crate::{
@@ -28,26 +26,23 @@ pub struct ChestBlock;
 
 #[async_trait]
 impl PumpkinBlock for ChestBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        face: BlockDirection,
-        replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut chest_props = ChestLikeProperties::default(block);
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut chest_props = ChestLikeProperties::default(args.block);
 
-        chest_props.waterlogged = replacing.water_source();
+        chest_props.waterlogged = args.replacing.water_source();
 
-        let (r#type, facing) = compute_chest_props(world, player, block, block_pos, face).await;
+        let (r#type, facing) = compute_chest_props(
+            args.world,
+            args.player,
+            args.block,
+            args.location,
+            args.direction,
+        )
+        .await;
         chest_props.facing = facing;
         chest_props.r#type = r#type;
 
-        chest_props.to_state_id(block)
+        chest_props.to_state_id(args.block)
     }
 
     async fn placed(
@@ -150,7 +145,7 @@ async fn compute_chest_props(
     player: &Player,
     block: &Block,
     block_pos: &BlockPos,
-    face: BlockDirection,
+    face: &BlockDirection,
 ) -> (ChestType, HorizontalFacing) {
     let chest_facing = player.get_entity().get_horizontal_facing().opposite();
 

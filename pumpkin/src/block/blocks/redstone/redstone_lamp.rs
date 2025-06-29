@@ -1,14 +1,13 @@
 use std::sync::Arc;
 
-use crate::{block::BlockIsReplacing, entity::player::Player};
+use crate::block::pumpkin_block::OnPlaceArgs;
 use async_trait::async_trait;
-use pumpkin_data::{Block, BlockDirection, block_properties::BlockProperties};
+use pumpkin_data::{Block, block_properties::BlockProperties};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
-use crate::{block::pumpkin_block::PumpkinBlock, server::Server, world::World};
+use crate::{block::pumpkin_block::PumpkinBlock, world::World};
 
 use super::block_receives_redstone_power;
 
@@ -19,20 +18,10 @@ pub struct RedstoneLamp;
 
 #[async_trait]
 impl PumpkinBlock for RedstoneLamp {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        _player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut props = RedstoneLampProperties::default(block);
-        props.lit = block_receives_redstone_power(world, block_pos).await;
-        props.to_state_id(block)
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut props = RedstoneLampProperties::default(args.block);
+        props.lit = block_receives_redstone_power(args.world, args.location).await;
+        props.to_state_id(args.block)
     }
 
     async fn on_neighbor_update(

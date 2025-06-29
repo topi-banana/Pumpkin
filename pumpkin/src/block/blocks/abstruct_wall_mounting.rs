@@ -15,15 +15,15 @@ pub trait WallMountedBlock {
     fn get_placement_face(
         &self,
         player: &Player,
-        direction: BlockDirection,
+        direction: &BlockDirection,
     ) -> (BlockFace, HorizontalFacing) {
-        let face = match direction {
+        let face = match *direction {
             BlockDirection::Up => BlockFace::Ceiling,
             BlockDirection::Down => BlockFace::Floor,
             _ => BlockFace::Wall,
         };
 
-        let facing = if direction == BlockDirection::Up || direction == BlockDirection::Down {
+        let facing = if direction == &BlockDirection::Up || direction == &BlockDirection::Down {
             player.living_entity.entity.get_horizontal_facing()
         } else {
             direction.opposite().to_cardinal_direction()

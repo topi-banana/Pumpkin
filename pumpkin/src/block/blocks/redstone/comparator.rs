@@ -21,8 +21,7 @@ use pumpkin_world::{
 
 use crate::{
     block::{
-        BlockIsReplacing,
-        pumpkin_block::{NormalUseArgs, PumpkinBlock, UseWithItemArgs},
+        pumpkin_block::{NormalUseArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs},
         registry::BlockActionResult,
     },
     entity::player::Player,
@@ -37,18 +36,8 @@ pub struct ComparatorBlock;
 
 #[async_trait]
 impl PumpkinBlock for ComparatorBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        RedstoneGateBlock::on_place(self, player, block).await
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        RedstoneGateBlock::on_place(self, args.player, args.block).await
     }
 
     async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {

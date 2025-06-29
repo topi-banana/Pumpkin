@@ -13,8 +13,7 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::UseWithItemArgs;
+use crate::block::pumpkin_block::{OnPlaceArgs, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::{
@@ -47,25 +46,16 @@ impl PumpkinBlock for RedstoneWireBlock {
         can_place_at(world.unwrap(), block_pos).await
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        _player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut wire = RedstoneWireProperties::default(block);
-        wire.power = Integer0To15::from_index(calculate_power(world, block_pos).await.into());
-        wire = get_regulated_sides(wire, world, block_pos).await;
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut wire = RedstoneWireProperties::default(args.block);
+        wire.power =
+            Integer0To15::from_index(calculate_power(args.world, args.location).await.into());
+        wire = get_regulated_sides(wire, args.world, args.location).await;
         if is_dot(wire) {
             wire = make_cross(wire.power);
         }
 
-        wire.to_state_id(block)
+        wire.to_state_id(args.block)
     }
 
     async fn get_state_for_neighbor_update(

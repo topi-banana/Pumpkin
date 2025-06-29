@@ -1,9 +1,8 @@
-use crate::block::BlockIsReplacing;
 use crate::block::blocks::redstone::block_receives_redstone_power;
-use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{
+    BlockMetadata, NormalUseArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs,
+};
 use crate::block::registry::BlockActionResult;
-use crate::entity::player::Player;
-use crate::server::Server;
 use crate::world::World;
 use async_trait::async_trait;
 use pumpkin_data::Block;
@@ -11,7 +10,6 @@ use pumpkin_data::BlockDirection;
 use pumpkin_data::block_properties::{BlockHalf, BlockProperties};
 use pumpkin_data::sound::{Sound, SoundCategory};
 use pumpkin_data::tag::{RegistryKey, Tagable, get_tag_values};
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockFlags;
@@ -87,32 +85,23 @@ impl PumpkinBlock for TrapDoorBlock {
         BlockActionResult::Consume
     }
 
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        face: BlockDirection,
-        replacing: BlockIsReplacing,
-        use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut trapdoor_props = TrapDoorProperties::default(block);
-        trapdoor_props.waterlogged = replacing.water_source();
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut trapdoor_props = TrapDoorProperties::default(args.block);
+        trapdoor_props.waterlogged = args.replacing.water_source();
 
-        let powered = block_receives_redstone_power(world, block_pos).await;
-        let direction = player
+        let powered = block_receives_redstone_power(args.world, args.location).await;
+        let direction = args
+            .player
             .living_entity
             .entity
             .get_horizontal_facing()
             .opposite();
 
         trapdoor_props.facing = direction;
-        trapdoor_props.half = match face {
+        trapdoor_props.half = match args.direction {
             BlockDirection::Up => BlockHalf::Top,
             BlockDirection::Down => BlockHalf::Bottom,
-            _ => match use_item_on.cursor_pos.y {
+            _ => match args.use_item_on.cursor_pos.y {
                 0.0...0.5 => BlockHalf::Bottom,
                 _ => BlockHalf::Top,
             },
@@ -120,7 +109,7 @@ impl PumpkinBlock for TrapDoorBlock {
         trapdoor_props.powered = powered;
         trapdoor_props.open = powered;
 
-        trapdoor_props.to_state_id(block)
+        trapdoor_props.to_state_id(args.block)
     }
 
     async fn on_neighbor_update(

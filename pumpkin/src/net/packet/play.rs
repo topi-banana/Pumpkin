@@ -1790,7 +1790,7 @@ impl Player {
                 self,
                 &block,
                 &final_block_pos,
-                final_face,
+                &final_face,
                 replacing,
                 &use_item_on,
             )

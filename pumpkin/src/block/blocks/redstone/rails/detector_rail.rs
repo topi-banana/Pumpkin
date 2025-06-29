@@ -9,7 +9,7 @@ use pumpkin_world::world::BlockAccessor;
 use pumpkin_world::world::BlockFlags;
 use std::sync::Arc;
 
-use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
 use crate::entity::player::Player;
 use crate::server::Server;
@@ -26,25 +26,16 @@ pub struct DetectorRailBlock;
 
 #[async_trait]
 impl PumpkinBlock for DetectorRailBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        world: &World,
-        player: &Player,
-        block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> BlockStateId {
-        let mut rail_props = RailProperties::default(block);
-        let player_facing = player.living_entity.entity.get_horizontal_facing();
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut rail_props = RailProperties::default(args.block);
+        let player_facing = args.player.living_entity.entity.get_horizontal_facing();
 
-        rail_props.set_waterlogged(replacing.water_source());
-        rail_props
-            .set_straight_shape(compute_placed_rail_shape(world, block_pos, player_facing).await);
+        rail_props.set_waterlogged(args.replacing.water_source());
+        rail_props.set_straight_shape(
+            compute_placed_rail_shape(args.world, args.location, player_facing).await,
+        );
 
-        rail_props.to_state_id(block)
+        rail_props.to_state_id(args.block)
     }
 
     async fn placed(

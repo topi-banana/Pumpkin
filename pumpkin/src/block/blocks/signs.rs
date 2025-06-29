@@ -6,14 +6,12 @@ use pumpkin_data::BlockDirection;
 use pumpkin_data::block_properties::BlockProperties;
 use pumpkin_data::tag::RegistryKey;
 use pumpkin_data::tag::get_tag_values;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
+use pumpkin_world::BlockStateId;
 use pumpkin_world::block::entities::sign::SignBlockEntity;
 
-use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
+use crate::block::pumpkin_block::{BlockMetadata, OnPlaceArgs, PumpkinBlock};
 use crate::entity::player::Player;
-use crate::server::Server;
 use crate::world::World;
 
 type SignProperties = pumpkin_data::block_properties::OakSignLikeProperties;
@@ -32,21 +30,11 @@ impl BlockMetadata for SignBlock {
 
 #[async_trait]
 impl PumpkinBlock for SignBlock {
-    async fn on_place(
-        &self,
-        _server: &Server,
-        _world: &World,
-        _player: &Player,
-        block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        replacing: BlockIsReplacing,
-        _use_item_on: &SUseItemOn,
-    ) -> u16 {
-        let mut sign_props = SignProperties::default(block);
-        sign_props.waterlogged = replacing.water_source();
+    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+        let mut sign_props = SignProperties::default(args.block);
+        sign_props.waterlogged = args.replacing.water_source();
 
-        sign_props.to_state_id(block)
+        sign_props.to_state_id(args.block)
     }
 
     async fn placed(

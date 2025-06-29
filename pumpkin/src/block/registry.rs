@@ -15,7 +15,9 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::BlockIsReplacing;
-use super::pumpkin_block::{ExplodeArgs, NormalUseArgs, OnSyncedBlockEventArgs, UseWithItemArgs};
+use super::pumpkin_block::{
+    ExplodeArgs, NormalUseArgs, OnPlaceArgs, OnSyncedBlockEventArgs, UseWithItemArgs,
+};
 use super::pumpkin_fluid::PumpkinFluid;
 
 pub enum BlockActionResult {
@@ -260,24 +262,24 @@ impl BlockRegistry {
         world: &World,
         player: &Player,
         block: &Block,
-        block_pos: &BlockPos,
-        face: BlockDirection,
+        location: &BlockPos,
+        direction: &BlockDirection,
         replacing: BlockIsReplacing,
         use_item_on: &SUseItemOn,
     ) -> BlockStateId {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
-                .on_place(
+                .on_place(OnPlaceArgs {
                     server,
                     world,
-                    player,
                     block,
-                    block_pos,
-                    face,
+                    location,
+                    direction,
+                    player,
                     replacing,
                     use_item_on,
-                )
+                })
                 .await;
         }
         block.default_state.id

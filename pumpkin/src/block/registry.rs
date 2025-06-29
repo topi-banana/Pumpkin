@@ -15,7 +15,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 
 use super::BlockIsReplacing;
-use super::pumpkin_block::{ExplodeArgs, NormalUseArgs, UseWithItemArgs};
+use super::pumpkin_block::{ExplodeArgs, NormalUseArgs, OnSyncedBlockEventArgs, UseWithItemArgs};
 use super::pumpkin_fluid::PumpkinFluid;
 
 pub enum BlockActionResult {
@@ -75,14 +75,20 @@ impl BlockRegistry {
         &self,
         block: &Block,
         world: &Arc<World>,
-        pos: &BlockPos,
+        location: &BlockPos,
         r#type: u8,
         data: u8,
     ) -> bool {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
-                .on_synced_block_event(block, world, pos, r#type, data)
+                .on_synced_block_event(OnSyncedBlockEventArgs {
+                    world,
+                    block,
+                    location,
+                    r#type,
+                    data,
+                })
                 .await;
         }
         false

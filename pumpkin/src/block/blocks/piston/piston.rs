@@ -21,7 +21,7 @@ use crate::{
     block::{
         BlockIsReplacing,
         blocks::redstone::is_emitting_redstone_power,
-        pumpkin_block::{BlockMetadata, PumpkinBlock},
+        pumpkin_block::{BlockMetadata, OnSyncedBlockEventArgs, PumpkinBlock},
     },
     entity::player::Player,
     server::Server,
@@ -132,14 +132,15 @@ impl PumpkinBlock for PistonBlock {
     }
 
     #[expect(clippy::too_many_lines)]
-    async fn on_synced_block_event(
-        &self,
-        block: &Block,
-        world: &Arc<World>,
-        pos: &BlockPos,
-        r#type: u8,
-        data: u8,
-    ) -> bool {
+    async fn on_synced_block_event<'a>(&self, args: OnSyncedBlockEventArgs<'a>) -> bool {
+        let (block, world, pos, r#type, data) = (
+            args.block,
+            args.world,
+            args.location,
+            args.r#type,
+            args.data,
+        );
+
         let state = world.get_block_state(pos).await;
         let mut props = PistonProps::from_state_id(state.id, block);
         let dir = props.facing.to_block_direction();

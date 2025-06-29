@@ -44,14 +44,7 @@ pub trait PumpkinBlock: Send + Sync {
     /// Handles the block event, which is an event specific to a block with an integer ID and data.
     ///
     /// returns whether the event was handled successfully
-    async fn on_synced_block_event(
-        &self,
-        _block: &Block,
-        _world: &Arc<World>,
-        _pos: &BlockPos,
-        _type: u8,
-        _data: u8,
-    ) -> bool {
+    async fn on_synced_block_event<'a>(&self, _args: OnSyncedBlockEventArgs<'a>) -> bool {
         false
     }
 
@@ -263,7 +256,7 @@ pub struct ExplodeArgs<'a> {
 pub struct OnSyncedBlockEventArgs<'a> {
     pub world: &'a Arc<World>,
     pub block: &'a Block,
-    pub pos: &'a BlockPos,
+    pub location: &'a BlockPos,
     pub r#type: u8,
     pub data: u8,
 }

@@ -19,7 +19,10 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockFlags;
 
-use crate::{block::pumpkin_block::PumpkinBlock, world::World};
+use crate::{
+    block::pumpkin_block::{OnSyncedBlockEventArgs, PumpkinBlock},
+    world::World,
+};
 
 use super::redstone::block_receives_redstone_power;
 
@@ -110,16 +113,9 @@ impl PumpkinBlock for NoteBlock {
         BlockActionResult::Continue
     }
 
-    async fn on_synced_block_event(
-        &self,
-        block: &Block,
-        world: &Arc<World>,
-        pos: &BlockPos,
-        _type: u8,
-        _data: u8,
-    ) -> bool {
-        let block_state = world.get_block_state(pos).await;
-        let note_props = NoteBlockLikeProperties::from_state_id(block_state.id, block);
+    async fn on_synced_block_event<'a>(&self, args: OnSyncedBlockEventArgs<'a>) -> bool {
+        let block_state = args.world.get_block_state(args.location).await;
+        let note_props = NoteBlockLikeProperties::from_state_id(block_state.id, args.block);
         let instrument = note_props.instrument;
         let pitch = if is_base_block(instrument) {
             // checks if can be pitched
@@ -128,11 +124,11 @@ impl PumpkinBlock for NoteBlock {
             1.0 // default pitch
         };
         // check hasCustomSound
-        world
+        args.world
             .play_sound_raw(
                 convert_instrument_to_sound(instrument) as u16,
                 SoundCategory::Records,
-                &pos.to_f64(),
+                &args.location.to_f64(),
                 3.0,
                 pitch,
             )

@@ -84,7 +84,7 @@ impl PistonBlock {
 
 #[async_trait]
 impl PumpkinBlock for PistonBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut props = PistonProps::default(args.block);
         props.extended = false;
         props.facing = args.player.living_entity.entity.get_facing().opposite();
@@ -118,7 +118,7 @@ impl PumpkinBlock for PistonBlock {
     }
 
     #[expect(clippy::too_many_lines)]
-    async fn on_synced_block_event<'a>(&self, args: OnSyncedBlockEventArgs<'a>) -> bool {
+    async fn on_synced_block_event(&self, args: OnSyncedBlockEventArgs<'_>) -> bool {
         let (block, world, pos, r#type, data) = (
             args.block,
             args.world,

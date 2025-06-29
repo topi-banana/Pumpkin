@@ -32,7 +32,7 @@ pub struct RepeaterBlock;
 
 #[async_trait]
 impl PumpkinBlock for RepeaterBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let state_id = RedstoneGateBlock::on_place(self, args.player, args.block).await;
 
         let mut props = RepeaterProperties::from_state_id(state_id, args.block);
@@ -115,14 +115,14 @@ impl PumpkinBlock for RepeaterBlock {
         }
     }
 
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         let state = args.world.get_block_state(args.location).await;
         let props = RepeaterProperties::from_state_id(state.id, args.block);
         self.on_use(props, args.world, *args.location, args.block)
             .await;
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         let state = args.world.get_block_state(args.location).await;
         let props = RepeaterProperties::from_state_id(state.id, args.block);
         self.on_use(props, args.world, *args.location, args.block)

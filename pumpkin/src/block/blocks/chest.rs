@@ -26,7 +26,7 @@ pub struct ChestBlock;
 
 #[async_trait]
 impl PumpkinBlock for ChestBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut chest_props = ChestLikeProperties::default(args.block);
 
         chest_props.waterlogged = args.replacing.water_source();
@@ -97,7 +97,7 @@ impl PumpkinBlock for ChestBlock {
         world.remove_block_entity(&location).await;
     }
 
-    async fn use_with_item<'a>(&self, _args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, _args: UseWithItemArgs<'_>) -> BlockActionResult {
         BlockActionResult::Consume
     }
 

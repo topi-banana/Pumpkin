@@ -19,7 +19,7 @@ pub struct GrindstoneBlock;
 
 #[async_trait]
 impl PumpkinBlock for GrindstoneBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut props =
             GrindstoneLikeProperties::from_state_id(args.block.default_state.id, args.block);
         (props.face, props.facing) =

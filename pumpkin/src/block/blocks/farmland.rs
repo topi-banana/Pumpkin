@@ -28,7 +28,7 @@ impl PumpkinBlock for FarmLandBlock {
             .await;
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         if !can_place_at(args.world, args.location).await {
             return Block::DIRT.default_state.id;
         }

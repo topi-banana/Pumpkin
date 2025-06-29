@@ -31,7 +31,7 @@ impl BlockMetadata for SlabBlock {
 
 #[async_trait]
 impl PumpkinBlock for SlabBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         if let BlockIsReplacing::Itself(state_id) = args.replacing {
             let mut slab_props = SlabProperties::from_state_id(state_id, args.block);
             slab_props.r#type = SlabType::Double;

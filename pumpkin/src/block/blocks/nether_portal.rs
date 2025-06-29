@@ -60,7 +60,7 @@ impl PumpkinBlock for NetherPortalBlock {
         Block::AIR.default_state.id
     }
 
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         let target_world = if args.world.dimension_type == VanillaDimensionType::TheNether {
             args.server
                 .get_world_from_dimension(VanillaDimensionType::Overworld)

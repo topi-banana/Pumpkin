@@ -40,7 +40,7 @@ impl BlockMetadata for PressurePlateBlock {
 
 #[async_trait]
 impl PumpkinBlock for PressurePlateBlock {
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         self.on_entity_collision_pp(args).await;
     }
 

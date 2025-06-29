@@ -46,7 +46,7 @@ impl PumpkinBlock for RedstoneWireBlock {
         can_place_at(world.unwrap(), block_pos).await
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut wire = RedstoneWireProperties::default(args.block);
         wire.power =
             Integer0To15::from_index(calculate_power(args.world, args.location).await.into());
@@ -156,13 +156,13 @@ impl PumpkinBlock for RedstoneWireBlock {
         }
     }
 
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         let state = args.world.get_block_state(args.location).await;
         let wire = RedstoneWireProperties::from_state_id(state.id, args.block);
         on_use(wire, args.world, args.location).await;
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         let state = args.world.get_block_state(args.location).await;
         let wire = RedstoneWireProperties::from_state_id(state.id, args.block);
         if on_use(wire, args.world, args.location).await {

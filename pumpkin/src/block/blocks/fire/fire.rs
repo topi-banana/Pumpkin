@@ -204,7 +204,7 @@ impl PumpkinBlock for FireBlock {
             .await;
     }
 
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         let base_entity = args.entity.get_entity();
         if !base_entity.entity_type.fire_immune {
             let ticks = base_entity.fire_ticks.load(Ordering::Relaxed);

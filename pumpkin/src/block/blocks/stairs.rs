@@ -33,7 +33,7 @@ impl BlockMetadata for StairBlock {
 
 #[async_trait]
 impl PumpkinBlock for StairBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut stair_props = StairsProperties::default(args.block);
         stair_props.waterlogged = args.replacing.water_source();
 

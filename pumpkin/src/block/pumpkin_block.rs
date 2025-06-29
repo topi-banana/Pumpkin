@@ -27,29 +27,29 @@ pub trait BlockMetadata {
 
 #[async_trait]
 pub trait PumpkinBlock: Send + Sync {
-    async fn normal_use<'a>(&self, _args: NormalUseArgs<'a>) {}
+    async fn normal_use(&self, _args: NormalUseArgs<'_>) {}
 
-    async fn use_with_item<'a>(&self, _args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, _args: UseWithItemArgs<'_>) -> BlockActionResult {
         BlockActionResult::Continue
     }
 
-    async fn on_entity_collision<'a>(&self, _args: OnEntityCollisionArgs<'a>) {}
+    async fn on_entity_collision(&self, _args: OnEntityCollisionArgs<'_>) {}
 
     fn should_drop_items_on_explosion(&self) -> bool {
         true
     }
 
-    async fn explode<'a>(&self, _args: ExplodeArgs<'a>) {}
+    async fn explode(&self, _args: ExplodeArgs<'_>) {}
 
     /// Handles the block event, which is an event specific to a block with an integer ID and data.
     ///
     /// returns whether the event was handled successfully
-    async fn on_synced_block_event<'a>(&self, _args: OnSyncedBlockEventArgs<'a>) -> bool {
+    async fn on_synced_block_event(&self, _args: OnSyncedBlockEventArgs<'_>) -> bool {
         false
     }
 
     /// getPlacementState in source code
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         args.block.default_state.id
     }
 

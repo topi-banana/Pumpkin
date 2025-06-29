@@ -36,7 +36,7 @@ impl BlockMetadata for TorchBlock {
 
 #[async_trait]
 impl PumpkinBlock for TorchBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         if args.direction == &BlockDirection::Down {
             let support_block = args.world.get_block_state(&args.location.down()).await;
             if support_block.is_center_solid(BlockDirection::Up) {

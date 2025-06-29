@@ -64,18 +64,18 @@ impl BlockMetadata for FenceGateBlock {
 
 #[async_trait]
 impl PumpkinBlock for FenceGateBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut fence_gate_props = FenceGateProperties::default(args.block);
         fence_gate_props.facing = args.player.living_entity.entity.get_horizontal_facing();
         fence_gate_props.to_state_id(args.block)
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         toggle_fence_gate(args.world, args.location, args.player).await;
         BlockActionResult::Consume
     }
 
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         toggle_fence_gate(args.world, args.location, args.player).await;
     }
 }

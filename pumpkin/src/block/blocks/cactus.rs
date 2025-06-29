@@ -68,7 +68,7 @@ impl PumpkinBlock for CactusBlock {
         }
     }
 
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         args.entity.damage(1.0, DamageType::CACTUS).await;
     }
 

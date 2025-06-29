@@ -15,7 +15,7 @@ pub struct EndPortalBlock;
 
 #[async_trait]
 impl PumpkinBlock for EndPortalBlock {
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         let world = if args.world.dimension_type == VanillaDimensionType::TheEnd {
             args.server
                 .get_world_from_dimension(VanillaDimensionType::Overworld)

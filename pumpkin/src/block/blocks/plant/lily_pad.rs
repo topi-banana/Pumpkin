@@ -17,7 +17,7 @@ pub struct LilyPadBlock;
 
 #[async_trait]
 impl PumpkinBlock for LilyPadBlock {
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         // Proberbly not the best solution, but works
         if args
             .entity

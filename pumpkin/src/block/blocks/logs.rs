@@ -22,7 +22,7 @@ impl BlockMetadata for LogBlock {
 
 #[async_trait]
 impl PumpkinBlock for LogBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut log_props = LogProperties::default(args.block);
         log_props.axis = args.direction.to_axis();
 

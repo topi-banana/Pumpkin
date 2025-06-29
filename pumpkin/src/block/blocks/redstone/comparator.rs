@@ -36,18 +36,18 @@ pub struct ComparatorBlock;
 
 #[async_trait]
 impl PumpkinBlock for ComparatorBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         RedstoneGateBlock::on_place(self, args.player, args.block).await
     }
 
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         let state = args.world.get_block_state(args.location).await;
         let props = ComparatorLikeProperties::from_state_id(state.id, args.block);
         self.on_use(props, args.world, *args.location, args.block)
             .await;
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         let state = args.world.get_block_state(args.location).await;
         let props = ComparatorLikeProperties::from_state_id(state.id, args.block);
         self.on_use(props, args.world, *args.location, args.block)

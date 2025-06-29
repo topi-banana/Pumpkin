@@ -26,7 +26,7 @@ pub struct DetectorRailBlock;
 
 #[async_trait]
 impl PumpkinBlock for DetectorRailBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut rail_props = RailProperties::default(args.block);
         let player_facing = args.player.living_entity.entity.get_horizontal_facing();
 

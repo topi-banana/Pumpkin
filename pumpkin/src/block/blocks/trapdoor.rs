@@ -69,13 +69,13 @@ impl BlockMetadata for TrapDoorBlock {
 
 #[async_trait]
 impl PumpkinBlock for TrapDoorBlock {
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         if can_open_trapdoor(args.block) {
             toggle_trapdoor(args.world, args.location).await;
         }
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         if !can_open_trapdoor(args.block) {
             return BlockActionResult::Continue;
         }
@@ -85,7 +85,7 @@ impl PumpkinBlock for TrapDoorBlock {
         BlockActionResult::Consume
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut trapdoor_props = TrapDoorProperties::default(args.block);
         trapdoor_props.waterlogged = args.replacing.water_source();
 

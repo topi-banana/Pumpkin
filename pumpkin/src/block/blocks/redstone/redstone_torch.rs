@@ -42,7 +42,7 @@ impl BlockMetadata for RedstoneTorchBlock {
 
 #[async_trait]
 impl PumpkinBlock for RedstoneTorchBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let world = args.world;
         let block = args.block;
         let location = args.location;

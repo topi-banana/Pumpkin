@@ -64,7 +64,7 @@ impl PumpkinBlock for LeafLitterBlock {
         Segmented::can_update_at(self, &ctx).await
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         Segmented::on_place(self, args).await
     }
 

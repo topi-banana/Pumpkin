@@ -15,7 +15,7 @@ pub struct EndPortalFrameBlock;
 
 #[async_trait]
 impl PumpkinBlock for EndPortalFrameBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut end_portal_frame_props = EndPortalFrameProperties::default(args.block);
         end_portal_frame_props.facing = args.player.get_entity().get_horizontal_facing().opposite();
 

@@ -17,7 +17,7 @@ pub struct ObserverBlock;
 
 #[async_trait]
 impl PumpkinBlock for ObserverBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut props = ObserverLikeProperties::default(args.block);
         props.facing = args.player.living_entity.entity.get_facing();
         props.to_state_id(args.block)

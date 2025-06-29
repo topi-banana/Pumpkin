@@ -18,7 +18,7 @@ pub struct IronBarsBlock;
 
 #[async_trait]
 impl PumpkinBlock for IronBarsBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut bars_props = IronBarsProperties::default(args.block);
         bars_props.waterlogged = args.replacing.water_source();
 

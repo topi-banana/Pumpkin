@@ -26,7 +26,7 @@ pub struct SeaPickleBlock;
 #[async_trait]
 impl PumpkinBlock for SeaPickleBlock {
     #[allow(clippy::many_single_char_names)]
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         if args.item != &Item::BONE_MEAL
             || !args
                 .world
@@ -108,7 +108,7 @@ impl PumpkinBlock for SeaPickleBlock {
         BlockActionResult::Consume
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         if args.player.get_entity().pose.load() != EntityPose::Crouching {
             if let BlockIsReplacing::Itself(state_id) = args.replacing {
                 let mut sea_pickle_prop = SeaPickleProperties::from_state_id(state_id, args.block);

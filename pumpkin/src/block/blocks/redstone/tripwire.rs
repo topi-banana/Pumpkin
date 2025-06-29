@@ -27,7 +27,7 @@ pub struct TripwireBlock;
 
 #[async_trait]
 impl PumpkinBlock for TripwireBlock {
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         let mut props = TripwireProperties::from_state_id(args.state.id, args.block);
         if props.powered {
             return;
@@ -46,7 +46,7 @@ impl PumpkinBlock for TripwireBlock {
             .await;
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let [connect_north, connect_east, connect_south, connect_west] = [
             BlockDirection::North,
             BlockDirection::East,

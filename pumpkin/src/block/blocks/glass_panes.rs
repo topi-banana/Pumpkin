@@ -27,7 +27,7 @@ impl BlockMetadata for GlassPaneBlock {
 
 #[async_trait]
 impl PumpkinBlock for GlassPaneBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut pane_props = GlassPaneProperties::default(args.block);
         pane_props.waterlogged = args.replacing.water_source();
 

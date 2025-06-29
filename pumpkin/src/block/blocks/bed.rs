@@ -60,7 +60,7 @@ impl PumpkinBlock for BedBlock {
         false
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut bed_props = BedProperties::default(args.block);
 
         bed_props.facing = args.player.living_entity.entity.get_horizontal_facing();
@@ -128,7 +128,7 @@ impl PumpkinBlock for BedBlock {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         let state_id = args.world.get_block_state_id(args.location).await;
         let bed_props = BedProperties::from_state_id(state_id, args.block);
 

@@ -85,7 +85,7 @@ impl PumpkinBlock for NoteBlock {
         }
     }
 
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         let block_state = args.world.get_block_state(args.location).await;
         let mut note_props = NoteBlockLikeProperties::from_state_id(block_state.id, args.block);
         let next_index = note_props.note.to_index() + 1;
@@ -105,12 +105,12 @@ impl PumpkinBlock for NoteBlock {
         Self::play_note(&note_props, args.world, args.location).await;
     }
 
-    async fn use_with_item<'a>(&self, _args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, _args: UseWithItemArgs<'_>) -> BlockActionResult {
         // TODO
         BlockActionResult::Continue
     }
 
-    async fn on_synced_block_event<'a>(&self, args: OnSyncedBlockEventArgs<'a>) -> bool {
+    async fn on_synced_block_event(&self, args: OnSyncedBlockEventArgs<'_>) -> bool {
         let block_state = args.world.get_block_state(args.location).await;
         let note_props = NoteBlockLikeProperties::from_state_id(block_state.id, args.block);
         let instrument = note_props.instrument;
@@ -133,7 +133,7 @@ impl PumpkinBlock for NoteBlock {
         true
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         Self::get_state_with_instrument(
             args.world,
             args.location,

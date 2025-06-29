@@ -48,13 +48,13 @@ impl JukeboxBlock {
 
 #[async_trait]
 impl PumpkinBlock for JukeboxBlock {
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         // For now just stop the music at this position
         let world = &args.player.living_entity.entity.world.read().await;
         self.stop_music(args.block, args.location, world).await;
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         let world = &args.player.living_entity.entity.world.read().await;
 
         // if the jukebox already has a record, stop playing

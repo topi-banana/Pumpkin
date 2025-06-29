@@ -16,7 +16,7 @@ pub struct PumpkinBlock;
 
 #[async_trait]
 impl crate::block::pumpkin_block::PumpkinBlock for PumpkinBlock {
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         if args.item != &Item::SHEARS {
             return BlockActionResult::Continue;
         }

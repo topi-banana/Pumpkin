@@ -29,7 +29,7 @@ pub struct ComposterBlock;
 
 #[async_trait]
 impl PumpkinBlock for ComposterBlock {
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         let state_id = args.world.get_block_state_id(args.location).await;
         let props = ComposterLikeProperties::from_state_id(state_id, args.block);
         if props.get_level() == 8 {
@@ -38,7 +38,7 @@ impl PumpkinBlock for ComposterBlock {
         }
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         let state_id = args.world.get_block_state_id(args.location).await;
         let props = ComposterLikeProperties::from_state_id(state_id, args.block);
         let level = props.get_level();

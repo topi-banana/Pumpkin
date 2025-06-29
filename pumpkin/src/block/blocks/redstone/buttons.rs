@@ -63,11 +63,11 @@ impl BlockMetadata for ButtonBlock {
 
 #[async_trait]
 impl PumpkinBlock for ButtonBlock {
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         click_button(args.world, args.location).await;
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         click_button(args.world, args.location).await;
         BlockActionResult::Consume
     }
@@ -135,7 +135,7 @@ impl PumpkinBlock for ButtonBlock {
         }
     }
 
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut props =
             ButtonLikeProperties::from_state_id(args.block.default_state.id, args.block);
         (props.face, props.facing) =

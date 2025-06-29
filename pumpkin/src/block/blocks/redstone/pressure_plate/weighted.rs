@@ -37,7 +37,7 @@ impl BlockMetadata for WeightedPressurePlateBlock {
 
 #[async_trait]
 impl PumpkinBlock for WeightedPressurePlateBlock {
-    async fn on_entity_collision<'a>(&self, args: OnEntityCollisionArgs<'a>) {
+    async fn on_entity_collision(&self, args: OnEntityCollisionArgs<'_>) {
         self.on_entity_collision_pp(args).await;
     }
 

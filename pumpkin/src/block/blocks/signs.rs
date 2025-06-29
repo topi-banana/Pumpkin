@@ -30,7 +30,7 @@ impl BlockMetadata for SignBlock {
 
 #[async_trait]
 impl PumpkinBlock for SignBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut sign_props = SignProperties::default(args.block);
         sign_props.waterlogged = args.replacing.water_source();
 

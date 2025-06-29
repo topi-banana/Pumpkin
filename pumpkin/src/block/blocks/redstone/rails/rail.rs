@@ -26,7 +26,7 @@ pub struct RailBlock;
 
 #[async_trait]
 impl PumpkinBlock for RailBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let world = args.world;
         let block_pos = args.location;
         let mut rail_props = RailProperties::default(args.block);

@@ -172,7 +172,7 @@ impl BlockMetadata for DoorBlock {
 
 #[async_trait]
 impl PumpkinBlock for DoorBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let powered = block_receives_redstone_power(args.world, args.location).await
             || block_receives_redstone_power(args.world, &args.location.up()).await;
 
@@ -224,7 +224,7 @@ impl PumpkinBlock for DoorBlock {
             .await;
     }
 
-    async fn use_with_item<'a>(&self, args: UseWithItemArgs<'a>) -> BlockActionResult {
+    async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
         if !can_open_door(args.block) {
             return BlockActionResult::Continue;
         }
@@ -234,7 +234,7 @@ impl PumpkinBlock for DoorBlock {
         BlockActionResult::Consume
     }
 
-    async fn normal_use<'a>(&self, args: NormalUseArgs<'a>) {
+    async fn normal_use(&self, args: NormalUseArgs<'_>) {
         if can_open_door(args.block) {
             toggle_door(args.player, args.world, args.location).await;
         }

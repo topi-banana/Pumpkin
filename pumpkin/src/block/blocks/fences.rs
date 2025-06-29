@@ -29,7 +29,7 @@ impl BlockMetadata for FenceBlock {
 
 #[async_trait]
 impl PumpkinBlock for FenceBlock {
-    async fn on_place<'a>(&self, args: OnPlaceArgs<'a>) -> BlockStateId {
+    async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
         let mut fence_props = FenceProperties::default(args.block);
         fence_props.waterlogged = args.replacing.water_source();
 

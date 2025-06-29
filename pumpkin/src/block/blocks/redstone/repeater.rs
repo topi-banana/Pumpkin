@@ -8,18 +8,18 @@ use pumpkin_data::{
     },
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
-use pumpkin_world::world::{BlockAccessor, BlockFlags};
+use pumpkin_world::world::BlockFlags;
 use pumpkin_world::{BlockStateId, chunk::TickPriority};
 
 use crate::{
     block::{
-        pumpkin_block::{NormalUseArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs},
+        pumpkin_block::{
+            CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs,
+        },
         registry::BlockActionResult,
     },
     entity::player::Player,
-    server::Server,
     world::World,
 };
 
@@ -167,18 +167,8 @@ impl PumpkinBlock for RepeaterBlock {
             || repeater_props.facing.to_block_direction() == direction.opposite()
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        RedstoneGateBlock::can_place_at(self, block_accessor, *block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        RedstoneGateBlock::can_place_at(self, args.block_accessor, *args.location).await
     }
 
     async fn placed(

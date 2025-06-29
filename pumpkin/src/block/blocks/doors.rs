@@ -19,6 +19,7 @@ use pumpkin_world::world::BlockFlags;
 use std::sync::Arc;
 
 use crate::block::blocks::redstone::block_receives_redstone_power;
+use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::NormalUseArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::UseWithItemArgs;
@@ -27,7 +28,6 @@ use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use pumpkin_protocol::server::play::SUseItemOn;
 
-use crate::server::Server;
 use crate::world::World;
 
 type DoorProperties = pumpkin_data::block_properties::OakDoorLikeProperties;
@@ -189,18 +189,8 @@ impl PumpkinBlock for DoorBlock {
         door_props.to_state_id(args.block)
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        world: Option<&World>,
-        _block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        can_place_at(world.unwrap(), block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        can_place_at(args.block_accessor, args.location).await
     }
 
     async fn placed(
@@ -326,7 +316,7 @@ impl PumpkinBlock for DoorBlock {
     }
 }
 
-async fn can_place_at(world: &World, block_pos: &BlockPos) -> bool {
+async fn can_place_at(world: &dyn BlockAccessor, block_pos: &BlockPos) -> bool {
     world.get_block_state(&block_pos.up()).await.replaceable()
         && world
             .get_block_state(&block_pos.down())

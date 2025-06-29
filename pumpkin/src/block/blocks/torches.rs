@@ -1,11 +1,9 @@
 use crate::block::BlockIsReplacing;
 use crate::entity::EntityBase;
-use crate::entity::player::Player;
 use async_trait::async_trait;
 use pumpkin_data::BlockDirection;
 use pumpkin_data::block_properties::{BlockProperties, Facing};
 use pumpkin_data::{Block, FacingExt, HorizontalFacingExt};
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockAccessor;
@@ -13,8 +11,7 @@ use pumpkin_world::world::BlockAccessor;
 type WallTorchProps = pumpkin_data::block_properties::WallTorchLikeProperties;
 // Normal tourches don't have properties
 
-use crate::block::pumpkin_block::{BlockMetadata, OnPlaceArgs, PumpkinBlock};
-use crate::server::Server;
+use crate::block::pumpkin_block::{BlockMetadata, CanPlaceAtArgs, OnPlaceArgs, PumpkinBlock};
 use crate::world::World;
 
 pub struct TorchBlock;
@@ -91,23 +88,16 @@ impl PumpkinBlock for TorchBlock {
         }
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        let support_block = block_accessor.get_block_state(&block_pos.down()).await;
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        let support_block = args
+            .block_accessor
+            .get_block_state(&args.location.down())
+            .await;
         if support_block.is_center_solid(BlockDirection::Up) {
             return true;
         }
         for dir in BlockDirection::horizontal() {
-            if can_place_at(world.unwrap(), block_pos, dir).await {
+            if can_place_at(args.block_accessor, args.location, dir).await {
                 return true;
             }
         }
@@ -141,7 +131,11 @@ impl PumpkinBlock for TorchBlock {
     }
 }
 
-async fn can_place_at(world: &World, block_pos: &BlockPos, facing: BlockDirection) -> bool {
+async fn can_place_at(
+    world: &dyn BlockAccessor,
+    block_pos: &BlockPos,
+    facing: BlockDirection,
+) -> bool {
     world
         .get_block_state(&block_pos.offset(facing.to_offset()))
         .await

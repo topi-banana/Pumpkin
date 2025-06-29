@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use crate::{
-    block::{
-        blocks::abstruct_wall_mounting::WallMountedBlock,
-        pumpkin_block::{OnPlaceArgs, UseWithItemArgs},
-    },
-    entity::player::Player,
+use crate::block::{
+    blocks::abstruct_wall_mounting::WallMountedBlock,
+    pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, UseWithItemArgs},
 };
 use async_trait::async_trait;
 use pumpkin_data::{
@@ -13,19 +10,14 @@ use pumpkin_data::{
     block_properties::{BlockFace, BlockProperties, LeverLikeProperties},
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
-use pumpkin_world::{
-    BlockStateId,
-    world::{BlockAccessor, BlockFlags},
-};
+use pumpkin_world::{BlockStateId, world::BlockFlags};
 
 use crate::{
     block::{
         pumpkin_block::{NormalUseArgs, PumpkinBlock},
         registry::BlockActionResult,
     },
-    server::Server,
     world::World,
 };
 
@@ -120,18 +112,9 @@ impl PumpkinBlock for LeverBlock {
         props.to_state_id(args.block)
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        pos: &BlockPos,
-        face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        WallMountedBlock::can_place_at(self, block_accessor, pos, face).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        WallMountedBlock::can_place_at(self, args.block_accessor, args.location, args.direction)
+            .await
     }
 
     async fn get_state_for_neighbor_update(

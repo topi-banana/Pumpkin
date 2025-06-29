@@ -4,13 +4,12 @@ use pumpkin_data::{
     block_properties::{BlockFace, BlockProperties, GrindstoneLikeProperties},
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, world::BlockAccessor};
 
-use crate::world::World;
-use crate::{block::pumpkin_block::OnPlaceArgs, server::Server};
-use crate::{block::pumpkin_block::PumpkinBlock, entity::player::Player};
+use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::PumpkinBlock;
+use crate::{block::pumpkin_block::CanPlaceAtArgs, world::World};
 
 use super::abstruct_wall_mounting::WallMountedBlock;
 
@@ -28,18 +27,9 @@ impl PumpkinBlock for GrindstoneBlock {
         props.to_state_id(args.block)
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        pos: &BlockPos,
-        face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        WallMountedBlock::can_place_at(self, block_accessor, pos, face).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        WallMountedBlock::can_place_at(self, args.block_accessor, args.location, args.direction)
+            .await
     }
 
     async fn get_state_for_neighbor_update(
@@ -64,7 +54,7 @@ impl WallMountedBlock for GrindstoneBlock {
         &self,
         _world: &dyn BlockAccessor,
         _pos: &BlockPos,
-        _direction: BlockDirection,
+        _direction: &BlockDirection,
     ) -> bool {
         true
     }

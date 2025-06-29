@@ -1,12 +1,9 @@
-use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
-use crate::entity::player::Player;
-use crate::server::Server;
+use crate::block::pumpkin_block::{BlockMetadata, CanPlaceAtArgs, PumpkinBlock};
 use crate::world::World;
 use async_trait::async_trait;
 use pumpkin_data::tag::{RegistryKey, get_tag_values};
 use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
@@ -27,18 +24,8 @@ impl BlockMetadata for CarpetBlock {
 
 #[async_trait]
 impl PumpkinBlock for CarpetBlock {
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        can_place_at(block_accessor, block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        can_place_at(args.block_accessor, args.location).await
     }
 
     async fn get_state_for_neighbor_update(
@@ -71,18 +58,8 @@ pub struct MossCarpetBlock;
 
 #[async_trait]
 impl PumpkinBlock for MossCarpetBlock {
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        can_place_at(block_accessor, block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        can_place_at(args.block_accessor, args.location).await
     }
 
     async fn get_state_for_neighbor_update(
@@ -115,18 +92,8 @@ pub struct PaleMossCarpetBlock;
 
 #[async_trait]
 impl PumpkinBlock for PaleMossCarpetBlock {
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        can_place_at(block_accessor, block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        can_place_at(args.block_accessor, args.location).await
     }
 
     async fn get_state_for_neighbor_update(

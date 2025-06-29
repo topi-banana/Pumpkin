@@ -36,7 +36,7 @@ pub trait WallMountedBlock {
         &self,
         world: &dyn BlockAccessor,
         pos: &BlockPos,
-        direction: BlockDirection,
+        direction: &BlockDirection,
     ) -> bool {
         let block_pos = pos.offset(direction.to_offset());
         let block_state = world.get_block_state(&block_pos).await;
@@ -52,7 +52,7 @@ pub trait WallMountedBlock {
         pos: &BlockPos,
     ) -> Option<BlockStateId> {
         (self.get_direction(state_id, block).opposite() == direction
-            && !self.can_place_at(world, pos, direction).await)
+            && !self.can_place_at(world, pos, &direction).await)
             .then(|| Block::AIR.default_state.id)
     }
 }

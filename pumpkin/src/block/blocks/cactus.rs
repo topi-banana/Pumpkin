@@ -8,15 +8,14 @@ use pumpkin_data::damage::DamageType;
 use pumpkin_data::tag::Tagable;
 use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock, RandomTickArgs};
-use crate::entity::player::Player;
-use crate::server::Server;
+use crate::block::pumpkin_block::{
+    CanPlaceAtArgs, OnEntityCollisionArgs, PumpkinBlock, RandomTickArgs,
+};
 use crate::world::World;
 
 #[pumpkin_block("minecraft:cactus")]
@@ -91,18 +90,8 @@ impl PumpkinBlock for CactusBlock {
         state
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        can_place_at(block_accessor, block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        can_place_at(args.block_accessor, args.location).await
     }
 }
 

@@ -4,12 +4,10 @@ use async_trait::async_trait;
 use pumpkin_data::tag::Tagable;
 use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
-use pumpkin_world::world::BlockAccessor;
 
-use crate::block::pumpkin_block::PumpkinBlock;
+use crate::block::pumpkin_block::{CanPlaceAtArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
@@ -47,18 +45,8 @@ impl PumpkinBlock for SoulFireBlock {
         state_id
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        Self::is_soul_base(&block_accessor.get_block(&block_pos.down()).await)
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        Self::is_soul_base(&args.block_accessor.get_block(&args.location.down()).await)
     }
 
     async fn broken(

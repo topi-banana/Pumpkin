@@ -1,9 +1,8 @@
 use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{OnPlaceArgs, PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::EntityBase;
 use crate::entity::player::Player;
-use crate::server::Server;
 use crate::world::World;
 use async_trait::async_trait;
 use pumpkin_data::block_properties::{BlockProperties, Integer1To4};
@@ -15,7 +14,7 @@ use pumpkin_macros::pumpkin_block;
 use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
-use pumpkin_world::world::{BlockAccessor, BlockFlags};
+use pumpkin_world::world::BlockFlags;
 use rand::Rng;
 
 type SeaPickleProperties = pumpkin_data::block_properties::SeaPickleLikeProperties;
@@ -128,18 +127,11 @@ impl PumpkinBlock for SeaPickleBlock {
         sea_pickle_prop.to_state_id(args.block)
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        let support_block = block_accessor.get_block_state(&block_pos.down()).await;
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        let support_block = args
+            .block_accessor
+            .get_block_state(&args.location.down())
+            .await;
         support_block.is_center_solid(BlockDirection::Up)
     }
 

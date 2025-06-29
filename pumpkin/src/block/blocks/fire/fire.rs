@@ -11,13 +11,12 @@ use std::sync::atomic::Ordering;
 use async_trait::async_trait;
 use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 
 use crate::block::blocks::tnt::TNTBlock;
-use crate::block::pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock};
+use crate::block::pumpkin_block::{CanPlaceAtArgs, OnEntityCollisionArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
@@ -233,16 +232,16 @@ impl PumpkinBlock for FireBlock {
         _neighbor_state: BlockStateId,
     ) -> BlockStateId {
         if self
-            .can_place_at(
-                None,
-                Some(world),
-                world,
-                None,
-                &Block::FIRE,
-                block_pos,
-                BlockDirection::Up,
-                None,
-            )
+            .can_place_at(CanPlaceAtArgs {
+                server: None,
+                world: Some(world),
+                block_accessor: world,
+                block: &Block::FIRE,
+                location: block_pos,
+                direction: &BlockDirection::Up,
+                player: None,
+                use_item_on: None,
+            })
             .await
         {
             let old_fire_props = FireProperties::from_state_id(state_id, &Block::FIRE);
@@ -256,22 +255,15 @@ impl PumpkinBlock for FireBlock {
         Block::AIR.default_state.id
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        let state = block_accessor.get_block_state(&block_pos.down()).await;
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        let state = args
+            .block_accessor
+            .get_block_state(&args.location.down())
+            .await;
         if state.is_side_solid(BlockDirection::Up) {
             return true;
         }
-        self.are_blocks_around_flammable(block_accessor, block_pos)
+        self.are_blocks_around_flammable(args.block_accessor, args.location)
             .await
     }
 
@@ -286,16 +278,16 @@ impl PumpkinBlock for FireBlock {
             )
             .await;
         if !Self
-            .can_place_at(
-                None,
-                Some(world),
-                world.as_ref(),
-                None,
+            .can_place_at(CanPlaceAtArgs {
+                server: None,
+                world: Some(world),
+                block_accessor: world.as_ref(),
                 block,
-                pos,
-                BlockDirection::Up,
-                None,
-            )
+                location: pos,
+                direction: &BlockDirection::Up,
+                player: None,
+                use_item_on: None,
+            })
             .await
         {
             world

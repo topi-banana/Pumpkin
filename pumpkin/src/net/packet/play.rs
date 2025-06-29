@@ -1774,7 +1774,7 @@ impl Player {
                 Some(self),
                 &block,
                 &final_block_pos,
-                final_face,
+                &final_face,
                 Some(&use_item_on),
             )
             .await

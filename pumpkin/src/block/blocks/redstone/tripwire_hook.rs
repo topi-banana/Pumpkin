@@ -7,7 +7,6 @@ use pumpkin_data::{
     sound::{Sound, SoundCategory},
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{
     BlockStateId,
@@ -17,9 +16,8 @@ use pumpkin_world::{
 use rand::{Rng, rng};
 
 use crate::{
-    block::pumpkin_block::{OnPlaceArgs, PumpkinBlock},
+    block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PumpkinBlock},
     entity::player::Player,
-    server::Server,
     world::World,
 };
 
@@ -42,22 +40,8 @@ impl PumpkinBlock for TripwireHookBlock {
         args.block.default_state.id
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        world: Option<&World>,
-        _block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        if let Some(world) = world {
-            Self::can_place_at(world, block_pos, &face).await
-        } else {
-            false
-        }
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        Self::can_place_at(args.block_accessor, args.location, args.direction).await
     }
 
     async fn player_placed(
@@ -166,7 +150,11 @@ impl PumpkinBlock for TripwireHookBlock {
 }
 
 impl TripwireHookBlock {
-    pub async fn can_place_at(world: &World, block_pos: &BlockPos, face: &BlockDirection) -> bool {
+    pub async fn can_place_at(
+        world: &dyn BlockAccessor,
+        block_pos: &BlockPos,
+        face: &BlockDirection,
+    ) -> bool {
         if !face.is_horizontal() {
             return false;
         }

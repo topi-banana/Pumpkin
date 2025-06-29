@@ -8,15 +8,12 @@ use pumpkin_data::{
     block_properties::{BlockProperties, CactusLikeProperties, EnumVariants, Integer0To15},
 };
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::pumpkin_block::{PumpkinBlock, RandomTickArgs};
-use crate::entity::player::Player;
-use crate::server::Server;
+use crate::block::pumpkin_block::{CanPlaceAtArgs, PumpkinBlock, RandomTickArgs};
 use crate::world::World;
 
 #[pumpkin_block("minecraft:sugar_cane")]
@@ -86,18 +83,8 @@ impl PumpkinBlock for SugarCaneBlock {
         state
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        can_place_at(block_accessor, block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        can_place_at(args.block_accessor, args.location).await
     }
 }
 

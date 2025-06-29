@@ -8,12 +8,11 @@ use pumpkin_data::block_properties::{
 };
 use pumpkin_data::{Block, BlockDirection, BlockState, HorizontalFacingExt};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::pumpkin_block::{OnPlaceArgs, UseWithItemArgs};
+use crate::block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::{
@@ -32,18 +31,8 @@ pub struct RedstoneWireBlock;
 
 #[async_trait]
 impl PumpkinBlock for RedstoneWireBlock {
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        world: Option<&World>,
-        _block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        can_place_at(world.unwrap(), block_pos).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        can_place_at(args.block_accessor, args.location).await
     }
 
     async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
@@ -180,7 +169,7 @@ impl PumpkinBlock for RedstoneWireBlock {
         _source_block: &Block,
         _notify: bool,
     ) {
-        if can_place_at(world, pos).await {
+        if can_place_at(world.as_ref(), pos).await {
             let state = world.get_block_state(pos).await;
             let mut wire = RedstoneWireProperties::from_state_id(state.id, block);
             let new_power = calculate_power(world, pos).await;
@@ -257,7 +246,7 @@ impl PumpkinBlock for RedstoneWireBlock {
     }
 }
 
-async fn can_place_at(world: &World, block_pos: &BlockPos) -> bool {
+async fn can_place_at(world: &dyn BlockAccessor, block_pos: &BlockPos) -> bool {
     let floor = world.get_block_state(&block_pos.down()).await;
     floor.is_side_solid(BlockDirection::Up)
 }

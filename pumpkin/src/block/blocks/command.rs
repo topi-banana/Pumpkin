@@ -9,7 +9,7 @@ use pumpkin_world::{
 };
 
 use crate::{
-    block::pumpkin_block::{BlockMetadata, PumpkinBlock},
+    block::pumpkin_block::{BlockMetadata, CanPlaceAtArgs, PumpkinBlock},
     world::World,
 };
 
@@ -89,23 +89,13 @@ impl PumpkinBlock for CommandBlock {
         }
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&crate::server::Server>,
-        _world: Option<&World>,
-        _block_accessor: &dyn pumpkin_world::world::BlockAccessor,
-        player: Option<&crate::entity::player::Player>,
-        _block: &Block,
-        _block_pos: &BlockPos,
-        _face: pumpkin_data::BlockDirection,
-        _use_item_on: Option<&pumpkin_protocol::server::play::SUseItemOn>,
-    ) -> bool {
-        if let Some(player) = player {
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        if let Some(player) = args.player {
             if player.gamemode.load() == GameMode::Creative {
                 return true;
             }
         }
 
-        return false;
+        false
     }
 }

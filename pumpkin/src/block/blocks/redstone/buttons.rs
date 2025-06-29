@@ -9,23 +9,20 @@ use pumpkin_data::block_properties::BlockFace;
 use pumpkin_data::block_properties::BlockProperties;
 use pumpkin_data::tag::RegistryKey;
 use pumpkin_data::tag::get_tag_values;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
-use pumpkin_world::world::BlockAccessor;
 use pumpkin_world::world::BlockFlags;
 
 type ButtonLikeProperties = pumpkin_data::block_properties::LeverLikeProperties;
 
 use crate::block::blocks::abstruct_wall_mounting::WallMountedBlock;
 use crate::block::blocks::redstone::lever::LeverLikePropertiesExt;
+use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
-use crate::entity::player::Player;
-use crate::server::Server;
 use crate::world::World;
 
 async fn click_button(world: &Arc<World>, block_pos: &BlockPos) {
@@ -144,18 +141,9 @@ impl PumpkinBlock for ButtonBlock {
         props.to_state_id(args.block)
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        pos: &BlockPos,
-        face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        WallMountedBlock::can_place_at(self, block_accessor, pos, face).await
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        WallMountedBlock::can_place_at(self, args.block_accessor, args.location, args.direction)
+            .await
     }
 
     async fn get_state_for_neighbor_update(

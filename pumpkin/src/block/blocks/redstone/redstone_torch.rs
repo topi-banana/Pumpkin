@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
+use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::entity::EntityBase;
-use crate::entity::player::Player;
 use async_trait::async_trait;
 use pumpkin_data::Block;
 use pumpkin_data::BlockDirection;
@@ -12,7 +12,6 @@ use pumpkin_data::FacingExt;
 use pumpkin_data::HorizontalFacingExt;
 use pumpkin_data::block_properties::BlockProperties;
 use pumpkin_data::block_properties::Facing;
-use pumpkin_protocol::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
@@ -23,7 +22,6 @@ type RWallTorchProps = pumpkin_data::block_properties::FurnaceLikeProperties;
 type RTorchProps = pumpkin_data::block_properties::RedstoneOreLikeProperties;
 
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
-use crate::server::Server;
 use crate::world::World;
 
 use super::get_redstone_power;
@@ -96,24 +94,16 @@ impl PumpkinBlock for RedstoneTorchBlock {
         }
     }
 
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        world: Option<&World>,
-        _block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
-        let world = world.unwrap();
-        let support_block = world.get_block_state(&block_pos.down()).await;
+    async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
+        let support_block = args
+            .block_accessor
+            .get_block_state(&args.location.down())
+            .await;
         if support_block.is_center_solid(BlockDirection::Up) {
             return true;
         }
         for dir in BlockDirection::horizontal() {
-            if can_place_at(world, block_pos, dir).await {
+            if can_place_at(args.block_accessor, args.location, dir).await {
                 return true;
             }
         }
@@ -306,7 +296,11 @@ pub async fn update_neighbors(world: &Arc<World>, pos: &BlockPos) {
     }
 }
 
-async fn can_place_at(world: &World, block_pos: &BlockPos, facing: BlockDirection) -> bool {
+async fn can_place_at(
+    world: &dyn BlockAccessor,
+    block_pos: &BlockPos,
+    facing: BlockDirection,
+) -> bool {
     world
         .get_block_state(&block_pos.offset(facing.to_offset()))
         .await

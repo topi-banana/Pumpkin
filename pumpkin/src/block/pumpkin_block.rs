@@ -55,18 +55,7 @@ pub trait PumpkinBlock: Send + Sync {
 
     async fn random_tick(&self, _args: RandomTickArgs<'_>) {}
 
-    #[allow(clippy::too_many_arguments)]
-    async fn can_place_at(
-        &self,
-        _server: Option<&Server>,
-        _world: Option<&World>,
-        _block_accessor: &dyn BlockAccessor,
-        _player: Option<&Player>,
-        _block: &Block,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: Option<&SUseItemOn>,
-    ) -> bool {
+    async fn can_place_at(&self, _args: CanPlaceAtArgs<'_>) -> bool {
         true
     }
 
@@ -272,8 +261,8 @@ pub struct CanPlaceAtArgs<'a> {
     pub world: Option<&'a World>,
     pub block_accessor: &'a dyn BlockAccessor,
     pub block: &'a Block,
-    pub block_pos: &'a BlockPos,
-    pub face: &'a BlockDirection,
+    pub location: &'a BlockPos,
+    pub direction: &'a BlockDirection,
     pub player: Option<&'a Player>,
     pub use_item_on: Option<&'a SUseItemOn>,
 }

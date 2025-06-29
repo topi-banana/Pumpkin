@@ -14,7 +14,7 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock};
+use crate::block::pumpkin_block::{OnEntityCollisionArgs, PumpkinBlock, RandomTickArgs};
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
@@ -30,26 +30,39 @@ impl PumpkinBlock for CactusBlock {
         }
     }
 
-    async fn random_tick(&self, block: &Block, world: &Arc<World>, pos: &BlockPos) {
-        if world.get_block_state(&pos.up()).await.is_air() {
-            let state_id = world.get_block_state(pos).await.id;
-            let age = CactusLikeProperties::from_state_id(state_id, block).age;
+    async fn random_tick(&self, args: RandomTickArgs<'_>) {
+        if args
+            .world
+            .get_block_state(&args.location.up())
+            .await
+            .is_air()
+        {
+            let state_id = args.world.get_block_state(args.location).await.id;
+            let age = CactusLikeProperties::from_state_id(state_id, args.block).age;
             if age == Integer0To15::L15 {
-                world
-                    .set_block_state(&pos.up(), state_id, BlockFlags::empty())
+                args.world
+                    .set_block_state(&args.location.up(), state_id, BlockFlags::empty())
                     .await;
                 let props = CactusLikeProperties {
                     age: Integer0To15::L0,
                 };
-                world
-                    .set_block_state(pos, props.to_state_id(block), BlockFlags::empty())
+                args.world
+                    .set_block_state(
+                        args.location,
+                        props.to_state_id(args.block),
+                        BlockFlags::empty(),
+                    )
                     .await;
             } else {
                 let props = CactusLikeProperties {
                     age: Integer0To15::from_index(age.to_index() + 1),
                 };
-                world
-                    .set_block_state(pos, props.to_state_id(block), BlockFlags::empty())
+                args.world
+                    .set_block_state(
+                        args.location,
+                        props.to_state_id(args.block),
+                        BlockFlags::empty(),
+                    )
                     .await;
             }
         }

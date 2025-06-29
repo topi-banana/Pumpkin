@@ -53,7 +53,7 @@ pub trait PumpkinBlock: Send + Sync {
         args.block.default_state.id
     }
 
-    async fn random_tick(&self, _block: &Block, _world: &Arc<World>, _pos: &BlockPos) {}
+    async fn random_tick(&self, _args: RandomTickArgs<'_>) {}
 
     #[allow(clippy::too_many_arguments)]
     async fn can_place_at(
@@ -264,7 +264,7 @@ pub struct OnPlaceArgs<'a> {
 pub struct RandomTickArgs<'a> {
     pub world: &'a Arc<World>,
     pub block: &'a Block,
-    pub pos: &'a BlockPos,
+    pub location: &'a BlockPos,
 }
 
 pub struct CanPlaceAtArgs<'a> {

@@ -1194,7 +1194,7 @@ impl Player {
                             .await;
                         server
                             .block_registry
-                            .broken(Arc::clone(world), &block, self, location, server, state)
+                            .broken(world, &block, self, &location, server, &state)
                             .await;
                         self.update_sequence(player_action.sequence.0);
                         return;
@@ -1217,14 +1217,7 @@ impl Player {
                                 .await;
                             server
                                 .block_registry
-                                .broken(
-                                    Arc::clone(world),
-                                    &block,
-                                    self,
-                                    location,
-                                    server,
-                                    broken_state,
-                                )
+                                .broken(world, &block, self, &location, server, &broken_state)
                                 .await;
                         } else {
                             self.mining
@@ -1294,7 +1287,7 @@ impl Player {
 
                     server
                         .block_registry
-                        .broken(Arc::clone(world), &block, self, location, server, state)
+                        .broken(world, &block, self, &location, server, &state)
                         .await;
 
                     self.update_sequence(player_action.sequence.0);

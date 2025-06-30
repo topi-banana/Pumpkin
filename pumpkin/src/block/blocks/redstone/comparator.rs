@@ -21,13 +21,11 @@ use pumpkin_world::{
 use crate::{
     block::{
         pumpkin_block::{
-            CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
-            UseWithItemArgs,
+            BrokenArgs, CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PlacedArgs, PlayerPlacedArgs,
+            PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
-    entity::player::Player,
-    server::Server,
     world::World,
 };
 
@@ -89,16 +87,8 @@ impl PumpkinBlock for ComparatorBlock {
         RedstoneGateBlock::player_placed(self, args).await;
     }
 
-    async fn broken(
-        &self,
-        _block: &Block,
-        _player: &Arc<Player>,
-        block_pos: BlockPos,
-        _server: &Server,
-        world: Arc<World>,
-        _state: BlockState,
-    ) {
-        world.remove_block_entity(&block_pos).await;
+    async fn broken(&self, args: BrokenArgs<'_>) {
+        args.world.remove_block_entity(args.location).await;
     }
 
     async fn get_state_for_neighbor_update(

@@ -12,12 +12,12 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PlacedArgs, UseWithItemArgs};
+use crate::block::pumpkin_block::{
+    BrokenArgs, CanPlaceAtArgs, OnPlaceArgs, PlacedArgs, UseWithItemArgs,
+};
 use crate::block::registry::BlockActionResult;
-use crate::entity::player::Player;
 use crate::{
     block::pumpkin_block::{NormalUseArgs, PumpkinBlock},
-    server::Server,
     world::World,
 };
 
@@ -225,16 +225,8 @@ impl PumpkinBlock for RedstoneWireBlock {
         update_wire_neighbors(args.world, args.location).await;
     }
 
-    async fn broken(
-        &self,
-        _block: &Block,
-        _player: &Arc<Player>,
-        location: BlockPos,
-        _server: &Server,
-        world: Arc<World>,
-        _state: BlockState,
-    ) {
-        update_wire_neighbors(&world, &location).await;
+    async fn broken(&self, args: BrokenArgs<'_>) {
+        update_wire_neighbors(args.world, args.location).await;
     }
 }
 

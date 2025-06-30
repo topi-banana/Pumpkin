@@ -16,7 +16,7 @@ use std::sync::Arc;
 
 use super::BlockIsReplacing;
 use super::pumpkin_block::{
-    CanPlaceAtArgs, CanUpdateAtArgs, ExplodeArgs, NormalUseArgs, OnPlaceArgs,
+    BrokenArgs, CanPlaceAtArgs, CanUpdateAtArgs, ExplodeArgs, NormalUseArgs, OnPlaceArgs,
     OnSyncedBlockEventArgs, PlacedArgs, PlayerPlacedArgs, UseWithItemArgs,
 };
 use super::pumpkin_fluid::PumpkinFluid;
@@ -361,17 +361,24 @@ impl BlockRegistry {
 
     pub async fn broken(
         &self,
-        world: Arc<World>,
+        world: &Arc<World>,
         block: &Block,
         player: &Arc<Player>,
-        location: BlockPos,
+        location: &BlockPos,
         server: &Server,
-        state: BlockState,
+        state: &BlockState,
     ) {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             pumpkin_block
-                .broken(block, player, location, server, world.clone(), state)
+                .broken(BrokenArgs {
+                    block,
+                    player,
+                    location,
+                    server,
+                    world,
+                    state,
+                })
                 .await;
         }
     }

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use pumpkin_data::{
-    Block, BlockDirection, BlockState,
+    Block, BlockDirection,
     block_properties::{BlockProperties, HorizontalFacing},
     item::Item,
 };
@@ -11,9 +11,9 @@ use pumpkin_util::math::{boundingbox::BoundingBox, position::BlockPos};
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
 use crate::{
-    block::pumpkin_block::{OnEntityCollisionArgs, OnPlaceArgs, PlacedArgs, PumpkinBlock},
-    entity::player::Player,
-    server::Server,
+    block::pumpkin_block::{
+        BrokenArgs, OnEntityCollisionArgs, OnPlaceArgs, PlacedArgs, PumpkinBlock,
+    },
     world::World,
 };
 
@@ -81,17 +81,9 @@ impl PumpkinBlock for TripwireBlock {
         Self::update(args.world, args.location, args.state_id).await;
     }
 
-    async fn broken(
-        &self,
-        block: &Block,
-        player: &Arc<Player>,
-        location: BlockPos,
-        _server: &Server,
-        world: Arc<World>,
-        state: BlockState,
-    ) {
+    async fn broken(&self, args: BrokenArgs<'_>) {
         let has_shears = {
-            let main_hand_item_stack = player.inventory().held_item();
+            let main_hand_item_stack = args.player.inventory().held_item();
             main_hand_item_stack
                 .lock()
                 .await
@@ -99,10 +91,14 @@ impl PumpkinBlock for TripwireBlock {
                 .eq(&Item::SHEARS)
         };
         if has_shears {
-            let mut props = TripwireProperties::from_state_id(state.id, block);
+            let mut props = TripwireProperties::from_state_id(args.state.id, args.block);
             props.disarmed = true;
-            world
-                .set_block_state(&location, props.to_state_id(block), BlockFlags::empty())
+            args.world
+                .set_block_state(
+                    args.location,
+                    props.to_state_id(args.block),
+                    BlockFlags::empty(),
+                )
                 .await;
             // TODO world.emitGameEvent(player, GameEvent.SHEAR, pos);
         }

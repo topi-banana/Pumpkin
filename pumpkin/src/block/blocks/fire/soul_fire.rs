@@ -1,15 +1,11 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use pumpkin_data::tag::Tagable;
-use pumpkin_data::{Block, BlockDirection, BlockState};
+use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 
-use crate::block::pumpkin_block::{CanPlaceAtArgs, PumpkinBlock};
-use crate::entity::player::Player;
-use crate::server::Server;
+use crate::block::pumpkin_block::{BrokenArgs, CanPlaceAtArgs, PumpkinBlock};
 use crate::world::World;
 
 use super::FireBlockBase;
@@ -49,15 +45,7 @@ impl PumpkinBlock for SoulFireBlock {
         Self::is_soul_base(&args.block_accessor.get_block(&args.location.down()).await)
     }
 
-    async fn broken(
-        &self,
-        _block: &Block,
-        _player: &Arc<Player>,
-        block_pos: BlockPos,
-        _server: &Server,
-        world: Arc<World>,
-        _state: BlockState,
-    ) {
-        FireBlockBase::broken(world, block_pos).await;
+    async fn broken(&self, args: BrokenArgs<'_>) {
+        FireBlockBase::broken(args.world.clone(), *args.location).await;
     }
 }

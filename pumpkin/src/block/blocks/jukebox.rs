@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::{NormalUseArgs, PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{BrokenArgs, NormalUseArgs, PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
-use crate::entity::player::Player;
-use crate::server::Server;
 use crate::world::World;
 use async_trait::async_trait;
 use pumpkin_data::world::WorldEvent;
 use pumpkin_data::{
-    Block, BlockState,
+    Block,
     block_properties::{BlockProperties, JukeboxLikeProperties},
 };
 use pumpkin_macros::pumpkin_block;
@@ -91,18 +89,10 @@ impl PumpkinBlock for JukeboxBlock {
         BlockActionResult::Consume
     }
 
-    async fn broken(
-        &self,
-        _block: &Block,
-        _player: &Arc<Player>,
-        position: BlockPos,
-        _server: &Server,
-        world: Arc<World>,
-        _state: BlockState,
-    ) {
+    async fn broken(&self, args: BrokenArgs<'_>) {
         // For now just stop the music at this position
-        world
-            .sync_world_event(WorldEvent::JukeboxStopsPlaying, position, 0)
+        args.world
+            .sync_world_event(WorldEvent::JukeboxStopsPlaying, *args.location, 0)
             .await;
     }
 }

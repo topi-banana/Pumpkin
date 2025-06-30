@@ -17,10 +17,8 @@ use pumpkin_world::chunk::TickPriority;
 
 use crate::block::blocks::tnt::TNTBlock;
 use crate::block::pumpkin_block::{
-    CanPlaceAtArgs, OnEntityCollisionArgs, PlacedArgs, PumpkinBlock,
+    BrokenArgs, CanPlaceAtArgs, OnEntityCollisionArgs, PlacedArgs, PumpkinBlock,
 };
-use crate::entity::player::Player;
-use crate::server::Server;
 use crate::world::World;
 use crate::world::portal::nether::NetherPortal;
 
@@ -412,15 +410,7 @@ impl PumpkinBlock for FireBlock {
         }
     }
 
-    async fn broken(
-        &self,
-        _block: &Block,
-        _player: &Arc<Player>,
-        block_pos: BlockPos,
-        _server: &Server,
-        world: Arc<World>,
-        _state: BlockState,
-    ) {
-        FireBlockBase::broken(world, block_pos).await;
+    async fn broken(&self, args: BrokenArgs<'_>) {
+        FireBlockBase::broken(args.world.clone(), *args.location).await;
     }
 }

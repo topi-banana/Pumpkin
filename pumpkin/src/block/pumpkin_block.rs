@@ -68,16 +68,7 @@ pub trait PumpkinBlock: Send + Sync {
 
     async fn player_placed(&self, _args: PlayerPlacedArgs<'_>) {}
 
-    async fn broken(
-        &self,
-        _block: &Block,
-        _player: &Arc<Player>,
-        _location: BlockPos,
-        _server: &Server,
-        _world: Arc<World>,
-        _state: BlockState,
-    ) {
-    }
+    async fn broken(&self, _args: BrokenArgs<'_>) {}
 
     async fn on_neighbor_update(
         &self,

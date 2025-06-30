@@ -5,20 +5,19 @@ use pumpkin_data::block_properties::{
     BlockProperties, ChestLikeProperties, ChestType, HorizontalFacing,
 };
 use pumpkin_data::entity::EntityPose;
-use pumpkin_data::{Block, BlockDirection, BlockState};
+use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::block::entities::chest::ChestBlockEntity;
 use pumpkin_world::world::BlockFlags;
 
-use crate::block::pumpkin_block::{OnPlaceArgs, PlacedArgs, UseWithItemArgs};
+use crate::block::pumpkin_block::{BrokenArgs, OnPlaceArgs, PlacedArgs, UseWithItemArgs};
 use crate::entity::EntityBase;
 use crate::world::World;
 use crate::{
     block::{pumpkin_block::PumpkinBlock, registry::BlockActionResult},
     entity::player::Player,
-    server::Server,
 };
 
 #[pumpkin_block("minecraft:chest")]
@@ -93,16 +92,8 @@ impl PumpkinBlock for ChestBlock {
         BlockActionResult::Consume
     }
 
-    async fn broken(
-        &self,
-        block: &Block,
-        _player: &Arc<Player>,
-        block_pos: BlockPos,
-        _server: &Server,
-        world: Arc<World>,
-        state: BlockState,
-    ) {
-        let chest_props = ChestLikeProperties::from_state_id(state.id, block);
+    async fn broken(&self, args: BrokenArgs<'_>) {
+        let chest_props = ChestLikeProperties::from_state_id(args.state.id, args.block);
         let connected_towards = match chest_props.r#type {
             ChestType::Single => return,
             ChestType::Left => chest_props.facing.rotate_clockwise(),
@@ -110,9 +101,9 @@ impl PumpkinBlock for ChestBlock {
         };
 
         if let Some(mut neighbor_props) = get_chest_properties_if_can_connect(
-            &world,
-            block,
-            &block_pos,
+            args.world,
+            args.block,
+            args.location,
             chest_props.facing,
             connected_towards,
             chest_props.r#type.opposite(),
@@ -121,10 +112,10 @@ impl PumpkinBlock for ChestBlock {
         {
             neighbor_props.r#type = ChestType::Single;
 
-            world
+            args.world
                 .set_block_state(
-                    &block_pos.offset(connected_towards.to_offset()),
-                    neighbor_props.to_state_id(block),
+                    &args.location.offset(connected_towards.to_offset()),
+                    neighbor_props.to_state_id(args.block),
                     BlockFlags::NOTIFY_LISTENERS,
                 )
                 .await;

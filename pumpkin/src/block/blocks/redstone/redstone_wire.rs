@@ -13,7 +13,8 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
 use crate::block::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs, UseWithItemArgs,
+    BrokenArgs, CanPlaceAtArgs, OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs, PrepareArgs,
+    UseWithItemArgs,
 };
 use crate::block::registry::BlockActionResult;
 use crate::{
@@ -103,41 +104,35 @@ impl PumpkinBlock for RedstoneWireBlock {
         wire.to_state_id(block)
     }
 
-    async fn prepare(
-        &self,
-        world: &Arc<World>,
-        block_pos: &BlockPos,
-        _block: &Block,
-        state_id: BlockStateId,
-        flags: BlockFlags,
-    ) {
-        let wire_props = RedstoneWireLikeProperties::from_state_id(state_id, &Block::REDSTONE_WIRE);
+    async fn prepare(&self, args: PrepareArgs<'_>) {
+        let wire_props =
+            RedstoneWireLikeProperties::from_state_id(args.state_id, &Block::REDSTONE_WIRE);
 
         for direction in BlockDirection::horizontal() {
-            let other_block_pos = block_pos.offset(direction.to_offset());
-            let other_block = world.get_block(&other_block_pos).await;
+            let other_block_pos = args.location.offset(direction.to_offset());
+            let other_block = args.world.get_block(&other_block_pos).await;
 
             if wire_props.is_side_connected(direction) && other_block != Block::REDSTONE_WIRE {
                 let up_block_pos = other_block_pos.up();
-                let up_block = world.get_block(&up_block_pos).await;
+                let up_block = args.world.get_block(&up_block_pos).await;
                 if up_block == Block::REDSTONE_WIRE {
-                    world
+                    args.world
                         .replace_with_state_for_neighbor_update(
                             &up_block_pos,
                             direction.opposite(),
-                            flags,
+                            args.flags,
                         )
                         .await;
                 }
 
                 let down_block_pos = other_block_pos.down();
-                let down_block = world.get_block(&down_block_pos).await;
+                let down_block = args.world.get_block(&down_block_pos).await;
                 if down_block == Block::REDSTONE_WIRE {
-                    world
+                    args.world
                         .replace_with_state_for_neighbor_update(
                             &down_block_pos,
                             direction.opposite(),
-                            flags,
+                            args.flags,
                         )
                         .await;
                 }

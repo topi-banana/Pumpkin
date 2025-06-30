@@ -73,15 +73,7 @@ pub trait PumpkinBlock: Send + Sync {
     async fn on_neighbor_update(&self, _args: OnNeighborUpdateArgs<'_>) {}
 
     /// Called if a block state is replaced or it replaces another state
-    async fn prepare(
-        &self,
-        _world: &Arc<World>,
-        _pos: &BlockPos,
-        _block: &Block,
-        _state_id: BlockStateId,
-        _flags: BlockFlags,
-    ) {
-    }
+    async fn prepare(&self, _args: PrepareArgs<'_>) {}
 
     #[allow(clippy::too_many_arguments)]
     async fn get_state_for_neighbor_update(
@@ -269,9 +261,9 @@ pub struct OnNeighborUpdateArgs<'a> {
 
 pub struct PrepareArgs<'a> {
     pub world: &'a Arc<World>,
-    pub pos: &'a BlockPos,
     pub block: &'a Block,
     pub state_id: BlockStateId,
+    pub location: &'a BlockPos,
     pub flags: BlockFlags,
 }
 

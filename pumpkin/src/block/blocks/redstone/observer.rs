@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::{GetStateForNeighborUpdateArgs, OnPlaceArgs};
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState, FacingExt,
@@ -60,21 +60,15 @@ impl PumpkinBlock for ObserverBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        block_pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        let props = ObserverLikeProperties::from_state_id(state, block);
+        let props = ObserverLikeProperties::from_state_id(args.state_id, args.block);
 
-        if props.facing.to_block_direction() == direction && !props.powered {
-            Self::schedule_tick(world, block_pos).await;
+        if &props.facing.to_block_direction() == args.direction && !props.powered {
+            Self::schedule_tick(args.world, args.location).await;
         }
 
-        state
+        args.state_id
     }
 
     async fn emits_redstone_power(

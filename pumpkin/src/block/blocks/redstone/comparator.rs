@@ -21,8 +21,9 @@ use pumpkin_world::{
 use crate::{
     block::{
         pumpkin_block::{
-            BrokenArgs, CanPlaceAtArgs, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs,
-            PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
+            BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, NormalUseArgs,
+            OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
+            UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -93,24 +94,23 @@ impl PumpkinBlock for ComparatorBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        _block: &Block,
-        state: BlockStateId,
-        _pos: &BlockPos,
-        direction: BlockDirection,
-        neighbor_pos: &BlockPos,
-        neighbor_state_id: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if direction == BlockDirection::Down {
-            if let Some(neighbor_state) = get_state_by_state_id(neighbor_state_id) {
-                if !RedstoneGateBlock::can_place_above(self, world, *neighbor_pos, &neighbor_state)
-                    .await
+        if args.direction == &BlockDirection::Down {
+            if let Some(neighbor_state) = get_state_by_state_id(args.neighbor_state_id) {
+                if !RedstoneGateBlock::can_place_above(
+                    self,
+                    args.world,
+                    *args.neighbor_location,
+                    &neighbor_state,
+                )
+                .await
                 {
                     return Block::AIR.default_state.id;
                 }
             }
         }
-        state
+        args.state_id
     }
 
     async fn get_weak_redstone_power(

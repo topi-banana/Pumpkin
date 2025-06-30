@@ -20,6 +20,7 @@ use std::sync::Arc;
 
 use crate::block::blocks::redstone::block_receives_redstone_power;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
+use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::NormalUseArgs;
 use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
@@ -276,34 +277,28 @@ impl PumpkinBlock for DoorBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: u16,
-        block_pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        neighbor_state: u16,
-    ) -> u16 {
-        let lv = DoorProperties::from_state_id(state, block).half;
-        if direction.to_axis() != Axis::Y
-            || (lv == DoubleBlockHalf::Lower) != (direction == BlockDirection::Up)
+        args: GetStateForNeighborUpdateArgs<'_>,
+    ) -> BlockStateId {
+        let lv = DoorProperties::from_state_id(args.state_id, args.block).half;
+        if args.direction.to_axis() != Axis::Y
+            || (lv == DoubleBlockHalf::Lower) != (args.direction == &BlockDirection::Up)
         {
             if lv == DoubleBlockHalf::Lower
-                && direction == BlockDirection::Down
-                && !can_place_at(world, block_pos).await
+                && args.direction == &BlockDirection::Down
+                && !can_place_at(args.world, args.location).await
             {
                 return 0;
             }
-        } else if Block::from_state_id(neighbor_state).unwrap().id == block.id
-            && DoorProperties::from_state_id(neighbor_state, block).half != lv
+        } else if Block::from_state_id(args.neighbor_state_id).unwrap().id == args.block.id
+            && DoorProperties::from_state_id(args.neighbor_state_id, args.block).half != lv
         {
-            let mut new_state = DoorProperties::from_state_id(neighbor_state, block);
+            let mut new_state = DoorProperties::from_state_id(args.neighbor_state_id, args.block);
             new_state.half = lv;
-            return new_state.to_state_id(block);
+            return new_state.to_state_id(args.block);
         } else {
             return 0;
         }
-        state
+        args.state_id
     }
 }
 

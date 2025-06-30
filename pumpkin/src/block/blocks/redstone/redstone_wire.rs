@@ -13,8 +13,8 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
 use crate::block::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs, PrepareArgs,
-    UseWithItemArgs,
+    BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnNeighborUpdateArgs, OnPlaceArgs,
+    PlacedArgs, PrepareArgs, UseWithItemArgs,
 };
 use crate::block::registry::BlockActionResult;
 use crate::{
@@ -50,58 +50,52 @@ impl PumpkinBlock for RedstoneWireBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        block_pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        let mut wire = RedstoneWireProperties::from_state_id(state, block);
+        let mut wire = RedstoneWireProperties::from_state_id(args.state_id, args.block);
         let old_state = wire;
         let new_side: WireConnection;
 
-        match direction {
+        match args.direction {
             BlockDirection::Up => {
-                return state;
+                return args.state_id;
             }
             BlockDirection::Down => {
-                return get_regulated_sides(wire, world, block_pos)
+                return get_regulated_sides(wire, args.world, args.location)
                     .await
-                    .to_state_id(block);
+                    .to_state_id(args.block);
             }
             BlockDirection::North => {
-                let side = get_side(world, block_pos, BlockDirection::North).await;
+                let side = get_side(args.world, args.location, BlockDirection::North).await;
                 wire.north = side.to_north();
                 new_side = side;
             }
             BlockDirection::South => {
-                let side = get_side(world, block_pos, BlockDirection::South).await;
+                let side = get_side(args.world, args.location, BlockDirection::South).await;
                 wire.south = side.to_south();
                 new_side = side;
             }
             BlockDirection::East => {
-                let side = get_side(world, block_pos, BlockDirection::East).await;
+                let side = get_side(args.world, args.location, BlockDirection::East).await;
                 wire.east = side.to_east();
                 new_side = side;
             }
             BlockDirection::West => {
-                let side = get_side(world, block_pos, BlockDirection::West).await;
+                let side = get_side(args.world, args.location, BlockDirection::West).await;
                 wire.west = side.to_west();
                 new_side = side;
             }
         }
 
-        wire = get_regulated_sides(wire, world, block_pos).await;
+        wire = get_regulated_sides(wire, args.world, args.location).await;
         if is_cross(old_state) && new_side.is_none() {
-            return wire.to_state_id(block);
+            return wire.to_state_id(args.block);
         }
         if !is_dot(old_state) && is_dot(wire) {
             let power = wire.power;
             wire = make_cross(power);
         }
-        wire.to_state_id(block)
+        wire.to_state_id(args.block)
     }
 
     async fn prepare(&self, args: PrepareArgs<'_>) {

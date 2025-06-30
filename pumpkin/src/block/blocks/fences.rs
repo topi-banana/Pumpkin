@@ -1,3 +1,4 @@
+use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use async_trait::async_trait;
 use pumpkin_data::Block;
@@ -38,16 +39,10 @@ impl PumpkinBlock for FenceBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        let fence_props = FenceProperties::from_state_id(state_id, block);
-        compute_fence_state(fence_props, world, block, block_pos).await
+        let fence_props = FenceProperties::from_state_id(args.state_id, args.block);
+        compute_fence_state(fence_props, args.world, args.block, args.location).await
     }
 }
 

@@ -5,16 +5,17 @@ use pumpkin_data::{
     damage::DamageType,
     fluid::Fluid,
 };
-use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 
 use crate::{
     block::{
         BlockIsReplacing,
-        pumpkin_block::{BlockMetadata, OnEntityCollisionArgs, OnPlaceArgs, PumpkinBlock},
+        pumpkin_block::{
+            BlockMetadata, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, OnPlaceArgs,
+            PumpkinBlock,
+        },
     },
     entity::EntityBase,
-    world::World,
 };
 
 pub struct CampfireBlock;
@@ -52,30 +53,28 @@ impl PumpkinBlock for CampfireBlock {
         props.to_state_id(args.block)
     }
 
-    #[allow(clippy::too_many_arguments)]
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        direction: BlockDirection,
-        neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        let mut props = CampfireLikeProperties::from_state_id(state, block);
+        let mut props = CampfireLikeProperties::from_state_id(args.state_id, args.block);
         if props.waterlogged {
             props.lit = false;
-            world
-                .schedule_fluid_tick(block.id, *pos, Fluid::WATER.flow_speed as u16)
+            args.world
+                .schedule_fluid_tick(
+                    args.block.id,
+                    *args.location,
+                    Fluid::WATER.flow_speed as u16,
+                )
                 .await;
         }
 
-        if direction == BlockDirection::Down {
-            props.signal_fire = is_signal_fire_base_block(&world.get_block(neighbor_pos).await);
+        if args.direction == &BlockDirection::Down {
+            props.signal_fire =
+                is_signal_fire_base_block(&args.world.get_block(args.neighbor_location).await);
         }
 
-        props.to_state_id(block)
+        props.to_state_id(args.block)
     }
 
     // TODO: onProjectileHit

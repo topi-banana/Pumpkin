@@ -16,9 +16,9 @@ use std::sync::Arc;
 
 use super::BlockIsReplacing;
 use super::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, CanUpdateAtArgs, ExplodeArgs, NormalUseArgs, OnNeighborUpdateArgs,
-    OnPlaceArgs, OnSyncedBlockEventArgs, PlacedArgs, PlayerPlacedArgs, PrepareArgs,
-    UseWithItemArgs,
+    BrokenArgs, CanPlaceAtArgs, CanUpdateAtArgs, ExplodeArgs, GetStateForNeighborUpdateArgs,
+    NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs, OnSyncedBlockEventArgs, PlacedArgs,
+    PlayerPlacedArgs, PrepareArgs, UseWithItemArgs,
 };
 use super::pumpkin_fluid::PumpkinFluid;
 
@@ -415,15 +415,15 @@ impl BlockRegistry {
             let pumpkin_block = self.get_pumpkin_block(block);
             if let Some(pumpkin_block) = pumpkin_block {
                 let new_state = pumpkin_block
-                    .get_state_for_neighbor_update(
+                    .get_state_for_neighbor_update(GetStateForNeighborUpdateArgs {
                         world,
                         block,
-                        state.id,
+                        state_id: state.id,
                         location,
-                        direction.opposite(),
-                        &neighbor_pos,
-                        neighbor_state.id,
-                    )
+                        direction: &direction.opposite(),
+                        neighbor_location: &neighbor_pos,
+                        neighbor_state_id: neighbor_state.id,
+                    })
                     .await;
                 world.set_block_state(&neighbor_pos, new_state, flags).await;
             }
@@ -457,27 +457,27 @@ impl BlockRegistry {
         &self,
         world: &World,
         block: &Block,
-        state: BlockStateId,
-        block_pos: &BlockPos,
+        state_id: BlockStateId,
+        location: &BlockPos,
         direction: BlockDirection,
-        neighbor_pos: &BlockPos,
-        neighbor_state: BlockStateId,
+        neighbor_location: &BlockPos,
+        neighbor_state_id: BlockStateId,
     ) -> BlockStateId {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
-                .get_state_for_neighbor_update(
+                .get_state_for_neighbor_update(GetStateForNeighborUpdateArgs {
                     world,
                     block,
-                    state,
-                    block_pos,
-                    direction,
-                    neighbor_pos,
-                    neighbor_state,
-                )
+                    state_id,
+                    location,
+                    direction: &direction,
+                    neighbor_location,
+                    neighbor_state_id,
+                })
                 .await;
         }
-        state
+        state_id
     }
 
     pub async fn update_neighbors(

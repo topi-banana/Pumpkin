@@ -7,9 +7,9 @@ use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, world::BlockAccessor};
 
-use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
-use crate::{block::pumpkin_block::CanPlaceAtArgs, world::World};
+use crate::block::pumpkin_block::{GetStateForNeighborUpdateArgs, OnPlaceArgs};
 
 use super::abstruct_wall_mounting::WallMountedBlock;
 
@@ -34,17 +34,9 @@ impl PumpkinBlock for GrindstoneBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        WallMountedBlock::get_state_for_neighbor_update(self, state, block, direction, world, pos)
-            .await
-            .unwrap_or(state)
+        WallMountedBlock::get_state_for_neighbor_update(self, args).await
     }
 }
 

@@ -16,7 +16,9 @@ use pumpkin_world::{
 use rand::{Rng, rng};
 
 use crate::{
-    block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PlayerPlacedArgs, PumpkinBlock},
+    block::pumpkin_block::{
+        CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, PlayerPlacedArgs, PumpkinBlock,
+    },
     world::World,
 };
 
@@ -58,22 +60,16 @@ impl PumpkinBlock for TripwireHookBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if direction.to_horizontal_facing().is_some_and(|facing| {
-            let props = TripwireHookProperties::from_state_id(state, block);
+        if args.direction.to_horizontal_facing().is_some_and(|facing| {
+            let props = TripwireHookProperties::from_state_id(args.state_id, args.block);
             facing.opposite() == props.facing
-        }) && !Self::can_place_at(world, pos, &direction).await
+        }) && !Self::can_place_at(args.world, args.location, args.direction).await
         {
             Block::AIR.default_state.id
         } else {
-            state
+            args.state_id
         }
     }
 

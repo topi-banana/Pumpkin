@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
+use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::PlacedArgs;
@@ -114,28 +115,22 @@ impl PumpkinBlock for RedstoneTorchBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: u16,
-        block_pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: u16,
-    ) -> u16 {
-        if *block == Block::REDSTONE_WALL_TORCH {
-            let props = RWallTorchProps::from_state_id(state, block);
-            if props.facing.to_block_direction().opposite() == direction
-                && !can_place_at(world, block_pos, props.facing.to_block_direction()).await
+        args: GetStateForNeighborUpdateArgs<'_>,
+    ) -> BlockStateId {
+        if args.block == &Block::REDSTONE_WALL_TORCH {
+            let props = RWallTorchProps::from_state_id(args.state_id, args.block);
+            if &props.facing.to_block_direction().opposite() == args.direction
+                && !can_place_at(args.world, args.location, props.facing.to_block_direction()).await
             {
                 return 0;
             }
-        } else if direction == BlockDirection::Down {
-            let support_block = world.get_block_state(&block_pos.down()).await;
+        } else if args.direction == &BlockDirection::Down {
+            let support_block = args.world.get_block_state(&args.location.down()).await;
             if !support_block.is_center_solid(BlockDirection::Up) {
                 return 0;
             }
         }
-        state
+        args.state_id
     }
 
     async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {

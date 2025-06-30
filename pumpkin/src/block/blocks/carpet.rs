@@ -1,8 +1,10 @@
-use crate::block::pumpkin_block::{BlockMetadata, CanPlaceAtArgs, PumpkinBlock};
+use crate::block::pumpkin_block::{
+    BlockMetadata, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, PumpkinBlock,
+};
 use crate::world::World;
 use async_trait::async_trait;
+use pumpkin_data::Block;
 use pumpkin_data::tag::{RegistryKey, get_tag_values};
-use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
@@ -30,20 +32,14 @@ impl PumpkinBlock for CarpetBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if !can_place_at(world, pos).await {
-            world
-                .schedule_block_tick(block, *pos, 1, TickPriority::Normal)
+        if !can_place_at(args.world, args.location).await {
+            args.world
+                .schedule_block_tick(args.block, *args.location, 1, TickPriority::Normal)
                 .await;
         }
-        state
+        args.state_id
     }
 
     async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
@@ -64,20 +60,14 @@ impl PumpkinBlock for MossCarpetBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if !can_place_at(world, pos).await {
-            world
-                .schedule_block_tick(block, *pos, 1, TickPriority::Normal)
+        if !can_place_at(args.world, args.location).await {
+            args.world
+                .schedule_block_tick(args.block, *args.location, 1, TickPriority::Normal)
                 .await;
         }
-        state
+        args.state_id
     }
 
     async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
@@ -98,20 +88,14 @@ impl PumpkinBlock for PaleMossCarpetBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if !can_place_at(world, pos).await {
-            world
-                .schedule_block_tick(block, *pos, 1, TickPriority::Normal)
+        if !can_place_at(args.world, args.location).await {
+            args.world
+                .schedule_block_tick(args.block, *args.location, 1, TickPriority::Normal)
                 .await;
         }
-        state
+        args.state_id
     }
 
     async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {

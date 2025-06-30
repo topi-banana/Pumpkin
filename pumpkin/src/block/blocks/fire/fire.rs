@@ -17,7 +17,8 @@ use pumpkin_world::chunk::TickPriority;
 
 use crate::block::blocks::tnt::TNTBlock;
 use crate::block::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, OnEntityCollisionArgs, PlacedArgs, PumpkinBlock,
+    BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, PlacedArgs,
+    PumpkinBlock,
 };
 use crate::world::World;
 use crate::world::portal::nether::NetherPortal;
@@ -216,30 +217,24 @@ impl PumpkinBlock for FireBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        _block: &Block,
-        state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
         if self
             .can_place_at(CanPlaceAtArgs {
                 server: None,
-                world: Some(world),
-                block_accessor: world,
+                world: Some(args.world),
+                block_accessor: args.world,
                 block: &Block::FIRE,
-                location: block_pos,
+                location: args.location,
                 direction: &BlockDirection::Up,
                 player: None,
                 use_item_on: None,
             })
             .await
         {
-            let old_fire_props = FireProperties::from_state_id(state_id, &Block::FIRE);
+            let old_fire_props = FireProperties::from_state_id(args.state_id, &Block::FIRE);
             let fire_state_id = self
-                .get_state_for_position(world, &Block::FIRE, block_pos)
+                .get_state_for_position(args.world, &Block::FIRE, args.location)
                 .await;
             let mut fire_props = FireProperties::from_state_id(fire_state_id, &Block::FIRE);
             fire_props.age = EnumVariants::from_index(old_fire_props.age.to_index());

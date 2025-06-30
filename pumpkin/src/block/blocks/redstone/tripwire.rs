@@ -12,7 +12,8 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
 use crate::{
     block::pumpkin_block::{
-        BrokenArgs, OnEntityCollisionArgs, OnPlaceArgs, PlacedArgs, PumpkinBlock,
+        BrokenArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, OnPlaceArgs, PlacedArgs,
+        PumpkinBlock,
     },
     world::World,
 };
@@ -56,7 +57,7 @@ impl PumpkinBlock for TripwireBlock {
         .map(async |dir| {
             let current_pos = args.location.offset(dir.to_offset());
             let state_id = args.world.get_block_state_id(&current_pos).await;
-            Self::should_connect_to(state_id, dir)
+            Self::should_connect_to(state_id, &dir)
         });
 
         let mut props = TripwireProperties::from_state_id(args.block.default_state.id, args.block);
@@ -106,24 +107,20 @@ impl PumpkinBlock for TripwireBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        _world: &World,
-        block: &Block,
-        state: BlockStateId,
-        _pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        direction.to_horizontal_facing().map_or(state, |facing| {
-            let mut props = TripwireProperties::from_state_id(state, block);
-            *match facing {
-                HorizontalFacing::North => &mut props.north,
-                HorizontalFacing::South => &mut props.south,
-                HorizontalFacing::West => &mut props.west,
-                HorizontalFacing::East => &mut props.east,
-            } = Self::should_connect_to(neighbor_state, direction);
-            props.to_state_id(block)
-        })
+        args.direction
+            .to_horizontal_facing()
+            .map_or(args.state_id, |facing| {
+                let mut props = TripwireProperties::from_state_id(args.state_id, args.block);
+                *match facing {
+                    HorizontalFacing::North => &mut props.north,
+                    HorizontalFacing::South => &mut props.south,
+                    HorizontalFacing::West => &mut props.west,
+                    HorizontalFacing::East => &mut props.east,
+                } = Self::should_connect_to(args.neighbor_state_id, args.direction);
+                props.to_state_id(args.block)
+            })
     }
 
     async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, pos: &BlockPos) {
@@ -203,7 +200,7 @@ impl TripwireBlock {
     }
 
     #[must_use]
-    pub fn should_connect_to(state_id: BlockStateId, facing: BlockDirection) -> bool {
+    pub fn should_connect_to(state_id: BlockStateId, facing: &BlockDirection) -> bool {
         Block::from_state_id(state_id).is_some_and(|block| {
             if block == Block::TRIPWIRE_HOOK {
                 let props = TripwireHookProperties::from_state_id(state_id, &block);

@@ -1,12 +1,12 @@
 use async_trait::async_trait;
+use pumpkin_data::Block;
 use pumpkin_data::tag::Tagable;
-use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 
-use crate::block::pumpkin_block::{BrokenArgs, CanPlaceAtArgs, PumpkinBlock};
-use crate::world::World;
+use crate::block::pumpkin_block::{
+    BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, PumpkinBlock,
+};
 
 use super::FireBlockBase;
 
@@ -26,19 +26,13 @@ impl SoulFireBlock {
 impl PumpkinBlock for SoulFireBlock {
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        _block: &Block,
-        state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if !Self::is_soul_base(&world.get_block(&block_pos.down()).await) {
+        if !Self::is_soul_base(&args.world.get_block(&args.location.down()).await) {
             return Block::AIR.default_state.id;
         }
 
-        state_id
+        args.state_id
     }
 
     async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {

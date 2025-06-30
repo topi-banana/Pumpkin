@@ -15,8 +15,8 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 use crate::{
     block::{
         pumpkin_block::{
-            CanPlaceAtArgs, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs,
-            PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
+            CanPlaceAtArgs, GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs,
+            OnPlaceArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -179,29 +179,30 @@ impl PumpkinBlock for RepeaterBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        direction: BlockDirection,
-        neighbor_pos: &BlockPos,
-        neighbor_state_id: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if direction == BlockDirection::Down {
-            if let Some(neighbor_state) = get_state_by_state_id(neighbor_state_id) {
-                if !RedstoneGateBlock::can_place_above(self, world, *neighbor_pos, &neighbor_state)
-                    .await
+        if args.direction == &BlockDirection::Down {
+            if let Some(neighbor_state) = get_state_by_state_id(args.neighbor_state_id) {
+                if !RedstoneGateBlock::can_place_above(
+                    self,
+                    args.world,
+                    *args.neighbor_location,
+                    &neighbor_state,
+                )
+                .await
                 {
                     return Block::AIR.default_state.id;
                 }
             }
         }
-        let mut props = RepeaterProperties::from_state_id(state, block);
-        if direction.to_axis() != props.facing.to_block_direction().to_axis() {
-            props.locked = self.is_locked(world, *pos, state, block).await;
-            return props.to_state_id(block);
+        let mut props = RepeaterProperties::from_state_id(args.state_id, args.block);
+        if args.direction.to_axis() != props.facing.to_block_direction().to_axis() {
+            props.locked = self
+                .is_locked(args.world, *args.location, args.state_id, args.block)
+                .await;
+            return props.to_state_id(args.block);
         }
-        state
+        args.state_id
     }
 
     async fn player_placed(&self, args: PlayerPlacedArgs<'_>) {

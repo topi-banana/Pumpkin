@@ -1,13 +1,12 @@
 use async_trait::async_trait;
 use pumpkin_data::tag::Tagable;
 use pumpkin_data::{Block, BlockDirection};
-use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 
 use crate::block::pumpkin_block::{
-    BlockMetadata, CanPlaceAtArgs, CanUpdateAtArgs, OnPlaceArgs, PumpkinBlock,
+    BlockMetadata, CanPlaceAtArgs, CanUpdateAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs,
+    PumpkinBlock,
 };
-use crate::world::World;
 
 use super::segmented::Segmented;
 
@@ -42,23 +41,17 @@ impl PumpkinBlock for FlowerbedBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        _block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if direction == BlockDirection::Down {
-            let block_below = world.get_block(&pos.down()).await;
+        if args.direction == &BlockDirection::Down {
+            let block_below = args.world.get_block(&args.location.down()).await;
             if !(block_below.is_tagged_with("minecraft:dirt").unwrap()
                 || block_below == Block::FARMLAND)
             {
                 return Block::AIR.default_state.id;
             }
         }
-        state
+        args.state_id
     }
 }
 

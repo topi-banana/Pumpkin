@@ -14,7 +14,8 @@ use pumpkin_world::chunk::TickPriority;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
 use crate::block::pumpkin_block::{
-    CanPlaceAtArgs, OnEntityCollisionArgs, PumpkinBlock, RandomTickArgs,
+    CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, PumpkinBlock,
+    RandomTickArgs,
 };
 use crate::world::World;
 
@@ -73,21 +74,15 @@ impl PumpkinBlock for CactusBlock {
 
     async fn get_state_for_neighbor_update(
         &self,
-        world: &World,
-        block: &Block,
-        state: BlockStateId,
-        pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if !can_place_at(world, pos).await {
-            world
-                .schedule_block_tick(block, *pos, 1, TickPriority::Normal)
+        if !can_place_at(args.world, args.location).await {
+            args.world
+                .schedule_block_tick(args.block, *args.location, 1, TickPriority::Normal)
                 .await;
         }
 
-        state
+        args.state_id
     }
 
     async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {

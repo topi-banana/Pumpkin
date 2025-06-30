@@ -75,18 +75,11 @@ pub trait PumpkinBlock: Send + Sync {
     /// Called if a block state is replaced or it replaces another state
     async fn prepare(&self, _args: PrepareArgs<'_>) {}
 
-    #[allow(clippy::too_many_arguments)]
     async fn get_state_for_neighbor_update(
         &self,
-        _world: &World,
-        _block: &Block,
-        state: BlockStateId,
-        _pos: &BlockPos,
-        _direction: BlockDirection,
-        _neighbor_pos: &BlockPos,
-        _neighbor_state: BlockStateId,
+        args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        state
+        args.state_id
     }
 
     async fn on_scheduled_tick(&self, _world: &Arc<World>, _block: &Block, _pos: &BlockPos) {}
@@ -270,11 +263,11 @@ pub struct PrepareArgs<'a> {
 pub struct GetStateForNeighborUpdateArgs<'a> {
     pub world: &'a World,
     pub block: &'a Block,
-    pub state: BlockStateId,
-    pub pos: &'a BlockPos,
+    pub state_id: BlockStateId,
+    pub location: &'a BlockPos,
     pub direction: &'a BlockDirection,
-    pub neighbor_pos: &'a BlockPos,
-    pub neighbor_state: BlockStateId,
+    pub neighbor_location: &'a BlockPos,
+    pub neighbor_state_id: BlockStateId,
 }
 
 pub struct OnScheduledTickArgs<'a> {

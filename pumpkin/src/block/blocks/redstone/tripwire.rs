@@ -11,7 +11,7 @@ use pumpkin_util::math::{boundingbox::BoundingBox, position::BlockPos};
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
 use crate::{
-    block::pumpkin_block::{OnEntityCollisionArgs, OnPlaceArgs, PumpkinBlock},
+    block::pumpkin_block::{OnEntityCollisionArgs, OnPlaceArgs, PlacedArgs, PumpkinBlock},
     entity::player::Player,
     server::Server,
     world::World,
@@ -69,24 +69,16 @@ impl PumpkinBlock for TripwireBlock {
         props.to_state_id(args.block)
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        state_id: BlockStateId,
-        pos: &BlockPos,
-        old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
+    async fn placed(&self, args: PlacedArgs<'_>) {
         if let (Some(old_block), Some(new_block)) = (
-            Block::from_state_id(old_state_id),
-            Block::from_state_id(state_id),
+            Block::from_state_id(args.old_state_id),
+            Block::from_state_id(args.state_id),
         ) {
             if old_block == new_block {
                 return;
             }
         }
-        Self::update(world, pos, state_id).await;
+        Self::update(args.world, args.location, args.state_id).await;
     }
 
     async fn broken(

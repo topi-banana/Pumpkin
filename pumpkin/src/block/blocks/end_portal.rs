@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::block::pumpkin_block::OnEntityCollisionArgs;
+use crate::block::pumpkin_block::PlacedArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
 use crate::world::World;
 use async_trait::async_trait;
@@ -31,17 +32,9 @@ impl PumpkinBlock for EndPortalBlock {
             .await;
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        _state_id: u16,
-        _pos: &BlockPos,
-        _old_state_id: u16,
-        _notify: bool,
-    ) {
-        world
-            .add_block_entity(Arc::new(EndPortalBlockEntity::new(*_pos)))
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        args.world
+            .add_block_entity(Arc::new(EndPortalBlockEntity::new(*args.location)))
             .await;
     }
 

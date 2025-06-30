@@ -16,7 +16,9 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 
 use crate::block::blocks::tnt::TNTBlock;
-use crate::block::pumpkin_block::{CanPlaceAtArgs, OnEntityCollisionArgs, PumpkinBlock};
+use crate::block::pumpkin_block::{
+    CanPlaceAtArgs, OnEntityCollisionArgs, PlacedArgs, PumpkinBlock,
+};
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
@@ -167,36 +169,29 @@ impl FireBlock {
 
 #[async_trait]
 impl PumpkinBlock for FireBlock {
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: BlockStateId,
-        pos: &BlockPos,
-        old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        if old_state_id == state_id {
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        if args.old_state_id == args.state_id {
             // Already a fire
             return;
         }
 
-        let dimension = world.dimension_type;
+        let dimension = args.world.dimension_type;
         // First lets check if we are in OverWorld or Nether, its not possible to place an Nether portal in other dimensions in Vanilla
         if dimension == VanillaDimensionType::Overworld
             || dimension == VanillaDimensionType::TheNether
         {
-            if let Some(portal) = NetherPortal::get_new_portal(world, pos, HorizontalAxis::X).await
+            if let Some(portal) =
+                NetherPortal::get_new_portal(args.world, args.location, HorizontalAxis::X).await
             {
-                portal.create(world).await;
+                portal.create(args.world).await;
                 return;
             }
         }
 
-        world
+        args.world
             .schedule_block_tick(
-                block,
-                *pos,
+                args.block,
+                *args.location,
                 Self::get_fire_tick_delay() as u16,
                 TickPriority::Normal,
             )

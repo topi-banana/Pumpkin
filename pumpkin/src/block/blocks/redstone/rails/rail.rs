@@ -10,6 +10,7 @@ use std::sync::Arc;
 
 use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::PlacedArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
 use crate::world::World;
 
@@ -107,16 +108,8 @@ impl PumpkinBlock for RailBlock {
         rail_props.to_state_id(args.block)
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        update_flanking_rails_shape(world, block, state_id, block_pos).await;
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        update_flanking_rails_shape(args.world, args.block, args.state_id, args.location).await;
     }
 
     async fn on_neighbor_update(

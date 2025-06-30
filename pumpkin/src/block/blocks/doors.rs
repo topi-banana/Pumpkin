@@ -22,6 +22,7 @@ use crate::block::blocks::redstone::block_receives_redstone_power;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::NormalUseArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::PlacedArgs;
 use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
@@ -193,22 +194,14 @@ impl PumpkinBlock for DoorBlock {
         can_place_at(args.block_accessor, args.location).await
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        let mut door_props = DoorProperties::from_state_id(state_id, block);
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        let mut door_props = DoorProperties::from_state_id(args.state_id, args.block);
         door_props.half = DoubleBlockHalf::Upper;
 
-        world
+        args.world
             .set_block_state(
-                &block_pos.offset(BlockDirection::Up.to_offset()),
-                door_props.to_state_id(block),
+                &args.location.offset(BlockDirection::Up.to_offset()),
+                door_props.to_state_id(args.block),
                 BlockFlags::NOTIFY_ALL | BlockFlags::SKIP_BLOCK_ADDED_CALLBACK,
             )
             .await;

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::{ExplodeArgs, PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{ExplodeArgs, PlacedArgs, PumpkinBlock, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::Entity;
 use crate::entity::tnt::TNTEntity;
@@ -13,7 +13,6 @@ use pumpkin_data::sound::SoundCategory;
 use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::math::vector3::Vector3;
-use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockFlags;
 use rand::Rng;
 use uuid::Uuid;
@@ -63,17 +62,9 @@ impl PumpkinBlock for TNTBlock {
         BlockActionResult::Consume
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        _state_id: BlockStateId,
-        pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        if block_receives_redstone_power(world, pos).await {
-            Self::prime(world, pos).await;
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        if block_receives_redstone_power(args.world, args.location).await {
+            Self::prime(args.world, args.location).await;
         }
     }
 

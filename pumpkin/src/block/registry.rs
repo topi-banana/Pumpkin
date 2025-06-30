@@ -17,7 +17,7 @@ use std::sync::Arc;
 use super::BlockIsReplacing;
 use super::pumpkin_block::{
     CanPlaceAtArgs, CanUpdateAtArgs, ExplodeArgs, NormalUseArgs, OnPlaceArgs,
-    OnSyncedBlockEventArgs, UseWithItemArgs,
+    OnSyncedBlockEventArgs, PlacedArgs, UseWithItemArgs,
 };
 use super::pumpkin_fluid::PumpkinFluid;
 
@@ -316,14 +316,21 @@ impl BlockRegistry {
         world: &Arc<World>,
         block: &Block,
         state_id: BlockStateId,
-        block_pos: &BlockPos,
+        location: &BlockPos,
         old_state_id: BlockStateId,
         notify: bool,
     ) {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             pumpkin_block
-                .placed(world, block, state_id, block_pos, old_state_id, notify)
+                .placed(PlacedArgs {
+                    world,
+                    block,
+                    state_id,
+                    old_state_id,
+                    location,
+                    notify,
+                })
                 .await;
         }
     }

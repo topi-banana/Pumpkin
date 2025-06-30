@@ -15,7 +15,7 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 use crate::{
     block::{
         pumpkin_block::{
-            CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs,
+            CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PlacedArgs, PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -171,17 +171,16 @@ impl PumpkinBlock for RepeaterBlock {
         RedstoneGateBlock::can_place_at(self, args.block_accessor, *args.location).await
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: BlockStateId,
-        pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        if let Some(state) = get_state_by_state_id(state_id) {
-            RedstoneGateBlock::update_target(self, world, *pos, state.id, block).await;
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        if let Some(state) = get_state_by_state_id(args.state_id) {
+            RedstoneGateBlock::update_target(
+                self,
+                args.world,
+                *args.location,
+                state.id,
+                args.block,
+            )
+            .await;
         }
     }
 

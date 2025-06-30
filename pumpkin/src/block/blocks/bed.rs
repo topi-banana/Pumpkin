@@ -15,7 +15,7 @@ use pumpkin_world::block::entities::bed::BedBlockEntity;
 use pumpkin_world::world::BlockFlags;
 
 use crate::block::pumpkin_block::{
-    BlockMetadata, CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PumpkinBlock,
+    BlockMetadata, CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PlacedArgs, PumpkinBlock,
 };
 use crate::entity::player::Player;
 use crate::entity::{Entity, EntityBase};
@@ -63,33 +63,25 @@ impl PumpkinBlock for BedBlock {
         bed_props.to_state_id(args.block)
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        let bed_entity = BedBlockEntity::new(*block_pos);
-        world.add_block_entity(Arc::new(bed_entity)).await;
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        let bed_entity = BedBlockEntity::new(*args.location);
+        args.world.add_block_entity(Arc::new(bed_entity)).await;
 
-        let mut bed_head_props = BedProperties::default(block);
-        bed_head_props.facing = BedProperties::from_state_id(state_id, block).facing;
+        let mut bed_head_props = BedProperties::default(args.block);
+        bed_head_props.facing = BedProperties::from_state_id(args.state_id, args.block).facing;
         bed_head_props.part = BedPart::Head;
 
-        let bed_head_pos = block_pos.offset(bed_head_props.facing.to_offset());
-        world
+        let bed_head_pos = args.location.offset(bed_head_props.facing.to_offset());
+        args.world
             .set_block_state(
                 &bed_head_pos,
-                bed_head_props.to_state_id(block),
+                bed_head_props.to_state_id(args.block),
                 BlockFlags::NOTIFY_ALL | BlockFlags::SKIP_BLOCK_ADDED_CALLBACK,
             )
             .await;
 
         let bed_head_entity = BedBlockEntity::new(bed_head_pos);
-        world.add_block_entity(Arc::new(bed_head_entity)).await;
+        args.world.add_block_entity(Arc::new(bed_head_entity)).await;
     }
 
     async fn broken(

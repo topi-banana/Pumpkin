@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::block::BlockIsReplacing;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::PlacedArgs;
 use crate::entity::EntityBase;
 use async_trait::async_trait;
 use pumpkin_data::Block;
@@ -259,16 +260,8 @@ impl PumpkinBlock for RedstoneTorchBlock {
         }
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        _state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        update_neighbors(world, block_pos).await;
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        update_neighbors(args.world, args.location).await;
     }
 
     async fn on_state_replaced(

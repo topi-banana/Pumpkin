@@ -12,7 +12,7 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
-use crate::block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, UseWithItemArgs};
+use crate::block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PlacedArgs, UseWithItemArgs};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
 use crate::{
@@ -221,16 +221,8 @@ impl PumpkinBlock for RedstoneWireBlock {
         }
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        _state_id: BlockStateId,
-        block_pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        update_wire_neighbors(world, block_pos).await;
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        update_wire_neighbors(args.world, args.location).await;
     }
 
     async fn broken(

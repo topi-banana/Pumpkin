@@ -10,6 +10,7 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::block::entities::sign::SignBlockEntity;
 
+use crate::block::pumpkin_block::PlacedArgs;
 use crate::block::pumpkin_block::{BlockMetadata, OnPlaceArgs, PumpkinBlock};
 use crate::entity::player::Player;
 use crate::world::World;
@@ -37,17 +38,9 @@ impl PumpkinBlock for SignBlock {
         sign_props.to_state_id(args.block)
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        _state_id: u16,
-        pos: &BlockPos,
-        _old_state_id: u16,
-        _notify: bool,
-    ) {
-        world
-            .add_block_entity(Arc::new(SignBlockEntity::empty(*pos)))
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        args.world
+            .add_block_entity(Arc::new(SignBlockEntity::empty(*args.location)))
             .await;
     }
 

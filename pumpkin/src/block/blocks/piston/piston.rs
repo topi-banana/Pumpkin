@@ -19,7 +19,9 @@ use pumpkin_world::{
 use crate::{
     block::{
         blocks::redstone::is_emitting_redstone_power,
-        pumpkin_block::{BlockMetadata, OnPlaceArgs, OnSyncedBlockEventArgs, PumpkinBlock},
+        pumpkin_block::{
+            BlockMetadata, OnPlaceArgs, OnSyncedBlockEventArgs, PlacedArgs, PumpkinBlock,
+        },
     },
     world::World,
 };
@@ -91,19 +93,11 @@ impl PumpkinBlock for PistonBlock {
         props.to_state_id(args.block)
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: BlockStateId,
-        pos: &BlockPos,
-        old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        if old_state_id == state_id {
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        if args.old_state_id == args.state_id {
             return;
         }
-        try_move(world, block, pos).await;
+        try_move(args.world, args.block, args.location).await;
     }
 
     async fn on_neighbor_update(

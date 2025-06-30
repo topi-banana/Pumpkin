@@ -13,7 +13,7 @@ use pumpkin_world::block::entities::barrel::BarrelBlockEntity;
 use pumpkin_world::inventory::Inventory;
 use tokio::sync::Mutex;
 
-use crate::block::pumpkin_block::UseWithItemArgs;
+use crate::block::pumpkin_block::{PlacedArgs, UseWithItemArgs};
 use crate::{
     block::{
         pumpkin_block::{NormalUseArgs, PumpkinBlock},
@@ -71,17 +71,11 @@ impl PumpkinBlock for BarrelBlock {
         BlockActionResult::Consume
     }
 
-    async fn placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        _state_id: BlockStateId,
-        pos: &BlockPos,
-        _old_state_id: BlockStateId,
-        _notify: bool,
-    ) {
-        let barrel_block_entity = BarrelBlockEntity::new(*pos);
-        world.add_block_entity(Arc::new(barrel_block_entity)).await;
+    async fn placed(&self, args: PlacedArgs<'_>) {
+        let barrel_block_entity = BarrelBlockEntity::new(*args.location);
+        args.world
+            .add_block_entity(Arc::new(barrel_block_entity))
+            .await;
     }
 
     async fn on_state_replaced(

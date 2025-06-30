@@ -59,17 +59,7 @@ pub trait PumpkinBlock: Send + Sync {
         true
     }
 
-    #[allow(clippy::too_many_arguments)]
-    async fn can_update_at(
-        &self,
-        _world: &World,
-        _block: &Block,
-        _state_id: BlockStateId,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: &SUseItemOn,
-        _player: &Player,
-    ) -> bool {
+    async fn can_update_at(&self, _args: CanUpdateAtArgs<'_>) -> bool {
         false
     }
 
@@ -271,10 +261,10 @@ pub struct CanUpdateAtArgs<'a> {
     pub world: &'a World,
     pub block: &'a Block,
     pub state_id: BlockStateId,
-    pub block_pos: &'a BlockPos,
-    pub face: &'a BlockDirection,
-    pub use_item_on: &'a SUseItemOn,
+    pub location: &'a BlockPos,
+    pub direction: &'a BlockDirection,
     pub player: &'a Player,
+    pub use_item_on: &'a SUseItemOn,
 }
 
 pub struct PlacedArgs<'a> {

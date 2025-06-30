@@ -1,15 +1,15 @@
 use async_trait::async_trait;
 use pumpkin_data::tag::Tagable;
 use pumpkin_data::{Block, BlockDirection};
-use pumpkin_protocol::java::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 
-use crate::block::pumpkin_block::{BlockMetadata, CanPlaceAtArgs, OnPlaceArgs, PumpkinBlock};
-use crate::entity::player::Player;
+use crate::block::pumpkin_block::{
+    BlockMetadata, CanPlaceAtArgs, CanUpdateAtArgs, OnPlaceArgs, PumpkinBlock,
+};
 use crate::world::World;
 
-use super::segmented::{Segmented, UpdateContext};
+use super::segmented::Segmented;
 
 type FlowerbedProperties = pumpkin_data::block_properties::PinkPetalsLikeProperties;
 
@@ -32,26 +32,8 @@ impl PumpkinBlock for FlowerbedBlock {
         block_below.is_tagged_with("minecraft:dirt").unwrap() || block_below == Block::FARMLAND
     }
 
-    async fn can_update_at(
-        &self,
-        world: &World,
-        block: &Block,
-        state_id: BlockStateId,
-        block_pos: &BlockPos,
-        face: BlockDirection,
-        use_item_on: &SUseItemOn,
-        player: &Player,
-    ) -> bool {
-        let ctx = UpdateContext {
-            world,
-            block,
-            state_id,
-            block_pos,
-            face,
-            use_item_on,
-            player,
-        };
-        Segmented::can_update_at(self, &ctx).await
+    async fn can_update_at(&self, args: CanUpdateAtArgs<'_>) -> bool {
+        Segmented::can_update_at(self, args).await
     }
 
     async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {

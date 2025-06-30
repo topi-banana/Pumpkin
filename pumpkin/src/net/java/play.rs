@@ -1702,7 +1702,7 @@ impl Player {
                     &clicked_block,
                     clicked_block_state.id,
                     &clicked_block_pos,
-                    face,
+                    &face,
                     &use_item_on,
                     self,
                 )
@@ -1736,7 +1736,7 @@ impl Player {
                             &previous_block,
                             previous_block_state.id,
                             &block_pos,
-                            face.opposite(),
+                            &face.opposite(),
                             &use_item_on,
                             self,
                         )

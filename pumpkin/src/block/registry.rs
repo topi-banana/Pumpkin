@@ -16,8 +16,8 @@ use std::sync::Arc;
 
 use super::BlockIsReplacing;
 use super::pumpkin_block::{
-    CanPlaceAtArgs, ExplodeArgs, NormalUseArgs, OnPlaceArgs, OnSyncedBlockEventArgs,
-    UseWithItemArgs,
+    CanPlaceAtArgs, CanUpdateAtArgs, ExplodeArgs, NormalUseArgs, OnPlaceArgs,
+    OnSyncedBlockEventArgs, UseWithItemArgs,
 };
 use super::pumpkin_fluid::PumpkinFluid;
 
@@ -242,15 +242,23 @@ impl BlockRegistry {
         world: &World,
         block: &Block,
         state_id: BlockStateId,
-        block_pos: &BlockPos,
-        face: BlockDirection,
+        location: &BlockPos,
+        direction: &BlockDirection,
         use_item_on: &SUseItemOn,
         player: &Player,
     ) -> bool {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
-                .can_update_at(world, block, state_id, block_pos, face, use_item_on, player)
+                .can_update_at(CanUpdateAtArgs {
+                    world,
+                    block,
+                    state_id,
+                    location,
+                    direction,
+                    player,
+                    use_item_on,
+                })
                 .await;
         }
         false

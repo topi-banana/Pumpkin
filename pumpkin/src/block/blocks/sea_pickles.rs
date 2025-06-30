@@ -1,9 +1,9 @@
 use crate::block::BlockIsReplacing;
-use crate::block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{
+    CanPlaceAtArgs, CanUpdateAtArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs,
+};
 use crate::block::registry::BlockActionResult;
 use crate::entity::EntityBase;
-use crate::entity::player::Player;
-use crate::world::World;
 use async_trait::async_trait;
 use pumpkin_data::block_properties::{BlockProperties, Integer1To4};
 use pumpkin_data::entity::EntityPose;
@@ -11,7 +11,6 @@ use pumpkin_data::item::Item;
 use pumpkin_data::tag::Tagable;
 use pumpkin_data::{Block, BlockDirection};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_protocol::java::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockFlags;
@@ -135,18 +134,9 @@ impl PumpkinBlock for SeaPickleBlock {
         support_block.is_center_solid(BlockDirection::Up)
     }
 
-    #[allow(clippy::too_many_arguments)]
-    async fn can_update_at(
-        &self,
-        _world: &World,
-        block: &Block,
-        state_id: BlockStateId,
-        _block_pos: &BlockPos,
-        _face: BlockDirection,
-        _use_item_on: &SUseItemOn,
-        player: &Player,
-    ) -> bool {
-        player.get_entity().pose.load() != EntityPose::Crouching
-            && SeaPickleProperties::from_state_id(state_id, block).pickles != Integer1To4::L4
+    async fn can_update_at(&self, args: CanUpdateAtArgs<'_>) -> bool {
+        args.player.get_entity().pose.load() != EntityPose::Crouching
+            && SeaPickleProperties::from_state_id(args.state_id, args.block).pickles
+                != Integer1To4::L4
     }
 }

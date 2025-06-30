@@ -15,7 +15,11 @@ use pumpkin_world::{
     world::{BlockAccessor, BlockFlags},
 };
 
-use crate::{block::pumpkin_block::PlayerPlacedArgs, entity::player::Player, world::World};
+use crate::{
+    block::pumpkin_block::{OnNeighborUpdateArgs, PlayerPlacedArgs},
+    entity::player::Player,
+    world::World,
+};
 
 use super::{get_redstone_power, is_diode};
 
@@ -72,24 +76,23 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
 
     async fn get_output_level(&self, world: &World, pos: BlockPos) -> u8;
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        pos: &BlockPos,
-        source_block: &Block,
-    ) {
-        let state = world.get_block_state(pos).await;
-        if RedstoneGateBlock::can_place_at(self, &**world, *pos).await {
-            self.update_powered(world, *pos, &state, block).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
+        if RedstoneGateBlock::can_place_at(self, args.world.as_ref(), *args.location).await {
+            self.update_powered(args.world, *args.location, &state, args.block)
+                .await;
             return;
         }
-        world
-            .set_block_state(pos, Block::AIR.default_state.id, BlockFlags::NOTIFY_ALL)
+        args.world
+            .set_block_state(
+                args.location,
+                Block::AIR.default_state.id,
+                BlockFlags::NOTIFY_ALL,
+            )
             .await;
         for dir in BlockDirection::all() {
-            world
-                .update_neighbor(&pos.offset(dir.to_offset()), source_block)
+            args.world
+                .update_neighbor(&args.location.offset(dir.to_offset()), args.source_block)
                 .await;
         }
     }

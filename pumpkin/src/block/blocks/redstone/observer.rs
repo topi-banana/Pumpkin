@@ -10,7 +10,10 @@ use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
-use crate::{block::pumpkin_block::PumpkinBlock, world::World};
+use crate::{
+    block::pumpkin_block::{OnNeighborUpdateArgs, PumpkinBlock},
+    world::World,
+};
 
 #[pumpkin_block("minecraft:observer")]
 pub struct ObserverBlock;
@@ -23,15 +26,7 @@ impl PumpkinBlock for ObserverBlock {
         props.to_state_id(args.block)
     }
 
-    async fn on_neighbor_update(
-        &self,
-        _world: &Arc<World>,
-        _block: &Block,
-        _block_pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-    }
+    async fn on_neighbor_update(&self, _args: OnNeighborUpdateArgs<'_>) {}
 
     async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, block_pos: &BlockPos) {
         let state = world.get_block_state(block_pos).await;

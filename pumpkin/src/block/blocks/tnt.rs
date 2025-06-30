@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::{ExplodeArgs, PlacedArgs, PumpkinBlock, UseWithItemArgs};
+use crate::block::pumpkin_block::{
+    ExplodeArgs, OnNeighborUpdateArgs, PlacedArgs, PumpkinBlock, UseWithItemArgs,
+};
 use crate::block::registry::BlockActionResult;
 use crate::entity::Entity;
 use crate::entity::tnt::TNTEntity;
 use crate::world::World;
 use async_trait::async_trait;
-use pumpkin_data::Block;
 use pumpkin_data::entity::EntityType;
 use pumpkin_data::item::Item;
 use pumpkin_data::sound::SoundCategory;
@@ -68,16 +69,9 @@ impl PumpkinBlock for TNTBlock {
         }
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        if block_receives_redstone_power(world, pos).await {
-            Self::prime(world, pos).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        if block_receives_redstone_power(args.world, args.location).await {
+            Self::prime(args.world, args.location).await;
         }
     }
 

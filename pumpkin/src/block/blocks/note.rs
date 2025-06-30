@@ -1,6 +1,6 @@
-use std::sync::Arc;
-
-use crate::block::pumpkin_block::{NormalUseArgs, OnPlaceArgs, UseWithItemArgs};
+use crate::block::pumpkin_block::{
+    NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs, UseWithItemArgs,
+};
 use crate::block::registry::BlockActionResult;
 use async_trait::async_trait;
 use pumpkin_data::block_properties::Axis;
@@ -62,25 +62,22 @@ impl NoteBlock {
 
 #[async_trait]
 impl PumpkinBlock for NoteBlock {
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        let block_state = world.get_block_state(pos).await;
-        let mut note_props = NoteBlockLikeProperties::from_state_id(block_state.id, block);
-        let powered = block_receives_redstone_power(world, pos).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        let block_state = args.world.get_block_state(args.location).await;
+        let mut note_props = NoteBlockLikeProperties::from_state_id(block_state.id, args.block);
+        let powered = block_receives_redstone_power(args.world, args.location).await;
         // check if powered state changed
         if note_props.powered != powered {
             if powered {
-                Self::play_note(&note_props, world, pos).await;
+                Self::play_note(&note_props, args.world, args.location).await;
             }
             note_props.powered = powered;
-            world
-                .set_block_state(pos, note_props.to_state_id(block), BlockFlags::NOTIFY_ALL)
+            args.world
+                .set_block_state(
+                    args.location,
+                    note_props.to_state_id(args.block),
+                    BlockFlags::NOTIFY_ALL,
+                )
                 .await;
         }
     }

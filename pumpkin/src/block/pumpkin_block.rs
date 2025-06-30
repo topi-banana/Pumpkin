@@ -70,15 +70,7 @@ pub trait PumpkinBlock: Send + Sync {
 
     async fn broken(&self, _args: BrokenArgs<'_>) {}
 
-    async fn on_neighbor_update(
-        &self,
-        _world: &Arc<World>,
-        _block: &Block,
-        _pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-    }
+    async fn on_neighbor_update(&self, _args: OnNeighborUpdateArgs<'_>) {}
 
     /// Called if a block state is replaced or it replaces another state
     async fn prepare(
@@ -270,7 +262,7 @@ pub struct BrokenArgs<'a> {
 pub struct OnNeighborUpdateArgs<'a> {
     pub world: &'a Arc<World>,
     pub block: &'a Block,
-    pub pos: &'a BlockPos,
+    pub location: &'a BlockPos,
     pub source_block: &'a Block,
     pub notify: bool,
 }

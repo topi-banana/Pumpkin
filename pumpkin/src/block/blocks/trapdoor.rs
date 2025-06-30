@@ -1,6 +1,6 @@
 use crate::block::blocks::redstone::block_receives_redstone_power;
 use crate::block::pumpkin_block::{
-    BlockMetadata, NormalUseArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs,
+    BlockMetadata, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs, PumpkinBlock, UseWithItemArgs,
 };
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
@@ -122,33 +122,30 @@ impl PumpkinBlock for TrapDoorBlock {
         trapdoor_props.to_state_id(args.block)
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        let block_state = world.get_block_state(pos).await;
-        let mut trapdoor_props = TrapDoorProperties::from_state_id(block_state.id, block);
-        let powered = block_receives_redstone_power(world, pos).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        let block_state = args.world.get_block_state(args.location).await;
+        let mut trapdoor_props = TrapDoorProperties::from_state_id(block_state.id, args.block);
+        let powered = block_receives_redstone_power(args.world, args.location).await;
         if powered != trapdoor_props.powered {
             trapdoor_props.powered = !trapdoor_props.powered;
 
             if powered != trapdoor_props.open {
                 trapdoor_props.open = trapdoor_props.powered;
 
-                world
-                    .play_block_sound(get_sound(block, powered), SoundCategory::Blocks, *pos)
+                args.world
+                    .play_block_sound(
+                        get_sound(args.block, powered),
+                        SoundCategory::Blocks,
+                        *args.location,
+                    )
                     .await;
             }
         }
 
-        world
+        args.world
             .set_block_state(
-                pos,
-                trapdoor_props.to_state_id(block),
+                args.location,
+                trapdoor_props.to_state_id(args.block),
                 BlockFlags::NOTIFY_LISTENERS,
             )
             .await;

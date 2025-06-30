@@ -1,5 +1,4 @@
 use async_trait::async_trait;
-use pumpkin_data::Block;
 use pumpkin_data::BlockDirection;
 use pumpkin_data::block_properties::BlockHalf;
 use pumpkin_data::block_properties::BlockProperties;
@@ -11,8 +10,8 @@ use pumpkin_data::tag::get_tag_values;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockFlags;
-use std::sync::Arc;
 
+use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
 use crate::world::World;
@@ -62,26 +61,24 @@ impl PumpkinBlock for StairBlock {
         stair_props.to_state_id(args.block)
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        block_pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        let state_id = world.get_block_state_id(block_pos).await;
-        let mut stair_props = StairsProperties::from_state_id(state_id, block);
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        let state_id = args.world.get_block_state_id(args.location).await;
+        let mut stair_props = StairsProperties::from_state_id(state_id, args.block);
 
-        let new_shape =
-            compute_stair_shape(world, block_pos, stair_props.facing, stair_props.half).await;
+        let new_shape = compute_stair_shape(
+            args.world,
+            args.location,
+            stair_props.facing,
+            stair_props.half,
+        )
+        .await;
 
         if stair_props.shape != new_shape {
             stair_props.shape = new_shape;
-            world
+            args.world
                 .set_block_state(
-                    block_pos,
-                    stair_props.to_state_id(block),
+                    args.location,
+                    stair_props.to_state_id(args.block),
                     BlockFlags::NOTIFY_ALL,
                 )
                 .await;

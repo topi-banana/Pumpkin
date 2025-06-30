@@ -10,7 +10,7 @@ pub mod time;
 
 use crate::{
     PLUGIN_MANAGER,
-    block::{self, registry::BlockRegistry},
+    block::{self, pumpkin_block::OnNeighborUpdateArgs, registry::BlockRegistry},
     command::client_suggestions,
     entity::{Entity, EntityBase, EntityId, player::Player, r#type::from_type},
     error::PumpkinError,
@@ -1901,7 +1901,13 @@ impl World {
                 self.block_registry.get_pumpkin_block(&neighbor_block)
             {
                 neighbor_pumpkin_block
-                    .on_neighbor_update(self, &neighbor_block, &neighbor_pos, &source_block, false)
+                    .on_neighbor_update(OnNeighborUpdateArgs {
+                        world: self,
+                        block: &neighbor_block,
+                        location: &neighbor_pos,
+                        source_block: &source_block,
+                        notify: false,
+                    })
                     .await;
             }
 
@@ -1925,13 +1931,13 @@ impl World {
         if let Some(neighbor_pumpkin_block) = self.block_registry.get_pumpkin_block(&neighbor_block)
         {
             neighbor_pumpkin_block
-                .on_neighbor_update(
-                    self,
-                    &neighbor_block,
-                    neighbor_block_pos,
+                .on_neighbor_update(OnNeighborUpdateArgs {
+                    world: self,
+                    block: &neighbor_block,
+                    location: neighbor_block_pos,
                     source_block,
-                    false,
-                )
+                    notify: false,
+                })
                 .await;
         }
     }

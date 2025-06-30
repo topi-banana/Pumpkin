@@ -15,8 +15,8 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 use crate::{
     block::{
         pumpkin_block::{
-            CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
-            UseWithItemArgs,
+            CanPlaceAtArgs, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs,
+            PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -43,15 +43,8 @@ impl PumpkinBlock for RepeaterBlock {
         props.to_state_id(args.block)
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        pos: &BlockPos,
-        source_block: &Block,
-        _notify: bool,
-    ) {
-        RedstoneGateBlock::on_neighbor_update(self, world, block, pos, source_block).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        RedstoneGateBlock::on_neighbor_update(self, args).await;
     }
 
     async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, block_pos: &BlockPos) {

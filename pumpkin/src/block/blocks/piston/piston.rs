@@ -20,7 +20,8 @@ use crate::{
     block::{
         blocks::redstone::is_emitting_redstone_power,
         pumpkin_block::{
-            BlockMetadata, OnPlaceArgs, OnSyncedBlockEventArgs, PlacedArgs, PumpkinBlock,
+            BlockMetadata, OnNeighborUpdateArgs, OnPlaceArgs, OnSyncedBlockEventArgs, PlacedArgs,
+            PumpkinBlock,
         },
     },
     world::World,
@@ -100,15 +101,8 @@ impl PumpkinBlock for PistonBlock {
         try_move(args.world, args.block, args.location).await;
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        block_pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        try_move(world, block, block_pos).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        try_move(args.world, args.block, args.location).await;
     }
 
     #[expect(clippy::too_many_lines)]

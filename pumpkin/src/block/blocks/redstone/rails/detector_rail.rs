@@ -1,16 +1,13 @@
 use async_trait::async_trait;
-use pumpkin_data::Block;
 use pumpkin_macros::pumpkin_block;
-use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::world::BlockFlags;
-use std::sync::Arc;
 
 use crate::block::pumpkin_block::CanPlaceAtArgs;
+use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::PlacedArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
-use crate::world::World;
 
 use super::RailProperties;
 use super::common::{
@@ -39,17 +36,10 @@ impl PumpkinBlock for DetectorRailBlock {
         update_flanking_rails_shape(args.world, args.block, args.state_id, args.location).await;
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        block_pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        if !rail_placement_is_valid(world, block, block_pos).await {
-            world
-                .break_block(block_pos, None, BlockFlags::NOTIFY_ALL)
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        if !rail_placement_is_valid(args.world, args.block, args.location).await {
+            args.world
+                .break_block(args.location, None, BlockFlags::NOTIFY_ALL)
                 .await;
             return;
         }

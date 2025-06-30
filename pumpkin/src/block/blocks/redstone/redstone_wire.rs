@@ -13,7 +13,7 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
 use crate::block::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, OnPlaceArgs, PlacedArgs, UseWithItemArgs,
+    BrokenArgs, CanPlaceAtArgs, OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs, UseWithItemArgs,
 };
 use crate::block::registry::BlockActionResult;
 use crate::{
@@ -161,31 +161,26 @@ impl PumpkinBlock for RedstoneWireBlock {
         }
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        if can_place_at(world.as_ref(), pos).await {
-            let state = world.get_block_state(pos).await;
-            let mut wire = RedstoneWireProperties::from_state_id(state.id, block);
-            let new_power = calculate_power(world, pos).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        if can_place_at(args.world.as_ref(), args.location).await {
+            let state = args.world.get_block_state(args.location).await;
+            let mut wire = RedstoneWireProperties::from_state_id(state.id, args.block);
+            let new_power = calculate_power(args.world, args.location).await;
             if wire.power.to_index() as u8 != new_power {
                 wire.power = Integer0To15::from_index(new_power.into());
-                world
+                args.world
                     .set_block_state(
-                        pos,
+                        args.location,
                         wire.to_state_id(&Block::REDSTONE_WIRE),
                         BlockFlags::empty(),
                     )
                     .await;
-                RedstoneWireTurbo::update_surrounding_neighbors(world, *pos).await;
+                RedstoneWireTurbo::update_surrounding_neighbors(args.world, *args.location).await;
             }
         } else {
-            world.break_block(pos, None, BlockFlags::NOTIFY_ALL).await;
+            args.world
+                .break_block(args.location, None, BlockFlags::NOTIFY_ALL)
+                .await;
         }
     }
 

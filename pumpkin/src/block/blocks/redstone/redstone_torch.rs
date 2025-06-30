@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
+use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::PlacedArgs;
 use crate::entity::EntityBase;
@@ -137,39 +138,36 @@ impl PumpkinBlock for RedstoneTorchBlock {
         state
     }
 
-    async fn on_neighbor_update(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        block_pos: &BlockPos,
-        _source_block: &Block,
-        _notify: bool,
-    ) {
-        let state = world.get_block_state(block_pos).await;
+    async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
 
-        if world.is_block_tick_scheduled(block_pos, block).await {
+        if args
+            .world
+            .is_block_tick_scheduled(args.location, args.block)
+            .await
+        {
             return;
         }
 
-        if block == &Block::REDSTONE_WALL_TORCH {
-            let props = RWallTorchProps::from_state_id(state.id, block);
+        if args.block == &Block::REDSTONE_WALL_TORCH {
+            let props = RWallTorchProps::from_state_id(state.id, args.block);
             if props.lit
                 != should_be_lit(
-                    world,
-                    block_pos,
+                    args.world,
+                    args.location,
                     props.facing.to_block_direction().opposite(),
                 )
                 .await
             {
-                world
-                    .schedule_block_tick(block, *block_pos, 2, TickPriority::Normal)
+                args.world
+                    .schedule_block_tick(args.block, *args.location, 2, TickPriority::Normal)
                     .await;
             }
-        } else if block == &Block::REDSTONE_TORCH {
-            let props = RTorchProps::from_state_id(state.id, block);
-            if props.lit != should_be_lit(world, block_pos, BlockDirection::Down).await {
-                world
-                    .schedule_block_tick(block, *block_pos, 2, TickPriority::Normal)
+        } else if args.block == &Block::REDSTONE_TORCH {
+            let props = RTorchProps::from_state_id(state.id, args.block);
+            if props.lit != should_be_lit(args.world, args.location, BlockDirection::Down).await {
+                args.world
+                    .schedule_block_tick(args.block, *args.location, 2, TickPriority::Normal)
                     .await;
             }
         }

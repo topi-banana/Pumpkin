@@ -26,7 +26,7 @@ use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
 use crate::entity::player::Player;
-use pumpkin_protocol::server::play::SUseItemOn;
+use pumpkin_protocol::java::server::play::SUseItemOn;
 
 use crate::world::World;
 

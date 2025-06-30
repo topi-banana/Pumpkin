@@ -17,7 +17,8 @@ use rand::{Rng, rng};
 
 use crate::{
     block::pumpkin_block::{
-        CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, PlayerPlacedArgs, PumpkinBlock,
+        CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
+        PlayerPlacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -73,9 +74,9 @@ impl PumpkinBlock for TripwireHookBlock {
         }
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
-        let state_id = world.get_block_state_id(pos).await;
-        Self::update(world, *pos, state_id, false, true, -1, None).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state_id = args.world.get_block_state_id(args.location).await;
+        Self::update(args.world, *args.location, state_id, false, true, -1, None).await;
     }
 
     async fn on_state_replaced(

@@ -5,6 +5,7 @@ use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::OnScheduledTickArgs;
 use crate::block::pumpkin_block::PlacedArgs;
 use crate::entity::EntityBase;
 use async_trait::async_trait;
@@ -223,32 +224,41 @@ impl PumpkinBlock for RedstoneTorchBlock {
         0
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, block_pos: &BlockPos) {
-        let state = world.get_block_state(block_pos).await;
-        if block == &Block::REDSTONE_WALL_TORCH {
-            let mut props = RWallTorchProps::from_state_id(state.id, block);
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
+        if args.block == &Block::REDSTONE_WALL_TORCH {
+            let mut props = RWallTorchProps::from_state_id(state.id, args.block);
             let should_be_lit_now = should_be_lit(
-                world,
-                block_pos,
+                args.world,
+                args.location,
                 props.facing.to_block_direction().opposite(),
             )
             .await;
             if props.lit != should_be_lit_now {
                 props.lit = should_be_lit_now;
-                world
-                    .set_block_state(block_pos, props.to_state_id(block), BlockFlags::NOTIFY_ALL)
+                args.world
+                    .set_block_state(
+                        args.location,
+                        props.to_state_id(args.block),
+                        BlockFlags::NOTIFY_ALL,
+                    )
                     .await;
-                update_neighbors(world, block_pos).await;
+                update_neighbors(args.world, args.location).await;
             }
-        } else if block == &Block::REDSTONE_TORCH {
-            let mut props = RTorchProps::from_state_id(state.id, block);
-            let should_be_lit_now = should_be_lit(world, block_pos, BlockDirection::Down).await;
+        } else if args.block == &Block::REDSTONE_TORCH {
+            let mut props = RTorchProps::from_state_id(state.id, args.block);
+            let should_be_lit_now =
+                should_be_lit(args.world, args.location, BlockDirection::Down).await;
             if props.lit != should_be_lit_now {
                 props.lit = should_be_lit_now;
-                world
-                    .set_block_state(block_pos, props.to_state_id(block), BlockFlags::NOTIFY_ALL)
+                args.world
+                    .set_block_state(
+                        args.location,
+                        props.to_state_id(args.block),
+                        BlockFlags::NOTIFY_ALL,
+                    )
                     .await;
-                update_neighbors(world, block_pos).await;
+                update_neighbors(args.world, args.location).await;
             }
         }
     }

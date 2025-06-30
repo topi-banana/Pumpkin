@@ -12,8 +12,8 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
 use crate::{
     block::pumpkin_block::{
-        BrokenArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, OnPlaceArgs, PlacedArgs,
-        PumpkinBlock,
+        BrokenArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, OnPlaceArgs,
+        OnScheduledTickArgs, PlacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -123,28 +123,28 @@ impl PumpkinBlock for TripwireBlock {
             })
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, pos: &BlockPos) {
-        let state_id = world.get_block_state_id(pos).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state_id = args.world.get_block_state_id(args.location).await;
 
-        let mut props = TripwireProperties::from_state_id(state_id, block);
+        let mut props = TripwireProperties::from_state_id(state_id, args.block);
         if !props.powered {
             return;
         }
 
-        let aabb = BoundingBox::from_block(pos);
+        let aabb = BoundingBox::from_block(args.location);
         // TODO entity.canAvoidTraps()
-        if world.get_entities_at_box(&aabb).await.is_empty()
-            && world.get_players_at_box(&aabb).await.is_empty()
+        if args.world.get_entities_at_box(&aabb).await.is_empty()
+            && args.world.get_players_at_box(&aabb).await.is_empty()
         {
             props.powered = false;
-            let state_id = props.to_state_id(block);
-            world
-                .set_block_state(pos, state_id, BlockFlags::NOTIFY_ALL)
+            let state_id = props.to_state_id(args.block);
+            args.world
+                .set_block_state(args.location, state_id, BlockFlags::NOTIFY_ALL)
                 .await;
-            Self::update(world, pos, state_id).await;
+            Self::update(args.world, args.location, state_id).await;
         } else {
-            world
-                .schedule_block_tick(block, *pos, 10, TickPriority::Normal)
+            args.world
+                .schedule_block_tick(args.block, *args.location, 10, TickPriority::Normal)
                 .await;
         }
     }

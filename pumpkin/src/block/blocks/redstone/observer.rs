@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::block::pumpkin_block::{GetStateForNeighborUpdateArgs, OnPlaceArgs};
+use crate::block::pumpkin_block::{
+    GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
+};
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState, FacingExt,
@@ -28,34 +30,34 @@ impl PumpkinBlock for ObserverBlock {
 
     async fn on_neighbor_update(&self, _args: OnNeighborUpdateArgs<'_>) {}
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, block_pos: &BlockPos) {
-        let state = world.get_block_state(block_pos).await;
-        let mut props = ObserverLikeProperties::from_state_id(state.id, block);
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
+        let mut props = ObserverLikeProperties::from_state_id(state.id, args.block);
 
         if props.powered {
             props.powered = false;
-            world
+            args.world
                 .set_block_state(
-                    block_pos,
-                    props.to_state_id(block),
+                    args.location,
+                    props.to_state_id(args.block),
                     BlockFlags::NOTIFY_LISTENERS,
                 )
                 .await;
         } else {
             props.powered = true;
-            world
+            args.world
                 .set_block_state(
-                    block_pos,
-                    props.to_state_id(block),
+                    args.location,
+                    props.to_state_id(args.block),
                     BlockFlags::NOTIFY_LISTENERS,
                 )
                 .await;
-            world
-                .schedule_block_tick(block, *block_pos, 2, TickPriority::Normal)
+            args.world
+                .schedule_block_tick(args.block, *args.location, 2, TickPriority::Normal)
                 .await;
         }
 
-        Self::update_neighbors(world, block, block_pos, &props).await;
+        Self::update_neighbors(args.world, args.block, args.location, &props).await;
     }
 
     async fn get_state_for_neighbor_update(

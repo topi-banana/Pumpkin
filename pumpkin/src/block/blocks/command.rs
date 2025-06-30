@@ -1,4 +1,4 @@
-use std::sync::{Arc, atomic::Ordering};
+use std::sync::atomic::Ordering;
 
 use async_trait::async_trait;
 use pumpkin_data::Block;
@@ -9,7 +9,9 @@ use pumpkin_world::{
 };
 
 use crate::{
-    block::pumpkin_block::{BlockMetadata, CanPlaceAtArgs, OnNeighborUpdateArgs, PumpkinBlock},
+    block::pumpkin_block::{
+        BlockMetadata, CanPlaceAtArgs, OnNeighborUpdateArgs, OnScheduledTickArgs, PumpkinBlock,
+    },
     world::World,
 };
 
@@ -71,9 +73,9 @@ impl PumpkinBlock for CommandBlock {
         }
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
-        if let Some((nbt, block_entity)) = world.get_block_entity(pos).await {
-            let command_entity = CommandBlockEntity::from_nbt(&nbt, *pos);
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        if let Some((nbt, block_entity)) = args.world.get_block_entity(args.location).await {
+            let command_entity = CommandBlockEntity::from_nbt(&nbt, *args.location);
 
             if block_entity.resource_location() != command_entity.resource_location() {
                 return;

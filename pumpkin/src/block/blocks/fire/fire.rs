@@ -17,8 +17,8 @@ use pumpkin_world::chunk::TickPriority;
 
 use crate::block::blocks::tnt::TNTBlock;
 use crate::block::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, PlacedArgs,
-    PumpkinBlock,
+    BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs,
+    OnScheduledTickArgs, PlacedArgs, PumpkinBlock,
 };
 use crate::world::World;
 use crate::world::portal::nether::NetherPortal;
@@ -256,7 +256,8 @@ impl PumpkinBlock for FireBlock {
     }
 
     #[allow(clippy::too_many_lines)]
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, pos: &BlockPos) {
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let (world, block, pos) = (args.world, args.block, args.location);
         world
             .schedule_block_tick(
                 block,

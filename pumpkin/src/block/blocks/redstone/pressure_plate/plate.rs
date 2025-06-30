@@ -10,7 +10,9 @@ use pumpkin_util::math::{boundingbox::BoundingBox, position::BlockPos};
 use pumpkin_world::BlockStateId;
 
 use crate::{
-    block::pumpkin_block::{BlockMetadata, OnEntityCollisionArgs, PumpkinBlock},
+    block::pumpkin_block::{
+        BlockMetadata, OnEntityCollisionArgs, OnScheduledTickArgs, PumpkinBlock,
+    },
     world::World,
 };
 
@@ -44,8 +46,8 @@ impl PumpkinBlock for PressurePlateBlock {
         self.on_entity_collision_pp(args).await;
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, pos: &BlockPos) {
-        self.on_scheduled_tick_pp(world, block, pos).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        self.on_scheduled_tick_pp(args).await;
     }
 
     async fn on_state_replaced(

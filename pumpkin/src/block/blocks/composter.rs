@@ -17,7 +17,7 @@ use uuid::Uuid;
 
 use crate::{
     block::{
-        pumpkin_block::{NormalUseArgs, PumpkinBlock, UseWithItemArgs},
+        pumpkin_block::{NormalUseArgs, OnScheduledTickArgs, PumpkinBlock, UseWithItemArgs},
         registry::BlockActionResult,
     },
     entity::{Entity, item::ItemEntity},
@@ -66,12 +66,12 @@ impl PumpkinBlock for ComposterBlock {
         BlockActionResult::Consume
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, location: &BlockPos) {
-        let state_id = world.get_block_state_id(location).await;
-        let props = ComposterLikeProperties::from_state_id(state_id, block);
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state_id = args.world.get_block_state_id(args.location).await;
+        let props = ComposterLikeProperties::from_state_id(state_id, args.block);
         let level = props.get_level();
         if level == 7 {
-            self.update_level_composter(world, location, state_id, block, level + 1)
+            self.update_level_composter(args.world, args.location, state_id, args.block, level + 1)
                 .await;
         }
     }

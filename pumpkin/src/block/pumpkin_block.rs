@@ -82,7 +82,7 @@ pub trait PumpkinBlock: Send + Sync {
         args.state_id
     }
 
-    async fn on_scheduled_tick(&self, _world: &Arc<World>, _block: &Block, _pos: &BlockPos) {}
+    async fn on_scheduled_tick(&self, _args: OnScheduledTickArgs<'_>) {}
 
     async fn on_state_replaced(
         &self,
@@ -273,7 +273,7 @@ pub struct GetStateForNeighborUpdateArgs<'a> {
 pub struct OnScheduledTickArgs<'a> {
     pub world: &'a Arc<World>,
     pub block: &'a Block,
-    pub pos: &'a BlockPos,
+    pub location: &'a BlockPos,
 }
 
 pub struct OnStateReplacedArgs<'a> {

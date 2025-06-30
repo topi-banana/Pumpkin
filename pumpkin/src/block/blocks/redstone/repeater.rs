@@ -16,7 +16,8 @@ use crate::{
     block::{
         pumpkin_block::{
             CanPlaceAtArgs, GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs,
-            OnPlaceArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
+            OnPlaceArgs, OnScheduledTickArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
+            UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -47,51 +48,56 @@ impl PumpkinBlock for RepeaterBlock {
         RedstoneGateBlock::on_neighbor_update(self, args).await;
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, block_pos: &BlockPos) {
-        let state = world.get_block_state(block_pos).await;
-        if self.is_locked(world, *block_pos, state.id, block).await {
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
+        if self
+            .is_locked(args.world, *args.location, state.id, args.block)
+            .await
+        {
             return;
         }
-        let mut props = RepeaterProperties::from_state_id(state.id, block);
+        let mut props = RepeaterProperties::from_state_id(state.id, args.block);
 
         let now_powered = props.powered;
-        let should_be_powered = self.has_power(world, *block_pos, &state, block).await;
+        let should_be_powered = self
+            .has_power(args.world, *args.location, &state, args.block)
+            .await;
 
         if now_powered && !should_be_powered {
             props.powered = false;
-            world
+            args.world
                 .set_block_state(
-                    block_pos,
-                    props.to_state_id(block),
+                    args.location,
+                    props.to_state_id(args.block),
                     BlockFlags::NOTIFY_LISTENERS,
                 )
                 .await;
             RedstoneGateBlock::update_target(
                 self,
-                world,
-                *block_pos,
-                props.to_state_id(block),
-                block,
+                args.world,
+                *args.location,
+                props.to_state_id(args.block),
+                args.block,
             )
             .await;
         } else if !now_powered {
             props.powered = true;
-            world
+            args.world
                 .set_block_state(
-                    block_pos,
-                    props.to_state_id(block),
+                    args.location,
+                    props.to_state_id(args.block),
                     BlockFlags::NOTIFY_LISTENERS,
                 )
                 .await;
             if !should_be_powered {
-                world
+                args.world
                     .schedule_block_tick(
-                        block,
-                        *block_pos,
+                        args.block,
+                        *args.location,
                         RedstoneGateBlock::get_update_delay_internal(
                             self,
-                            props.to_state_id(block),
-                            block,
+                            props.to_state_id(args.block),
+                            args.block,
                         ),
                         TickPriority::VeryHigh,
                     )
@@ -99,10 +105,10 @@ impl PumpkinBlock for RepeaterBlock {
             }
             RedstoneGateBlock::update_target(
                 self,
-                world,
-                *block_pos,
-                props.to_state_id(block),
-                block,
+                args.world,
+                *args.location,
+                props.to_state_id(args.block),
+                args.block,
             )
             .await;
         }

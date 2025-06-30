@@ -1,16 +1,13 @@
 use crate::block::pumpkin_block::{
-    BlockMetadata, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, PumpkinBlock,
+    BlockMetadata, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnScheduledTickArgs, PumpkinBlock,
 };
-use crate::world::World;
 use async_trait::async_trait;
-use pumpkin_data::Block;
 use pumpkin_data::tag::{RegistryKey, get_tag_values};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::chunk::TickPriority;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
-use std::sync::Arc;
 
 pub struct CarpetBlock;
 
@@ -42,9 +39,11 @@ impl PumpkinBlock for CarpetBlock {
         args.state_id
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
-        if !can_place_at(world.as_ref(), pos).await {
-            world.break_block(pos, None, BlockFlags::empty()).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        if !can_place_at(args.world.as_ref(), args.location).await {
+            args.world
+                .break_block(args.location, None, BlockFlags::empty())
+                .await;
         }
     }
 }
@@ -70,9 +69,11 @@ impl PumpkinBlock for MossCarpetBlock {
         args.state_id
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
-        if !can_place_at(world.as_ref(), pos).await {
-            world.break_block(pos, None, BlockFlags::empty()).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        if !can_place_at(args.world.as_ref(), args.location).await {
+            args.world
+                .break_block(args.location, None, BlockFlags::empty())
+                .await;
         }
     }
 }
@@ -98,9 +99,11 @@ impl PumpkinBlock for PaleMossCarpetBlock {
         args.state_id
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
-        if !can_place_at(world.as_ref(), pos).await {
-            world.break_block(pos, None, BlockFlags::empty()).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        if !can_place_at(args.world.as_ref(), args.location).await {
+            args.world
+                .break_block(args.location, None, BlockFlags::empty())
+                .await;
         }
     }
 }

@@ -21,6 +21,7 @@ use crate::block::blocks::redstone::lever::LeverLikePropertiesExt;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
+use crate::block::pumpkin_block::OnScheduledTickArgs;
 use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
@@ -70,14 +71,18 @@ impl PumpkinBlock for ButtonBlock {
         BlockActionResult::Consume
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, block_pos: &BlockPos) {
-        let state = world.get_block_state(block_pos).await;
-        let mut props = ButtonLikeProperties::from_state_id(state.id, block);
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
+        let mut props = ButtonLikeProperties::from_state_id(state.id, args.block);
         props.powered = false;
-        world
-            .set_block_state(block_pos, props.to_state_id(block), BlockFlags::NOTIFY_ALL)
+        args.world
+            .set_block_state(
+                args.location,
+                props.to_state_id(args.block),
+                BlockFlags::NOTIFY_ALL,
+            )
             .await;
-        Self::update_neighbors(world, block_pos, &props).await;
+        Self::update_neighbors(args.world, args.location, &props).await;
     }
 
     async fn emits_redstone_power(

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use pumpkin_data::block_properties::{
     BlockProperties, CactusLikeProperties, EnumVariants, Integer0To15,
@@ -14,19 +12,20 @@ use pumpkin_world::chunk::TickPriority;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
 use crate::block::pumpkin_block::{
-    CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, PumpkinBlock,
-    RandomTickArgs,
+    CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, OnScheduledTickArgs,
+    PumpkinBlock, RandomTickArgs,
 };
-use crate::world::World;
 
 #[pumpkin_block("minecraft:cactus")]
 pub struct CactusBlock;
 
 #[async_trait]
 impl PumpkinBlock for CactusBlock {
-    async fn on_scheduled_tick(&self, world: &Arc<World>, _block: &Block, pos: &BlockPos) {
-        if !can_place_at(world.as_ref(), pos).await {
-            world.break_block(pos, None, BlockFlags::empty()).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        if !can_place_at(args.world.as_ref(), args.location).await {
+            args.world
+                .break_block(args.location, None, BlockFlags::empty())
+                .await;
         }
     }
 

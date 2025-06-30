@@ -22,8 +22,8 @@ use crate::{
     block::{
         pumpkin_block::{
             BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, NormalUseArgs,
-            OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
-            UseWithItemArgs,
+            OnNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, PlacedArgs, PlayerPlacedArgs,
+            PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -143,9 +143,10 @@ impl PumpkinBlock for ComparatorBlock {
         RedstoneGateBlock::on_neighbor_update(self, args).await;
     }
 
-    async fn on_scheduled_tick(&self, world: &Arc<World>, block: &Block, pos: &BlockPos) {
-        let state = world.get_block_state(pos).await;
-        self.update(world, *pos, &state, block).await;
+    async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
+        self.update(args.world, *args.location, &state, args.block)
+            .await;
     }
 
     async fn on_state_replaced(

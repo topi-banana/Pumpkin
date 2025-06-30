@@ -10,7 +10,11 @@ pub mod time;
 
 use crate::{
     PLUGIN_MANAGER,
-    block::{self, pumpkin_block::OnNeighborUpdateArgs, registry::BlockRegistry},
+    block::{
+        self,
+        pumpkin_block::{OnNeighborUpdateArgs, OnScheduledTickArgs},
+        registry::BlockRegistry,
+    },
     command::client_suggestions,
     entity::{Entity, EntityBase, EntityId, player::Player, r#type::from_type},
     error::PumpkinError,
@@ -597,7 +601,11 @@ impl World {
             }
             if let Some(pumpkin_block) = self.block_registry.get_pumpkin_block(&block) {
                 pumpkin_block
-                    .on_scheduled_tick(self, &block, &scheduled_tick.block_pos)
+                    .on_scheduled_tick(OnScheduledTickArgs {
+                        world: self,
+                        block: &block,
+                        location: &scheduled_tick.block_pos,
+                    })
                     .await;
             }
         }

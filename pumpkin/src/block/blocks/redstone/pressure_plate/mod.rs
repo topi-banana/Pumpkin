@@ -4,7 +4,10 @@ use pumpkin_data::{Block, BlockState};
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
-use crate::{block::pumpkin_block::OnEntityCollisionArgs, world::World};
+use crate::{
+    block::pumpkin_block::{OnEntityCollisionArgs, OnScheduledTickArgs},
+    world::World,
+};
 
 pub mod plate;
 pub mod weighted;
@@ -18,11 +21,11 @@ pub(crate) trait PressurePlate {
         }
     }
 
-    async fn on_scheduled_tick_pp(&self, world: &Arc<World>, block: &Block, pos: &BlockPos) {
-        let state = world.get_block_state(pos).await;
-        let output = self.get_redstone_output(block, state.id);
+    async fn on_scheduled_tick_pp(&self, args: OnScheduledTickArgs<'_>) {
+        let state = args.world.get_block_state(args.location).await;
+        let output = self.get_redstone_output(args.block, state.id);
         if output > 0 {
-            self.update_plate_state(world, pos, block, &state, output)
+            self.update_plate_state(args.world, args.location, args.block, &state, output)
                 .await;
         }
     }

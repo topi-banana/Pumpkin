@@ -15,11 +15,11 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 use crate::{
     block::{
         pumpkin_block::{
-            CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PlacedArgs, PumpkinBlock, UseWithItemArgs,
+            CanPlaceAtArgs, NormalUseArgs, OnPlaceArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
+            UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
-    entity::player::Player,
     world::World,
 };
 
@@ -211,16 +211,8 @@ impl PumpkinBlock for RepeaterBlock {
         state
     }
 
-    async fn player_placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: u16,
-        pos: &BlockPos,
-        _face: BlockDirection,
-        _player: &Player,
-    ) {
-        RedstoneGateBlock::player_placed(self, world, block, state_id, pos).await;
+    async fn player_placed(&self, args: PlayerPlacedArgs<'_>) {
+        RedstoneGateBlock::player_placed(self, args).await;
     }
 
     async fn on_state_replaced(

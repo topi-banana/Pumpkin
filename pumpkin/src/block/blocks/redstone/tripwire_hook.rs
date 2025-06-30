@@ -16,8 +16,7 @@ use pumpkin_world::{
 use rand::{Rng, rng};
 
 use crate::{
-    block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PumpkinBlock},
-    entity::player::Player,
+    block::pumpkin_block::{CanPlaceAtArgs, OnPlaceArgs, PlayerPlacedArgs, PumpkinBlock},
     world::World,
 };
 
@@ -44,16 +43,17 @@ impl PumpkinBlock for TripwireHookBlock {
         Self::can_place_at(args.block_accessor, args.location, args.direction).await
     }
 
-    async fn player_placed(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        state_id: u16,
-        pos: &BlockPos,
-        _face: BlockDirection,
-        _player: &Player,
-    ) {
-        Self::update(world, *pos, state_id, false, false, -1, None).await;
+    async fn player_placed(&self, args: PlayerPlacedArgs<'_>) {
+        Self::update(
+            args.world,
+            *args.location,
+            args.state_id,
+            false,
+            false,
+            -1,
+            None,
+        )
+        .await;
     }
 
     async fn get_state_for_neighbor_update(

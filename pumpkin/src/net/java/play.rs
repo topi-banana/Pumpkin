@@ -1815,7 +1815,7 @@ impl Player {
 
         server
             .block_registry
-            .player_placed(world, &block, new_state, &final_block_pos, face, self)
+            .player_placed(world, &block, new_state, &final_block_pos, &face, self)
             .await;
 
         // The block was placed successfully, so decrement their inventory

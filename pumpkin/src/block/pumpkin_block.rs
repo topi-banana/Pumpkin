@@ -66,16 +66,7 @@ pub trait PumpkinBlock: Send + Sync {
     /// onBlockAdded in source code
     async fn placed(&self, _args: PlacedArgs<'_>) {}
 
-    async fn player_placed(
-        &self,
-        _world: &Arc<World>,
-        _block: &Block,
-        _state_id: u16,
-        _pos: &BlockPos,
-        _face: BlockDirection,
-        _player: &Player,
-    ) {
-    }
+    async fn player_placed(&self, _args: PlayerPlacedArgs<'_>) {}
 
     async fn broken(
         &self,
@@ -271,8 +262,8 @@ pub struct PlayerPlacedArgs<'a> {
     pub world: &'a Arc<World>,
     pub block: &'a Block,
     pub state_id: BlockStateId,
-    pub pos: &'a BlockPos,
-    pub face: &'a BlockDirection,
+    pub location: &'a BlockPos,
+    pub direction: &'a BlockDirection,
     pub player: &'a Player,
 }
 

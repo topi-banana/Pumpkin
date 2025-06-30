@@ -15,7 +15,7 @@ use pumpkin_world::{
     world::{BlockAccessor, BlockFlags},
 };
 
-use crate::{entity::player::Player, world::World};
+use crate::{block::pumpkin_block::PlayerPlacedArgs, entity::player::Player, world::World};
 
 use super::{get_redstone_power, is_diode};
 
@@ -162,17 +162,13 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
         props.to_state_id(block)
     }
 
-    async fn player_placed(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        state_id: u16,
-        pos: &BlockPos,
-    ) {
-        if let Some(state) = get_state_by_state_id(state_id) {
-            if RedstoneGateBlock::has_power(self, world, *pos, &state, block).await {
-                world
-                    .schedule_block_tick(block, *pos, 1, TickPriority::Normal)
+    async fn player_placed(&self, args: PlayerPlacedArgs<'_>) {
+        if let Some(state) = get_state_by_state_id(args.state_id) {
+            if RedstoneGateBlock::has_power(self, args.world, *args.location, &state, args.block)
+                .await
+            {
+                args.world
+                    .schedule_block_tick(args.block, *args.location, 1, TickPriority::Normal)
                     .await;
             }
         }

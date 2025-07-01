@@ -9,8 +9,8 @@ use pumpkin_world::BlockStateId;
 
 use crate::{
     block::pumpkin_block::{
-        BlockMetadata, EmitsRedstonePowerArgs, OnEntityCollisionArgs, OnScheduledTickArgs,
-        OnStateReplacedArgs, PumpkinBlock,
+        BlockMetadata, EmitsRedstonePowerArgs, GetRedstonePowerArgs, OnEntityCollisionArgs,
+        OnScheduledTickArgs, OnStateReplacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -53,27 +53,13 @@ impl PumpkinBlock for PressurePlateBlock {
         self.on_state_replaced_pp(args).await;
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        state: &BlockState,
-        _direction: BlockDirection,
-    ) -> u8 {
-        self.get_redstone_output(block, state.id)
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        self.get_redstone_output(args.block, args.state.id)
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        if direction == BlockDirection::Up {
-            return self.get_redstone_output(block, state.id);
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        if args.direction == &BlockDirection::Up {
+            return self.get_redstone_output(args.block, args.state.id);
         }
         0
     }

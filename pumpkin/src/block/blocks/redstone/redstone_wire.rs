@@ -13,8 +13,8 @@ use pumpkin_world::BlockStateId;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 
 use crate::block::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnNeighborUpdateArgs, OnPlaceArgs,
-    PlacedArgs, PrepareArgs, UseWithItemArgs,
+    BrokenArgs, CanPlaceAtArgs, GetRedstonePowerArgs, GetStateForNeighborUpdateArgs,
+    OnNeighborUpdateArgs, OnPlaceArgs, PlacedArgs, PrepareArgs, UseWithItemArgs,
 };
 use crate::block::registry::BlockActionResult;
 use crate::{
@@ -173,32 +173,22 @@ impl PumpkinBlock for RedstoneWireBlock {
         }
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        let wire = RedstoneWireProperties::from_state_id(state.id, block);
-        if direction == BlockDirection::Up || wire.is_side_connected(direction.opposite()) {
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let wire = RedstoneWireProperties::from_state_id(args.state.id, args.block);
+        if args.direction == &BlockDirection::Up
+            || wire.is_side_connected(args.direction.opposite())
+        {
             wire.power.to_index() as u8
         } else {
             0
         }
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        let wire = RedstoneWireProperties::from_state_id(state.id, block);
-        if direction == BlockDirection::Up || wire.is_side_connected(direction.opposite()) {
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let wire = RedstoneWireProperties::from_state_id(args.state.id, args.block);
+        if args.direction == &BlockDirection::Up
+            || wire.is_side_connected(args.direction.opposite())
+        {
             wire.power.to_index() as u8
         } else {
             0

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use pumpkin_data::{
-    Block, BlockDirection, BlockState,
+    Block, BlockDirection,
     block_properties::BlockProperties,
     sound::{Sound, SoundCategory},
 };
@@ -17,8 +17,9 @@ use rand::{Rng, rng};
 
 use crate::{
     block::pumpkin_block::{
-        CanPlaceAtArgs, EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs,
-        OnScheduledTickArgs, OnStateReplacedArgs, PlayerPlacedArgs, PumpkinBlock,
+        CanPlaceAtArgs, EmitsRedstonePowerArgs, GetRedstonePowerArgs,
+        GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs,
+        PlayerPlacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -115,29 +116,16 @@ impl PumpkinBlock for TripwireHookBlock {
         true
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        state: &BlockState,
-        _direction: BlockDirection,
-    ) -> u8 {
-        let props = TripwireHookProperties::from_state_id(state.id, block);
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let props = TripwireHookProperties::from_state_id(args.state.id, args.block);
         if props.powered { 15 } else { 0 }
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        let props = TripwireHookProperties::from_state_id(state.id, block);
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let props = TripwireHookProperties::from_state_id(args.state.id, args.block);
         if props.powered
-            && direction
+            && args
+                .direction
                 .to_horizontal_facing()
                 .is_some_and(|facing| props.facing == facing)
         {

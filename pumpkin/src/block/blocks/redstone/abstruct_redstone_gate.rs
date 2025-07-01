@@ -16,7 +16,9 @@ use pumpkin_world::{
 };
 
 use crate::{
-    block::pumpkin_block::{OnNeighborUpdateArgs, OnStateReplacedArgs, PlayerPlacedArgs},
+    block::pumpkin_block::{
+        GetRedstonePowerArgs, OnNeighborUpdateArgs, OnStateReplacedArgs, PlayerPlacedArgs,
+    },
     entity::player::Player,
     world::World,
 };
@@ -46,32 +48,17 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
         state.is_side_solid(BlockDirection::Up)
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        world: &World,
-        block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        let props = T::from_state_id(state.id, block);
-        if props.is_powered() && props.get_facing().to_block_direction() == direction {
-            self.get_output_level(world, *block_pos).await
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let props = T::from_state_id(args.state.id, args.block);
+        if props.is_powered() && &props.get_facing().to_block_direction() == args.direction {
+            self.get_output_level(args.world, *args.location).await
         } else {
             0
         }
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        world: &World,
-        block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        self.get_weak_redstone_power(block, world, block_pos, state, direction)
-            .await
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        self.get_weak_redstone_power(args).await
     }
 
     async fn get_output_level(&self, world: &World, pos: BlockPos) -> u8;

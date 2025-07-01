@@ -3,13 +3,13 @@ use std::sync::Arc;
 use crate::block::{
     blocks::abstruct_wall_mounting::WallMountedBlock,
     pumpkin_block::{
-        CanPlaceAtArgs, EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs,
-        OnStateReplacedArgs, UseWithItemArgs,
+        CanPlaceAtArgs, EmitsRedstonePowerArgs, GetRedstonePowerArgs,
+        GetStateForNeighborUpdateArgs, OnPlaceArgs, OnStateReplacedArgs, UseWithItemArgs,
     },
 };
 use async_trait::async_trait;
 use pumpkin_data::{
-    Block, BlockDirection, BlockState, HorizontalFacingExt,
+    Block, BlockDirection, HorizontalFacingExt,
     block_properties::{BlockFace, BlockProperties, LeverLikeProperties},
 };
 use pumpkin_macros::pumpkin_block;
@@ -58,28 +58,14 @@ impl PumpkinBlock for LeverBlock {
         true
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _block_pos: &BlockPos,
-        state: &BlockState,
-        _direction: BlockDirection,
-    ) -> u8 {
-        let lever_props = LeverLikeProperties::from_state_id(state.id, block);
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let lever_props = LeverLikeProperties::from_state_id(args.state.id, args.block);
         if lever_props.powered { 15 } else { 0 }
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        let lever_props = LeverLikeProperties::from_state_id(state.id, block);
-        if lever_props.powered && lever_props.get_direction() == direction {
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let lever_props = LeverLikeProperties::from_state_id(args.state.id, args.block);
+        if lever_props.powered && &lever_props.get_direction() == args.direction {
             15
         } else {
             0

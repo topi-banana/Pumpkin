@@ -15,9 +15,10 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 use crate::{
     block::{
         pumpkin_block::{
-            CanPlaceAtArgs, EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, NormalUseArgs,
-            OnNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs,
-            PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
+            CanPlaceAtArgs, EmitsRedstonePowerArgs, GetRedstonePowerArgs,
+            GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs,
+            OnScheduledTickArgs, OnStateReplacedArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
+            UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -129,30 +130,12 @@ impl PumpkinBlock for RepeaterBlock {
         BlockActionResult::Consume
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        world: &World,
-        block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        RedstoneGateBlock::get_weak_redstone_power(self, block, world, block_pos, state, direction)
-            .await
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        RedstoneGateBlock::get_weak_redstone_power(self, args).await
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        world: &World,
-        block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        RedstoneGateBlock::get_strong_redstone_power(
-            self, block, world, block_pos, state, direction,
-        )
-        .await
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        RedstoneGateBlock::get_strong_redstone_power(self, args).await
     }
 
     async fn emits_redstone_power(&self, args: EmitsRedstonePowerArgs<'_>) -> bool {

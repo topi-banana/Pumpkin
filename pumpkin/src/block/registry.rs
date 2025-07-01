@@ -17,9 +17,9 @@ use std::sync::Arc;
 use super::BlockIsReplacing;
 use super::pumpkin_block::{
     BrokenArgs, CanPlaceAtArgs, CanUpdateAtArgs, EmitsRedstonePowerArgs, ExplodeArgs,
-    GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs,
-    OnStateReplacedArgs, OnSyncedBlockEventArgs, PlacedArgs, PlayerPlacedArgs, PrepareArgs,
-    UseWithItemArgs,
+    GetRedstonePowerArgs, GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs,
+    OnPlaceArgs, OnStateReplacedArgs, OnSyncedBlockEventArgs, PlacedArgs, PlayerPlacedArgs,
+    PrepareArgs, UseWithItemArgs,
 };
 use super::pumpkin_fluid::PumpkinFluid;
 
@@ -561,14 +561,20 @@ impl BlockRegistry {
         &self,
         block: &Block,
         world: &World,
-        block_pos: &BlockPos,
+        location: &BlockPos,
         state: &BlockState,
         direction: BlockDirection,
     ) -> u8 {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
-                .get_weak_redstone_power(block, world, block_pos, state, direction)
+                .get_weak_redstone_power(GetRedstonePowerArgs {
+                    block,
+                    world,
+                    location,
+                    state,
+                    direction: &direction,
+                })
                 .await;
         }
         0
@@ -578,14 +584,20 @@ impl BlockRegistry {
         &self,
         block: &Block,
         world: &World,
-        block_pos: &BlockPos,
+        location: &BlockPos,
         state: &BlockState,
         direction: BlockDirection,
     ) -> u8 {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
-                .get_strong_redstone_power(block, world, block_pos, state, direction)
+                .get_strong_redstone_power(GetRedstonePowerArgs {
+                    block,
+                    world,
+                    location,
+                    state,
+                    direction: &direction,
+                })
                 .await;
         }
         0

@@ -92,26 +92,12 @@ pub trait PumpkinBlock: Send + Sync {
     }
 
     /// Weak redstone power, aka. block that should be powered needs to be directly next to the source block
-    async fn get_weak_redstone_power(
-        &self,
-        _block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> u8 {
+    async fn get_weak_redstone_power(&self, _args: GetRedstonePowerArgs<'_>) -> u8 {
         0
     }
 
     /// Strong redstone power. this can power a block that then gives power
-    async fn get_strong_redstone_power(
-        &self,
-        _block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> u8 {
+    async fn get_strong_redstone_power(&self, _args: GetRedstonePowerArgs<'_>) -> u8 {
         0
     }
 
@@ -277,19 +263,11 @@ pub struct EmitsRedstonePowerArgs<'a> {
     pub direction: &'a BlockDirection,
 }
 
-pub struct GetWeakRedstonePowerArgs<'a> {
-    pub block: &'a Block,
+pub struct GetRedstonePowerArgs<'a> {
     pub world: &'a World,
-    pub pos: &'a BlockPos,
-    pub state: &'a BlockState,
-    pub direction: &'a BlockDirection,
-}
-
-pub struct GetStrongRedstonePowerArgs<'a> {
     pub block: &'a Block,
-    pub world: &'a World,
-    pub pos: &'a BlockPos,
     pub state: &'a BlockState,
+    pub location: &'a BlockPos,
     pub direction: &'a BlockDirection,
 }
 

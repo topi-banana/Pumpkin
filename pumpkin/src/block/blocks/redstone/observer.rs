@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
 use crate::block::pumpkin_block::{
-    EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
-    OnStateReplacedArgs,
+    EmitsRedstonePowerArgs, GetRedstonePowerArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs,
+    OnScheduledTickArgs, OnStateReplacedArgs,
 };
 use async_trait::async_trait;
 use pumpkin_data::{
-    Block, BlockDirection, BlockState, FacingExt,
+    Block, FacingExt,
     block_properties::{BlockProperties, ObserverLikeProperties},
 };
 use pumpkin_macros::pumpkin_block;
@@ -79,32 +79,17 @@ impl PumpkinBlock for ObserverBlock {
         &props.facing.to_block_direction() == args.direction
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        let props = ObserverLikeProperties::from_state_id(state.id, block);
-        if props.facing.to_block_direction() == direction && props.powered {
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let props = ObserverLikeProperties::from_state_id(args.state.id, args.block);
+        if &props.facing.to_block_direction() == args.direction && props.powered {
             15
         } else {
             0
         }
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        world: &World,
-        block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        self.get_weak_redstone_power(block, world, block_pos, state, direction)
-            .await
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        self.get_weak_redstone_power(args).await
     }
 
     async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {

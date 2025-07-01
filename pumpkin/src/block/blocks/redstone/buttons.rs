@@ -3,7 +3,6 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use pumpkin_data::Block;
 use pumpkin_data::BlockDirection;
-use pumpkin_data::BlockState;
 use pumpkin_data::HorizontalFacingExt;
 use pumpkin_data::block_properties::BlockFace;
 use pumpkin_data::block_properties::BlockProperties;
@@ -20,6 +19,7 @@ use crate::block::blocks::abstruct_wall_mounting::WallMountedBlock;
 use crate::block::blocks::redstone::lever::LeverLikePropertiesExt;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::EmitsRedstonePowerArgs;
+use crate::block::pumpkin_block::GetRedstonePowerArgs;
 use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::OnScheduledTickArgs;
@@ -91,28 +91,14 @@ impl PumpkinBlock for ButtonBlock {
         true
     }
 
-    async fn get_weak_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _block_pos: &BlockPos,
-        state: &BlockState,
-        _direction: BlockDirection,
-    ) -> u8 {
-        let button_props = ButtonLikeProperties::from_state_id(state.id, block);
+    async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let button_props = ButtonLikeProperties::from_state_id(args.state.id, args.block);
         if button_props.powered { 15 } else { 0 }
     }
 
-    async fn get_strong_redstone_power(
-        &self,
-        block: &Block,
-        _world: &World,
-        _block_pos: &BlockPos,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> u8 {
-        let button_props = ButtonLikeProperties::from_state_id(state.id, block);
-        if button_props.powered && button_props.get_direction() == direction {
+    async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
+        let button_props = ButtonLikeProperties::from_state_id(args.state.id, args.block);
+        if button_props.powered && &button_props.get_direction() == args.direction {
             15
         } else {
             0

@@ -1695,7 +1695,7 @@ impl Player {
                     &clicked_block,
                     clicked_block_state.id,
                     &clicked_block_pos,
-                    &face,
+                    face,
                     &use_item_on,
                     self,
                 )
@@ -1729,7 +1729,7 @@ impl Player {
                             &previous_block,
                             previous_block_state.id,
                             &block_pos,
-                            &face.opposite(),
+                            face.opposite(),
                             &use_item_on,
                             self,
                         )
@@ -1767,7 +1767,7 @@ impl Player {
                 Some(self),
                 &block,
                 &final_block_pos,
-                &final_face,
+                final_face,
                 Some(&use_item_on),
             )
             .await
@@ -1783,7 +1783,7 @@ impl Player {
                 self,
                 &block,
                 &final_block_pos,
-                &final_face,
+                final_face,
                 replacing,
                 &use_item_on,
             )
@@ -1808,7 +1808,7 @@ impl Player {
 
         server
             .block_registry
-            .player_placed(world, &block, new_state, &final_block_pos, &face, self)
+            .player_placed(world, &block, new_state, &final_block_pos, face, self)
             .await;
 
         // The block was placed successfully, so decrement their inventory

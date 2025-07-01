@@ -46,7 +46,7 @@ impl WallMountedBlock for GrindstoneBlock {
         &self,
         _world: &dyn BlockAccessor,
         _pos: &BlockPos,
-        _direction: &BlockDirection,
+        _direction: BlockDirection,
     ) -> bool {
         true
     }

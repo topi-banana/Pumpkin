@@ -40,7 +40,7 @@ impl PumpkinBlock for FarmLandBlock {
         &self,
         args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if args.direction == &BlockDirection::Up && !can_place_at(args.world, args.location).await {
+        if args.direction == BlockDirection::Up && !can_place_at(args.world, args.location).await {
             args.world
                 .schedule_block_tick(args.block, *args.location, 1, TickPriority::Normal)
                 .await;

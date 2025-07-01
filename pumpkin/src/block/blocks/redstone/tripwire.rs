@@ -57,7 +57,7 @@ impl PumpkinBlock for TripwireBlock {
         .map(async |dir| {
             let current_pos = args.location.offset(dir.to_offset());
             let state_id = args.world.get_block_state_id(&current_pos).await;
-            Self::should_connect_to(state_id, &dir)
+            Self::should_connect_to(state_id, dir)
         });
 
         let mut props = TripwireProperties::from_state_id(args.block.default_state.id, args.block);
@@ -195,7 +195,7 @@ impl TripwireBlock {
     }
 
     #[must_use]
-    pub fn should_connect_to(state_id: BlockStateId, facing: &BlockDirection) -> bool {
+    pub fn should_connect_to(state_id: BlockStateId, facing: BlockDirection) -> bool {
         Block::from_state_id(state_id).is_some_and(|block| {
             if block == Block::TRIPWIRE_HOOK {
                 let props = TripwireHookProperties::from_state_id(state_id, &block);

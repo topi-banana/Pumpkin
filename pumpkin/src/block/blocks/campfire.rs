@@ -69,7 +69,7 @@ impl PumpkinBlock for CampfireBlock {
                 .await;
         }
 
-        if args.direction == &BlockDirection::Down {
+        if args.direction == BlockDirection::Down {
             props.signal_fire =
                 is_signal_fire_base_block(&args.world.get_block(args.neighbor_location).await);
         }

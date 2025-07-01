@@ -151,7 +151,7 @@ pub struct OnPlaceArgs<'a> {
     pub world: &'a World,
     pub block: &'a Block,
     pub location: &'a BlockPos,
-    pub direction: &'a BlockDirection,
+    pub direction: BlockDirection,
     pub player: &'a Player,
     pub replacing: BlockIsReplacing,
     pub use_item_on: &'a SUseItemOn,
@@ -169,7 +169,7 @@ pub struct CanPlaceAtArgs<'a> {
     pub block_accessor: &'a dyn BlockAccessor,
     pub block: &'a Block,
     pub location: &'a BlockPos,
-    pub direction: &'a BlockDirection,
+    pub direction: BlockDirection,
     pub player: Option<&'a Player>,
     pub use_item_on: Option<&'a SUseItemOn>,
 }
@@ -179,7 +179,7 @@ pub struct CanUpdateAtArgs<'a> {
     pub block: &'a Block,
     pub state_id: BlockStateId,
     pub location: &'a BlockPos,
-    pub direction: &'a BlockDirection,
+    pub direction: BlockDirection,
     pub player: &'a Player,
     pub use_item_on: &'a SUseItemOn,
 }
@@ -198,7 +198,7 @@ pub struct PlayerPlacedArgs<'a> {
     pub block: &'a Block,
     pub state_id: BlockStateId,
     pub location: &'a BlockPos,
-    pub direction: &'a BlockDirection,
+    pub direction: BlockDirection,
     pub player: &'a Player,
 }
 
@@ -232,7 +232,7 @@ pub struct GetStateForNeighborUpdateArgs<'a> {
     pub block: &'a Block,
     pub state_id: BlockStateId,
     pub location: &'a BlockPos,
-    pub direction: &'a BlockDirection,
+    pub direction: BlockDirection,
     pub neighbor_location: &'a BlockPos,
     pub neighbor_state_id: BlockStateId,
 }
@@ -254,7 +254,7 @@ pub struct OnStateReplacedArgs<'a> {
 pub struct EmitsRedstonePowerArgs<'a> {
     pub block: &'a Block,
     pub state: &'a BlockState,
-    pub direction: &'a BlockDirection,
+    pub direction: BlockDirection,
 }
 
 pub struct GetRedstonePowerArgs<'a> {
@@ -262,7 +262,7 @@ pub struct GetRedstonePowerArgs<'a> {
     pub block: &'a Block,
     pub state: &'a BlockState,
     pub location: &'a BlockPos,
-    pub direction: &'a BlockDirection,
+    pub direction: BlockDirection,
 }
 
 pub struct GetComparatorOutputArgs<'a> {

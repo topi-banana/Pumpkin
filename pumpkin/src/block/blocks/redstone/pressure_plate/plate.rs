@@ -58,7 +58,7 @@ impl PumpkinBlock for PressurePlateBlock {
     }
 
     async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
-        if args.direction == &BlockDirection::Up {
+        if args.direction == BlockDirection::Up {
             return self.get_redstone_output(args.block, args.state.id);
         }
         0

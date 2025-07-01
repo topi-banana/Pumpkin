@@ -123,7 +123,7 @@ async fn compute_chest_props(
     player: &Player,
     block: &Block,
     block_pos: &BlockPos,
-    face: &BlockDirection,
+    face: BlockDirection,
 ) -> (ChestType, HorizontalFacing) {
     let chest_facing = player.get_entity().get_horizontal_facing().opposite();
 

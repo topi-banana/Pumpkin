@@ -67,7 +67,7 @@ impl PumpkinBlock for ObserverBlock {
     ) -> BlockStateId {
         let props = ObserverLikeProperties::from_state_id(args.state_id, args.block);
 
-        if &props.facing.to_block_direction() == args.direction && !props.powered {
+        if props.facing.to_block_direction() == args.direction && !props.powered {
             Self::schedule_tick(args.world, args.location).await;
         }
 
@@ -76,12 +76,12 @@ impl PumpkinBlock for ObserverBlock {
 
     async fn emits_redstone_power(&self, args: EmitsRedstonePowerArgs<'_>) -> bool {
         let props = ObserverLikeProperties::from_state_id(args.state.id, args.block);
-        &props.facing.to_block_direction() == args.direction
+        props.facing.to_block_direction() == args.direction
     }
 
     async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
         let props = ObserverLikeProperties::from_state_id(args.state.id, args.block);
-        if &props.facing.to_block_direction() == args.direction && props.powered {
+        if props.facing.to_block_direction() == args.direction && props.powered {
             15
         } else {
             0

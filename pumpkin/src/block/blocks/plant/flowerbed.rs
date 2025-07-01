@@ -43,7 +43,7 @@ impl PumpkinBlock for FlowerbedBlock {
         &self,
         args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if args.direction == &BlockDirection::Down {
+        if args.direction == BlockDirection::Down {
             let block_below = args.world.get_block(&args.location.down()).await;
             if !(block_below.is_tagged_with("minecraft:dirt").unwrap()
                 || block_below == Block::FARMLAND)

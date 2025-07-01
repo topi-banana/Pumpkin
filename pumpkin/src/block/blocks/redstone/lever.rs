@@ -65,7 +65,7 @@ impl PumpkinBlock for LeverBlock {
 
     async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
         let lever_props = LeverLikeProperties::from_state_id(args.state.id, args.block);
-        if lever_props.powered && &lever_props.get_direction() == args.direction {
+        if lever_props.powered && lever_props.get_direction() == args.direction {
             15
         } else {
             0

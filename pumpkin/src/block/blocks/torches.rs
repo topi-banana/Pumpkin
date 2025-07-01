@@ -35,7 +35,7 @@ impl BlockMetadata for TorchBlock {
 #[async_trait]
 impl PumpkinBlock for TorchBlock {
     async fn on_place(&self, args: OnPlaceArgs<'_>) -> BlockStateId {
-        if args.direction == &BlockDirection::Down {
+        if args.direction == BlockDirection::Down {
             let support_block = args.world.get_block_state(&args.location.down()).await;
             if support_block.is_center_solid(BlockDirection::Up) {
                 return args.block.default_state.id;
@@ -111,12 +111,12 @@ impl PumpkinBlock for TorchBlock {
     ) -> BlockStateId {
         if args.block == &Block::WALL_TORCH || args.block == &Block::SOUL_WALL_TORCH {
             let props = WallTorchProps::from_state_id(args.state_id, args.block);
-            if &props.facing.to_block_direction().opposite() == args.direction
+            if props.facing.to_block_direction().opposite() == args.direction
                 && !can_place_at(args.world, args.location, props.facing.to_block_direction()).await
             {
                 return 0;
             }
-        } else if args.direction == &BlockDirection::Down {
+        } else if args.direction == BlockDirection::Down {
             let support_block = args.world.get_block_state(&args.location.down()).await;
             if !support_block.is_center_solid(BlockDirection::Up) {
                 return 0;

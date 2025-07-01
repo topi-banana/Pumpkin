@@ -140,14 +140,14 @@ impl TripwireHookBlock {
     pub async fn can_place_at(
         world: &dyn BlockAccessor,
         block_pos: &BlockPos,
-        face: &BlockDirection,
+        face: BlockDirection,
     ) -> bool {
         if !face.is_horizontal() {
             return false;
         }
         let place_block_pos = block_pos.offset(face.to_offset());
         let place_block_state = world.get_block_state(&place_block_pos).await;
-        place_block_state.is_side_solid(*face)
+        place_block_state.is_side_solid(face)
     }
 
     #[allow(clippy::too_many_lines)]

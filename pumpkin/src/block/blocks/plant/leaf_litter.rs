@@ -45,7 +45,7 @@ impl PumpkinBlock for LeafLitterBlock {
         &self,
         args: GetStateForNeighborUpdateArgs<'_>,
     ) -> BlockStateId {
-        if args.direction == &BlockDirection::Down {
+        if args.direction == BlockDirection::Down {
             let block_below_state = args.world.get_block_state(&args.location.down()).await;
             if !block_below_state.is_side_solid(BlockDirection::Up) {
                 return Block::AIR.default_state.id;

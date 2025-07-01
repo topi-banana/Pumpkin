@@ -50,7 +50,7 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
 
     async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
         let props = T::from_state_id(args.state.id, args.block);
-        if props.is_powered() && &props.get_facing().to_block_direction() == args.direction {
+        if props.is_powered() && props.get_facing().to_block_direction() == args.direction {
             self.get_output_level(args.world, *args.location).await
         } else {
             0

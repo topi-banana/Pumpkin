@@ -226,7 +226,7 @@ impl PumpkinBlock for FireBlock {
                 block_accessor: args.world,
                 block: &Block::FIRE,
                 location: args.location,
-                direction: &BlockDirection::Up,
+                direction: BlockDirection::Up,
                 player: None,
                 use_item_on: None,
             })
@@ -273,7 +273,7 @@ impl PumpkinBlock for FireBlock {
                 block_accessor: world.as_ref(),
                 block,
                 location: pos,
-                direction: &BlockDirection::Up,
+                direction: BlockDirection::Up,
                 player: None,
                 use_item_on: None,
             })

@@ -281,10 +281,10 @@ impl PumpkinBlock for DoorBlock {
     ) -> BlockStateId {
         let lv = DoorProperties::from_state_id(args.state_id, args.block).half;
         if args.direction.to_axis() != Axis::Y
-            || (lv == DoubleBlockHalf::Lower) != (args.direction == &BlockDirection::Up)
+            || (lv == DoubleBlockHalf::Lower) != (args.direction == BlockDirection::Up)
         {
             if lv == DoubleBlockHalf::Lower
-                && args.direction == &BlockDirection::Down
+                && args.direction == BlockDirection::Down
                 && !can_place_at(args.world, args.location).await
             {
                 return 0;

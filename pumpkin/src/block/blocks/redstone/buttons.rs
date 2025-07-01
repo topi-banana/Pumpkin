@@ -98,7 +98,7 @@ impl PumpkinBlock for ButtonBlock {
 
     async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
         let button_props = ButtonLikeProperties::from_state_id(args.state.id, args.block);
-        if button_props.powered && &button_props.get_direction() == args.direction {
+        if button_props.powered && button_props.get_direction() == args.direction {
             15
         } else {
             0

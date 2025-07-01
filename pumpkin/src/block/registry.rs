@@ -52,7 +52,7 @@ impl BlockRegistryExt for BlockRegistry {
             None,
             block,
             block_pos,
-            &face,
+            face,
             None,
         )
         .await
@@ -217,7 +217,7 @@ impl BlockRegistry {
         player: Option<&Player>,
         block: &Block,
         location: &BlockPos,
-        direction: &BlockDirection,
+        direction: BlockDirection,
         use_item_on: Option<&SUseItemOn>,
     ) -> bool {
         let pumpkin_block = self.get_pumpkin_block(block);
@@ -245,7 +245,7 @@ impl BlockRegistry {
         block: &Block,
         state_id: BlockStateId,
         location: &BlockPos,
-        direction: &BlockDirection,
+        direction: BlockDirection,
         use_item_on: &SUseItemOn,
         player: &Player,
     ) -> bool {
@@ -274,7 +274,7 @@ impl BlockRegistry {
         player: &Player,
         block: &Block,
         location: &BlockPos,
-        direction: &BlockDirection,
+        direction: BlockDirection,
         replacing: BlockIsReplacing,
         use_item_on: &SUseItemOn,
     ) -> BlockStateId {
@@ -302,7 +302,7 @@ impl BlockRegistry {
         block: &Block,
         state_id: u16,
         location: &BlockPos,
-        direction: &BlockDirection,
+        direction: BlockDirection,
         player: &Player,
     ) {
         let pumpkin_block = self.get_pumpkin_block(block);
@@ -427,7 +427,7 @@ impl BlockRegistry {
                         block,
                         state_id: state.id,
                         location,
-                        direction: &direction.opposite(),
+                        direction: direction.opposite(),
                         neighbor_location: &neighbor_pos,
                         neighbor_state_id: neighbor_state.id,
                     })
@@ -478,7 +478,7 @@ impl BlockRegistry {
                     block,
                     state_id,
                     location,
-                    direction: &direction,
+                    direction,
                     neighbor_location,
                     neighbor_state_id,
                 })
@@ -550,7 +550,7 @@ impl BlockRegistry {
                 .emits_redstone_power(EmitsRedstonePowerArgs {
                     block,
                     state,
-                    direction: &direction,
+                    direction,
                 })
                 .await;
         }
@@ -569,11 +569,11 @@ impl BlockRegistry {
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
                 .get_weak_redstone_power(GetRedstonePowerArgs {
-                    block,
                     world,
-                    location,
+                    block,
                     state,
-                    direction: &direction,
+                    location,
+                    direction,
                 })
                 .await;
         }
@@ -592,11 +592,11 @@ impl BlockRegistry {
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
                 .get_strong_redstone_power(GetRedstonePowerArgs {
-                    block,
                     world,
-                    location,
+                    block,
                     state,
-                    direction: &direction,
+                    location,
+                    direction,
                 })
                 .await;
         }

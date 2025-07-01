@@ -59,7 +59,7 @@ impl FireBlockBase {
                     block_accessor: world.as_ref(),
                     block: &Block::SOUL_FIRE,
                     location: block_pos,
-                    direction: &BlockDirection::Up,
+                    direction: BlockDirection::Up,
                     player: None,
                     use_item_on: None,
                 })
@@ -72,7 +72,7 @@ impl FireBlockBase {
                     block_accessor: world.as_ref(),
                     block: &Block::FIRE,
                     location: block_pos,
-                    direction: &BlockDirection::Up,
+                    direction: BlockDirection::Up,
                     player: None,
                     use_item_on: None,
                 })

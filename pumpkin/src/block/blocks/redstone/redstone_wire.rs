@@ -175,8 +175,7 @@ impl PumpkinBlock for RedstoneWireBlock {
 
     async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
         let wire = RedstoneWireProperties::from_state_id(args.state.id, args.block);
-        if args.direction == &BlockDirection::Up
-            || wire.is_side_connected(args.direction.opposite())
+        if args.direction == BlockDirection::Up || wire.is_side_connected(args.direction.opposite())
         {
             wire.power.to_index() as u8
         } else {
@@ -186,8 +185,7 @@ impl PumpkinBlock for RedstoneWireBlock {
 
     async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
         let wire = RedstoneWireProperties::from_state_id(args.state.id, args.block);
-        if args.direction == &BlockDirection::Up
-            || wire.is_side_connected(args.direction.opposite())
+        if args.direction == BlockDirection::Up || wire.is_side_connected(args.direction.opposite())
         {
             wire.power.to_index() as u8
         } else {

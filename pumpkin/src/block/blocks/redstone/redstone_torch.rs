@@ -51,7 +51,7 @@ impl PumpkinBlock for RedstoneTorchBlock {
         let block = args.block;
         let location = args.location;
 
-        if args.direction == &BlockDirection::Down {
+        if args.direction == BlockDirection::Down {
             let support_block = world.get_block_state(&location.down()).await;
             if support_block.is_center_solid(BlockDirection::Up) {
                 return block.default_state.id;
@@ -122,12 +122,12 @@ impl PumpkinBlock for RedstoneTorchBlock {
     ) -> BlockStateId {
         if args.block == &Block::REDSTONE_WALL_TORCH {
             let props = RWallTorchProps::from_state_id(args.state_id, args.block);
-            if &props.facing.to_block_direction().opposite() == args.direction
+            if props.facing.to_block_direction().opposite() == args.direction
                 && !can_place_at(args.world, args.location, props.facing.to_block_direction()).await
             {
                 return 0;
             }
-        } else if args.direction == &BlockDirection::Down {
+        } else if args.direction == BlockDirection::Down {
             let support_block = args.world.get_block_state(&args.location.down()).await;
             if !support_block.is_center_solid(BlockDirection::Up) {
                 return 0;
@@ -178,12 +178,12 @@ impl PumpkinBlock for RedstoneTorchBlock {
     async fn get_weak_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
         if args.block == &Block::REDSTONE_WALL_TORCH {
             let props = RWallTorchProps::from_state_id(args.state.id, args.block);
-            if props.lit && args.direction != &props.facing.to_block_direction() {
+            if props.lit && args.direction != props.facing.to_block_direction() {
                 return 15;
             }
         } else if args.block == &Block::REDSTONE_TORCH {
             let props = RTorchProps::from_state_id(args.state.id, args.block);
-            if props.lit && args.direction != &BlockDirection::Up {
+            if props.lit && args.direction != BlockDirection::Up {
                 return 15;
             }
         }
@@ -191,7 +191,7 @@ impl PumpkinBlock for RedstoneTorchBlock {
     }
 
     async fn get_strong_redstone_power(&self, args: GetRedstonePowerArgs<'_>) -> u8 {
-        if args.direction == &BlockDirection::Down {
+        if args.direction == BlockDirection::Down {
             if args.block == &Block::REDSTONE_WALL_TORCH {
                 let props = RWallTorchProps::from_state_id(args.state.id, args.block);
                 if props.lit {

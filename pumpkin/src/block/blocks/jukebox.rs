@@ -61,7 +61,14 @@ impl PumpkinBlock for JukeboxBlock {
             return BlockActionResult::Consume;
         }
 
-        let Some(jukebox_playable) = &args.item.components.jukebox_playable else {
+        let Some(jukebox_playable) = &args
+            .item_stack
+            .lock()
+            .await
+            .item
+            .components
+            .jukebox_playable
+        else {
             return BlockActionResult::Continue;
         };
 

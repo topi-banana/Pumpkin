@@ -4,13 +4,14 @@ use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
 use async_trait::async_trait;
-use pumpkin_data::item::Item;
 use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_protocol::java::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
+use pumpkin_world::item::ItemStack;
 use pumpkin_world::world::{BlockAccessor, BlockFlags};
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use super::BlockIsReplacing;
 
@@ -120,7 +121,7 @@ pub struct UseWithItemArgs<'a> {
     pub block: &'a Block,
     pub location: &'a BlockPos,
     pub player: &'a Player,
-    pub item: &'a Item,
+    pub item_stack: &'a Arc<Mutex<ItemStack>>,
 }
 
 pub struct OnEntityCollisionArgs<'a> {

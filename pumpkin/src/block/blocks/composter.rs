@@ -50,7 +50,9 @@ impl PumpkinBlock for ComposterBlock {
                 .await;
         }
         if level < 7 {
-            if let Some(chance) = get_composter_increase_chance_from_item_id(args.item.id) {
+            if let Some(chance) =
+                get_composter_increase_chance_from_item_id(args.item_stack.lock().await.item.id)
+            {
                 if level == 0 || rand::rng().random_bool(f64::from(chance)) {
                     self.update_level_composter(
                         args.world,

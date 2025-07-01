@@ -25,7 +25,7 @@ pub struct SeaPickleBlock;
 impl PumpkinBlock for SeaPickleBlock {
     #[allow(clippy::many_single_char_names)]
     async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
-        if args.item != &Item::BONE_MEAL
+        if args.item_stack.lock().await.item != &Item::BONE_MEAL
             || !args
                 .world
                 .get_block(&args.location.down())

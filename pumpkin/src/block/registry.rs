@@ -10,9 +10,11 @@ use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_protocol::java::server::play::SUseItemOn;
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
+use pumpkin_world::item::ItemStack;
 use pumpkin_world::world::{BlockAccessor, BlockFlags, BlockRegistryExt};
 use std::collections::HashMap;
 use std::sync::Arc;
+use tokio::sync::Mutex;
 
 use super::BlockIsReplacing;
 use super::pumpkin_block::{
@@ -170,7 +172,7 @@ impl BlockRegistry {
         block: &Block,
         player: &Player,
         location: &BlockPos,
-        item: &Item,
+        item_stack: &Arc<Mutex<ItemStack>>,
         server: &Server,
         world: &Arc<World>,
     ) -> BlockActionResult {
@@ -183,7 +185,7 @@ impl BlockRegistry {
                     block,
                     location,
                     player,
-                    item,
+                    item_stack,
                 })
                 .await;
         }

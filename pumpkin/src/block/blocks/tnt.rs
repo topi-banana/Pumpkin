@@ -54,7 +54,8 @@ const DEFAULT_POWER: f32 = 4.0;
 #[async_trait]
 impl PumpkinBlock for TNTBlock {
     async fn use_with_item(&self, args: UseWithItemArgs<'_>) -> BlockActionResult {
-        if args.item != &Item::FLINT_AND_STEEL || args.item == &Item::FIRE_CHARGE {
+        let item = args.item_stack.lock().await.item;
+        if item != &Item::FLINT_AND_STEEL || item == &Item::FIRE_CHARGE {
             return BlockActionResult::Continue;
         }
         let world = args.player.world().await;

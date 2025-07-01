@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use async_trait::async_trait;
 use pumpkin_data::{
     Block, BlockDirection, BlockState,
@@ -10,7 +8,8 @@ use pumpkin_world::BlockStateId;
 
 use crate::{
     block::pumpkin_block::{
-        BlockMetadata, OnEntityCollisionArgs, OnScheduledTickArgs, PumpkinBlock,
+        BlockMetadata, OnEntityCollisionArgs, OnScheduledTickArgs, OnStateReplacedArgs,
+        PumpkinBlock,
     },
     world::World,
 };
@@ -47,16 +46,8 @@ impl PumpkinBlock for WeightedPressurePlateBlock {
         self.on_scheduled_tick_pp(args).await;
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        pos: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        self.on_state_replaced_pp(world, block, pos, old_state_id, moved)
-            .await;
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        self.on_state_replaced_pp(args).await;
     }
 
     async fn get_weak_redstone_power(

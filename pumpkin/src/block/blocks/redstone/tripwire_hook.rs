@@ -18,7 +18,7 @@ use rand::{Rng, rng};
 use crate::{
     block::pumpkin_block::{
         CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
-        PlayerPlacedArgs, PumpkinBlock,
+        OnStateReplacedArgs, PlayerPlacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -79,26 +79,33 @@ impl PumpkinBlock for TripwireHookBlock {
         Self::update(args.world, *args.location, state_id, false, true, -1, None).await;
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        location: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        if moved || Block::from_state_id(old_state_id).is_some_and(|old_block| old_block == *block)
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        if args.moved
+            || Block::from_state_id(args.old_state_id)
+                .is_some_and(|old_block| &old_block == args.block)
         {
             return;
         }
-        let props = TripwireHookProperties::from_state_id(old_state_id, block);
+        let props = TripwireHookProperties::from_state_id(args.old_state_id, args.block);
         if props.powered || props.attached {
-            Self::update(world, location, old_state_id, true, false, -1, None).await;
+            Self::update(
+                args.world,
+                *args.location,
+                args.old_state_id,
+                true,
+                false,
+                -1,
+                None,
+            )
+            .await;
         }
         if props.powered {
-            world.update_neighbor(&location, block).await;
-            world
-                .update_neighbor(&location.offset(props.facing.opposite().to_offset()), block)
+            args.world.update_neighbor(args.location, args.block).await;
+            args.world
+                .update_neighbor(
+                    &args.location.offset(props.facing.opposite().to_offset()),
+                    args.block,
+                )
                 .await;
         }
     }

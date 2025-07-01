@@ -1,14 +1,12 @@
 use std::sync::Arc;
 
 use crate::block::pumpkin_block::OnEntityCollisionArgs;
+use crate::block::pumpkin_block::OnStateReplacedArgs;
 use crate::block::pumpkin_block::PlacedArgs;
 use crate::block::pumpkin_block::PumpkinBlock;
-use crate::world::World;
 use async_trait::async_trait;
-use pumpkin_data::Block;
 use pumpkin_macros::pumpkin_block;
 use pumpkin_registry::VanillaDimensionType;
-use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::block::entities::end_portal::EndPortalBlockEntity;
 
 #[pumpkin_block("minecraft:end_portal")]
@@ -38,14 +36,7 @@ impl PumpkinBlock for EndPortalBlock {
             .await;
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        location: BlockPos,
-        _old_state_id: u16,
-        _moved: bool,
-    ) {
-        world.remove_block_entity(&location).await;
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        args.world.remove_block_entity(args.location).await;
     }
 }

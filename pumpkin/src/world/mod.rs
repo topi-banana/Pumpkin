@@ -1653,7 +1653,7 @@ impl World {
                 .on_state_replaced(
                     self,
                     &old_block,
-                    *position,
+                    position,
                     replaced_block_state_id,
                     block_moved,
                 )

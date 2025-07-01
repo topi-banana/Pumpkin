@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use crate::block::{
     blocks::abstruct_wall_mounting::WallMountedBlock,
-    pumpkin_block::{CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, UseWithItemArgs},
+    pumpkin_block::{
+        CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, OnStateReplacedArgs,
+        UseWithItemArgs,
+    },
 };
 use async_trait::async_trait;
 use pumpkin_data::{
@@ -88,18 +91,11 @@ impl PumpkinBlock for LeverBlock {
         }
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        location: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        if !moved {
-            let lever_props = LeverLikeProperties::from_state_id(old_state_id, block);
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        if !args.moved {
+            let lever_props = LeverLikeProperties::from_state_id(args.old_state_id, args.block);
             if lever_props.powered {
-                Self::update_neighbors(world, &location, &lever_props).await;
+                Self::update_neighbors(args.world, args.location, &lever_props).await;
             }
         }
     }

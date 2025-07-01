@@ -6,6 +6,7 @@ use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::OnScheduledTickArgs;
+use crate::block::pumpkin_block::OnStateReplacedArgs;
 use crate::block::pumpkin_block::PlacedArgs;
 use crate::entity::EntityBase;
 use async_trait::async_trait;
@@ -267,15 +268,8 @@ impl PumpkinBlock for RedstoneTorchBlock {
         update_neighbors(args.world, args.location).await;
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        location: BlockPos,
-        _old_state_id: BlockStateId,
-        _moved: bool,
-    ) {
-        update_neighbors(world, &location).await;
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        update_neighbors(args.world, args.location).await;
     }
 }
 

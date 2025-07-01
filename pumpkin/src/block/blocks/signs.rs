@@ -1,18 +1,16 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use pumpkin_data::Block;
 use pumpkin_data::block_properties::BlockProperties;
 use pumpkin_data::tag::RegistryKey;
 use pumpkin_data::tag::get_tag_values;
-use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::BlockStateId;
 use pumpkin_world::block::entities::sign::SignBlockEntity;
 
+use crate::block::pumpkin_block::OnStateReplacedArgs;
 use crate::block::pumpkin_block::PlacedArgs;
 use crate::block::pumpkin_block::PlayerPlacedArgs;
 use crate::block::pumpkin_block::{BlockMetadata, OnPlaceArgs, PumpkinBlock};
-use crate::world::World;
 
 type SignProperties = pumpkin_data::block_properties::OakSignLikeProperties;
 
@@ -47,14 +45,7 @@ impl PumpkinBlock for SignBlock {
         args.player.send_sign_packet(*args.location).await;
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        location: BlockPos,
-        _old_state_id: u16,
-        _moved: bool,
-    ) {
-        world.remove_block_entity(&location).await;
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        args.world.remove_block_entity(args.location).await;
     }
 }

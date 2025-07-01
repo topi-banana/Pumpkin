@@ -1,25 +1,19 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
-use pumpkin_data::Block;
 use pumpkin_inventory::generic_container_screen_handler::create_generic_9x3;
 use pumpkin_inventory::player::player_inventory::PlayerInventory;
 use pumpkin_inventory::screen_handler::{InventoryPlayer, ScreenHandler, ScreenHandlerFactory};
 use pumpkin_macros::pumpkin_block;
-use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::text::TextComponent;
-use pumpkin_world::BlockStateId;
 use pumpkin_world::block::entities::barrel::BarrelBlockEntity;
 use pumpkin_world::inventory::Inventory;
 use tokio::sync::Mutex;
 
-use crate::block::pumpkin_block::{PlacedArgs, UseWithItemArgs};
-use crate::{
-    block::{
-        pumpkin_block::{NormalUseArgs, PumpkinBlock},
-        registry::BlockActionResult,
-    },
-    world::World,
+use crate::block::pumpkin_block::{OnStateReplacedArgs, PlacedArgs, UseWithItemArgs};
+use crate::block::{
+    pumpkin_block::{NormalUseArgs, PumpkinBlock},
+    registry::BlockActionResult,
 };
 
 struct BarrelScreenFactory(Arc<dyn Inventory>);
@@ -78,14 +72,7 @@ impl PumpkinBlock for BarrelBlock {
             .await;
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        _block: &Block,
-        location: BlockPos,
-        _old_state_id: BlockStateId,
-        _moved: bool,
-    ) {
-        world.remove_block_entity(&location).await;
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        args.world.remove_block_entity(args.location).await;
     }
 }

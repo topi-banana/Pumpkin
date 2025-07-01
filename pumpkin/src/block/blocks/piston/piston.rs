@@ -470,7 +470,7 @@ async fn move_piston(
                 .on_state_replaced(
                     world,
                     &get_block_by_state_id(block_state.id).unwrap(),
-                    broken_block_pos,
+                    &broken_block_pos,
                     block_state.id, // ?
                     false,
                 )

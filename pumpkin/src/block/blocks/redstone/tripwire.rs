@@ -13,7 +13,7 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 use crate::{
     block::pumpkin_block::{
         BrokenArgs, GetStateForNeighborUpdateArgs, OnEntityCollisionArgs, OnPlaceArgs,
-        OnScheduledTickArgs, PlacedArgs, PumpkinBlock,
+        OnScheduledTickArgs, OnStateReplacedArgs, PlacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -149,20 +149,15 @@ impl PumpkinBlock for TripwireBlock {
         }
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        location: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        if moved || Block::from_state_id(old_state_id).is_some_and(|old_block| old_block == *block)
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        if args.moved
+            || Block::from_state_id(args.old_state_id)
+                .is_some_and(|old_block| &old_block == args.block)
         {
             return;
         }
-        let state_id = world.get_block_state_id(&location).await;
-        Self::update(world, &location, state_id).await;
+        let state_id = args.world.get_block_state_id(args.location).await;
+        Self::update(args.world, args.location, state_id).await;
     }
 }
 

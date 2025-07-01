@@ -84,15 +84,7 @@ pub trait PumpkinBlock: Send + Sync {
 
     async fn on_scheduled_tick(&self, _args: OnScheduledTickArgs<'_>) {}
 
-    async fn on_state_replaced(
-        &self,
-        _world: &Arc<World>,
-        _block: &Block,
-        _location: BlockPos,
-        _old_state_id: BlockStateId,
-        _moved: bool,
-    ) {
-    }
+    async fn on_state_replaced(&self, _args: OnStateReplacedArgs<'_>) {}
 
     /// Sides where redstone connects to
     async fn emits_redstone_power(
@@ -279,8 +271,8 @@ pub struct OnScheduledTickArgs<'a> {
 pub struct OnStateReplacedArgs<'a> {
     pub world: &'a Arc<World>,
     pub block: &'a Block,
-    pub location: &'a BlockPos,
     pub old_state_id: BlockStateId,
+    pub location: &'a BlockPos,
     pub moved: bool,
 }
 

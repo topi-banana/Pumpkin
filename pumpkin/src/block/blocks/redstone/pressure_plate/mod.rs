@@ -5,7 +5,7 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_world::{BlockStateId, chunk::TickPriority, world::BlockFlags};
 
 use crate::{
-    block::pumpkin_block::{OnEntityCollisionArgs, OnScheduledTickArgs},
+    block::pumpkin_block::{OnEntityCollisionArgs, OnScheduledTickArgs, OnStateReplacedArgs},
     world::World,
 };
 
@@ -30,17 +30,12 @@ pub(crate) trait PressurePlate {
         }
     }
 
-    async fn on_state_replaced_pp(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        pos: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        if !moved && self.get_redstone_output(block, old_state_id) > 0 {
-            world.update_neighbors(&pos, None).await;
-            world.update_neighbors(&pos.down(), None).await;
+    async fn on_state_replaced_pp(&self, args: OnStateReplacedArgs<'_>) {
+        if !args.moved && self.get_redstone_output(args.block, args.old_state_id) > 0 {
+            args.world.update_neighbors(args.location, None).await;
+            args.world
+                .update_neighbors(&args.location.down(), None)
+                .await;
         }
     }
 

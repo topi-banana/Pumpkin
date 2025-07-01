@@ -22,6 +22,7 @@ use crate::block::pumpkin_block::CanPlaceAtArgs;
 use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::OnScheduledTickArgs;
+use crate::block::pumpkin_block::OnStateReplacedArgs;
 use crate::block::pumpkin_block::UseWithItemArgs;
 use crate::block::pumpkin_block::{BlockMetadata, NormalUseArgs, PumpkinBlock};
 use crate::block::registry::BlockActionResult;
@@ -122,18 +123,11 @@ impl PumpkinBlock for ButtonBlock {
         }
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        location: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        if !moved {
-            let button_props = ButtonLikeProperties::from_state_id(old_state_id, block);
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        if !args.moved {
+            let button_props = ButtonLikeProperties::from_state_id(args.old_state_id, args.block);
             if button_props.powered {
-                Self::update_neighbors(world, &location, &button_props).await;
+                Self::update_neighbors(args.world, args.location, &button_props).await;
             }
         }
     }

@@ -16,7 +16,7 @@ use pumpkin_world::{
 };
 
 use crate::{
-    block::pumpkin_block::{OnNeighborUpdateArgs, PlayerPlacedArgs},
+    block::pumpkin_block::{OnNeighborUpdateArgs, OnStateReplacedArgs, PlayerPlacedArgs},
     entity::player::Player,
     world::World,
 };
@@ -177,20 +177,22 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
         }
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        location: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        if moved || Block::from_state_id(old_state_id).is_some_and(|old_block| old_block == *block)
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        if args.moved
+            || Block::from_state_id(args.old_state_id)
+                .is_some_and(|old_block| &old_block == args.block)
         {
             return;
         }
-        if let Some(old_state) = get_state_by_state_id(old_state_id) {
-            RedstoneGateBlock::update_target(self, world, location, old_state.id, block).await;
+        if let Some(old_state) = get_state_by_state_id(args.old_state_id) {
+            RedstoneGateBlock::update_target(
+                self,
+                args.world,
+                *args.location,
+                old_state.id,
+                args.block,
+            )
+            .await;
         }
     }
 

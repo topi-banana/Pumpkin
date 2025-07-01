@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::block::pumpkin_block::{
-    GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
+    GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs,
 };
 use async_trait::async_trait;
 use pumpkin_data::{
@@ -111,22 +111,16 @@ impl PumpkinBlock for ObserverBlock {
             .await
     }
 
-    async fn on_state_replaced(
-        &self,
-        world: &Arc<World>,
-        block: &Block,
-        location: BlockPos,
-        old_state_id: BlockStateId,
-        moved: bool,
-    ) {
-        if !moved {
-            let props = ObserverLikeProperties::from_state_id(old_state_id, block);
+    async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
+        if !args.moved {
+            let props = ObserverLikeProperties::from_state_id(args.old_state_id, args.block);
             if props.powered
-                && world
-                    .is_block_tick_scheduled(&location, &Block::OBSERVER)
+                && args
+                    .world
+                    .is_block_tick_scheduled(args.location, &Block::OBSERVER)
                     .await
             {
-                Self::update_neighbors(world, block, &location, &props).await;
+                Self::update_neighbors(args.world, args.block, args.location, &props).await;
             }
         }
     }

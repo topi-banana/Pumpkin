@@ -101,13 +101,7 @@ pub trait PumpkinBlock: Send + Sync {
         0
     }
 
-    async fn get_comparator_output(
-        &self,
-        _block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        _state: &BlockState,
-    ) -> Option<u8> {
+    async fn get_comparator_output(&self, _args: GetComparatorOutputArgs<'_>) -> Option<u8> {
         None
     }
 }
@@ -272,8 +266,8 @@ pub struct GetRedstonePowerArgs<'a> {
 }
 
 pub struct GetComparatorOutputArgs<'a> {
-    pub block: &'a Block,
     pub world: &'a World,
-    pub pos: &'a BlockPos,
+    pub block: &'a Block,
     pub state: &'a BlockState,
+    pub location: &'a BlockPos,
 }

@@ -21,10 +21,10 @@ use pumpkin_world::{
 use crate::{
     block::{
         pumpkin_block::{
-            BrokenArgs, CanPlaceAtArgs, EmitsRedstonePowerArgs, GetRedstonePowerArgs,
-            GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs,
-            OnScheduledTickArgs, OnStateReplacedArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock,
-            UseWithItemArgs,
+            BrokenArgs, CanPlaceAtArgs, EmitsRedstonePowerArgs, GetComparatorOutputArgs,
+            GetRedstonePowerArgs, GetStateForNeighborUpdateArgs, NormalUseArgs,
+            OnNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs,
+            PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -231,7 +231,12 @@ impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
 
         if let Some(pumpkin_block) = world.block_registry.get_pumpkin_block(&source_block) {
             if let Some(level) = pumpkin_block
-                .get_comparator_output(&source_block, world, &source_pos, &source_state)
+                .get_comparator_output(GetComparatorOutputArgs {
+                    world,
+                    block: &source_block,
+                    state: &source_state,
+                    location: &source_pos,
+                })
                 .await
             {
                 return level;
@@ -249,7 +254,12 @@ impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
                 world.block_registry.get_pumpkin_block(&source_block)
             {
                 pumpkin_block
-                    .get_comparator_output(&source_block, world, &source_pos, &source_state)
+                    .get_comparator_output(GetComparatorOutputArgs {
+                        world,
+                        block: &source_block,
+                        state: &source_state,
+                        location: &source_pos,
+                    })
                     .await
             } else {
                 None

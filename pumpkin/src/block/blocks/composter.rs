@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use async_trait::async_trait;
 use pumpkin_data::{
-    Block, BlockState,
+    Block,
     block_properties::{BlockProperties, ComposterLikeProperties, EnumVariants, Integer0To8},
     composter_increase_chance::get_composter_increase_chance_from_item_id,
     entity::EntityType,
@@ -17,7 +17,10 @@ use uuid::Uuid;
 
 use crate::{
     block::{
-        pumpkin_block::{NormalUseArgs, OnScheduledTickArgs, PumpkinBlock, UseWithItemArgs},
+        pumpkin_block::{
+            GetComparatorOutputArgs, NormalUseArgs, OnScheduledTickArgs, PumpkinBlock,
+            UseWithItemArgs,
+        },
         registry::BlockActionResult,
     },
     entity::{Entity, item::ItemEntity},
@@ -76,14 +79,8 @@ impl PumpkinBlock for ComposterBlock {
         }
     }
 
-    async fn get_comparator_output(
-        &self,
-        block: &Block,
-        _world: &World,
-        _pos: &BlockPos,
-        state: &BlockState,
-    ) -> Option<u8> {
-        let props = ComposterLikeProperties::from_state_id(state.id, block);
+    async fn get_comparator_output(&self, args: GetComparatorOutputArgs<'_>) -> Option<u8> {
+        let props = ComposterLikeProperties::from_state_id(args.state.id, args.block);
         Some(props.get_level())
     }
 }

@@ -19,6 +19,7 @@ type ButtonLikeProperties = pumpkin_data::block_properties::LeverLikeProperties;
 use crate::block::blocks::abstruct_wall_mounting::WallMountedBlock;
 use crate::block::blocks::redstone::lever::LeverLikePropertiesExt;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
+use crate::block::pumpkin_block::EmitsRedstonePowerArgs;
 use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
 use crate::block::pumpkin_block::OnScheduledTickArgs;
@@ -86,12 +87,7 @@ impl PumpkinBlock for ButtonBlock {
         Self::update_neighbors(args.world, args.location, &props).await;
     }
 
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         true
     }
 

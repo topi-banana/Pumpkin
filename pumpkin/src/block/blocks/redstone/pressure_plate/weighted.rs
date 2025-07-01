@@ -8,8 +8,8 @@ use pumpkin_world::BlockStateId;
 
 use crate::{
     block::pumpkin_block::{
-        BlockMetadata, OnEntityCollisionArgs, OnScheduledTickArgs, OnStateReplacedArgs,
-        PumpkinBlock,
+        BlockMetadata, EmitsRedstonePowerArgs, OnEntityCollisionArgs, OnScheduledTickArgs,
+        OnStateReplacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -75,12 +75,7 @@ impl PumpkinBlock for WeightedPressurePlateBlock {
         0
     }
 
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         true
     }
 }

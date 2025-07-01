@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::block::{
     blocks::abstruct_wall_mounting::WallMountedBlock,
     pumpkin_block::{
-        CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, OnStateReplacedArgs,
-        UseWithItemArgs,
+        CanPlaceAtArgs, EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs,
+        OnStateReplacedArgs, UseWithItemArgs,
     },
 };
 use async_trait::async_trait;
@@ -54,12 +54,7 @@ impl PumpkinBlock for LeverBlock {
         toggle_lever(args.world, args.location).await;
     }
 
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         true
     }
 

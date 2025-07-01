@@ -17,8 +17,8 @@ use rand::{Rng, rng};
 
 use crate::{
     block::pumpkin_block::{
-        CanPlaceAtArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
-        OnStateReplacedArgs, PlayerPlacedArgs, PumpkinBlock,
+        CanPlaceAtArgs, EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs,
+        OnScheduledTickArgs, OnStateReplacedArgs, PlayerPlacedArgs, PumpkinBlock,
     },
     world::World,
 };
@@ -111,12 +111,7 @@ impl PumpkinBlock for TripwireHookBlock {
     }
 
     #[inline]
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         true
     }
 

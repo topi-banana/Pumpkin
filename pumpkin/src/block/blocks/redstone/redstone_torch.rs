@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::block::BlockIsReplacing;
 use crate::block::pumpkin_block::CanPlaceAtArgs;
+use crate::block::pumpkin_block::EmitsRedstonePowerArgs;
 use crate::block::pumpkin_block::GetStateForNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnNeighborUpdateArgs;
 use crate::block::pumpkin_block::OnPlaceArgs;
@@ -170,12 +171,7 @@ impl PumpkinBlock for RedstoneTorchBlock {
         }
     }
 
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         true
     }
 

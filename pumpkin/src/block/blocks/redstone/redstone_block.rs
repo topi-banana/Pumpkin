@@ -3,7 +3,10 @@ use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_macros::pumpkin_block;
 use pumpkin_util::math::position::BlockPos;
 
-use crate::{block::pumpkin_block::PumpkinBlock, world::World};
+use crate::{
+    block::pumpkin_block::{EmitsRedstonePowerArgs, PumpkinBlock},
+    world::World,
+};
 
 #[pumpkin_block("minecraft:redstone_block")]
 pub struct RedstoneBlock;
@@ -21,12 +24,7 @@ impl PumpkinBlock for RedstoneBlock {
         15
     }
 
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         true
     }
 }

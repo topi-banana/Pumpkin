@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::block::pumpkin_block::{
-    GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs,
+    EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
+    OnStateReplacedArgs,
 };
 use async_trait::async_trait;
 use pumpkin_data::{
@@ -73,14 +74,9 @@ impl PumpkinBlock for ObserverBlock {
         args.state_id
     }
 
-    async fn emits_redstone_power(
-        &self,
-        block: &Block,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> bool {
-        let props = ObserverLikeProperties::from_state_id(state.id, block);
-        props.facing.to_block_direction() == direction
+    async fn emits_redstone_power(&self, args: EmitsRedstonePowerArgs<'_>) -> bool {
+        let props = ObserverLikeProperties::from_state_id(args.state.id, args.block);
+        &props.facing.to_block_direction() == args.direction
     }
 
     async fn get_weak_redstone_power(

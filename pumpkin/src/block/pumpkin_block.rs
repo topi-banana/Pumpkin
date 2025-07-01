@@ -87,12 +87,7 @@ pub trait PumpkinBlock: Send + Sync {
     async fn on_state_replaced(&self, _args: OnStateReplacedArgs<'_>) {}
 
     /// Sides where redstone connects to
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         false
     }
 

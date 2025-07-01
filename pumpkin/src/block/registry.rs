@@ -16,9 +16,10 @@ use std::sync::Arc;
 
 use super::BlockIsReplacing;
 use super::pumpkin_block::{
-    BrokenArgs, CanPlaceAtArgs, CanUpdateAtArgs, ExplodeArgs, GetStateForNeighborUpdateArgs,
-    NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs, OnStateReplacedArgs, OnSyncedBlockEventArgs,
-    PlacedArgs, PlayerPlacedArgs, PrepareArgs, UseWithItemArgs,
+    BrokenArgs, CanPlaceAtArgs, CanUpdateAtArgs, EmitsRedstonePowerArgs, ExplodeArgs,
+    GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs,
+    OnStateReplacedArgs, OnSyncedBlockEventArgs, PlacedArgs, PlayerPlacedArgs, PrepareArgs,
+    UseWithItemArgs,
 };
 use super::pumpkin_fluid::PumpkinFluid;
 
@@ -546,7 +547,11 @@ impl BlockRegistry {
         let pumpkin_block = self.get_pumpkin_block(block);
         if let Some(pumpkin_block) = pumpkin_block {
             return pumpkin_block
-                .emits_redstone_power(block, state, direction)
+                .emits_redstone_power(EmitsRedstonePowerArgs {
+                    block,
+                    state,
+                    direction: &direction,
+                })
                 .await;
         }
         false

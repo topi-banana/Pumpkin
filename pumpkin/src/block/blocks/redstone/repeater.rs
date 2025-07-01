@@ -15,9 +15,9 @@ use pumpkin_world::{BlockStateId, chunk::TickPriority};
 use crate::{
     block::{
         pumpkin_block::{
-            CanPlaceAtArgs, GetStateForNeighborUpdateArgs, NormalUseArgs, OnNeighborUpdateArgs,
-            OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs, PlacedArgs, PlayerPlacedArgs,
-            PumpkinBlock, UseWithItemArgs,
+            CanPlaceAtArgs, EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs, NormalUseArgs,
+            OnNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs,
+            PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -155,15 +155,10 @@ impl PumpkinBlock for RepeaterBlock {
         .await
     }
 
-    async fn emits_redstone_power(
-        &self,
-        block: &Block,
-        state: &BlockState,
-        direction: BlockDirection,
-    ) -> bool {
-        let repeater_props = RepeaterProperties::from_state_id(state.id, block);
-        repeater_props.facing.to_block_direction() == direction
-            || repeater_props.facing.to_block_direction() == direction.opposite()
+    async fn emits_redstone_power(&self, args: EmitsRedstonePowerArgs<'_>) -> bool {
+        let repeater_props = RepeaterProperties::from_state_id(args.state.id, args.block);
+        &repeater_props.facing.to_block_direction() == args.direction
+            || repeater_props.facing.to_block_direction() == args.direction.opposite()
     }
 
     async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {

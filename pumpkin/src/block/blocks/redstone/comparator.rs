@@ -21,9 +21,9 @@ use pumpkin_world::{
 use crate::{
     block::{
         pumpkin_block::{
-            BrokenArgs, CanPlaceAtArgs, GetStateForNeighborUpdateArgs, NormalUseArgs,
-            OnNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs, OnStateReplacedArgs,
-            PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
+            BrokenArgs, CanPlaceAtArgs, EmitsRedstonePowerArgs, GetStateForNeighborUpdateArgs,
+            NormalUseArgs, OnNeighborUpdateArgs, OnPlaceArgs, OnScheduledTickArgs,
+            OnStateReplacedArgs, PlacedArgs, PlayerPlacedArgs, PumpkinBlock, UseWithItemArgs,
         },
         registry::BlockActionResult,
     },
@@ -56,12 +56,7 @@ impl PumpkinBlock for ComparatorBlock {
         BlockActionResult::Consume
     }
 
-    async fn emits_redstone_power(
-        &self,
-        _block: &Block,
-        _state: &BlockState,
-        _direction: BlockDirection,
-    ) -> bool {
+    async fn emits_redstone_power(&self, _args: EmitsRedstonePowerArgs<'_>) -> bool {
         true
     }
 

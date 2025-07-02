@@ -36,7 +36,7 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
     async fn can_place_at(&self, world: &dyn BlockAccessor, pos: BlockPos) -> bool {
         let under_pos = pos.down();
         let under_state = world.get_block_state(&under_pos).await;
-        self.can_place_above(world, under_pos, &under_state).await
+        self.can_place_above(world, under_pos, under_state).await
     }
 
     async fn can_place_above(
@@ -66,7 +66,7 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
     async fn on_neighbor_update(&self, args: OnNeighborUpdateArgs<'_>) {
         let state = args.world.get_block_state(args.location).await;
         if RedstoneGateBlock::can_place_at(self, args.world.as_ref(), *args.location).await {
-            self.update_powered(args.world, *args.location, &state, args.block)
+            self.update_powered(args.world, *args.location, state, args.block)
                 .await;
             return;
         }
@@ -154,7 +154,7 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
 
     async fn player_placed(&self, args: PlayerPlacedArgs<'_>) {
         if let Some(state) = get_state_by_state_id(args.state_id) {
-            if RedstoneGateBlock::has_power(self, args.world, *args.location, &state, args.block)
+            if RedstoneGateBlock::has_power(self, args.world, *args.location, state, args.block)
                 .await
             {
                 args.world
@@ -167,7 +167,7 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
     async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
         if args.moved
             || Block::from_state_id(args.old_state_id)
-                .is_some_and(|old_block| &old_block == args.block)
+                .is_some_and(|old_block| old_block == args.block)
         {
             return;
         }
@@ -195,11 +195,11 @@ pub trait RedstoneGateBlock<T: Send + BlockProperties + RedstoneGateBlockPropert
         let (target_block, target_state) = world
             .get_block_and_block_state(&pos.offset(facing.to_offset()))
             .await;
-        if target_block == Block::COMPARATOR {
-            let props = ComparatorLikeProperties::from_state_id(target_state.id, &target_block);
+        if target_block == &Block::COMPARATOR {
+            let props = ComparatorLikeProperties::from_state_id(target_state.id, target_block);
             props.facing != facing
-        } else if target_block == Block::REPEATER {
-            let props = RepeaterLikeProperties::from_state_id(target_state.id, &target_block);
+        } else if target_block == &Block::REPEATER {
+            let props = RepeaterLikeProperties::from_state_id(target_state.id, target_block);
             props.facing != facing
         } else {
             false
@@ -220,8 +220,8 @@ pub async fn get_power<T: BlockProperties + RedstoneGateBlockProperties + Send>(
     let source_pos = pos.offset(facing.to_offset());
     let (source_block, source_state) = world.get_block_and_block_state(&source_pos).await;
     let source_level = get_redstone_power(
-        &source_block,
-        &source_state,
+        source_block,
+        source_state,
         world,
         &source_pos,
         facing.to_block_direction(),
@@ -230,8 +230,8 @@ pub async fn get_power<T: BlockProperties + RedstoneGateBlockProperties + Send>(
     if source_level >= 15 {
         source_level
     } else {
-        source_level.max(if source_block == Block::REDSTONE_WIRE {
-            let props = RedstoneWireLikeProperties::from_state_id(source_state.id, &source_block);
+        source_level.max(if source_block == &Block::REDSTONE_WIRE {
+            let props = RedstoneWireLikeProperties::from_state_id(source_state.id, source_block);
             props.power.to_index() as u8
         } else {
             0
@@ -247,14 +247,14 @@ async fn get_power_on_side(
 ) -> u8 {
     let side_pos = pos.offset(side.to_block_direction().to_offset());
     let (side_block, side_state) = world.get_block_and_block_state(&side_pos).await;
-    if !only_gate || is_diode(&side_block) {
+    if !only_gate || is_diode(side_block) {
         world
             .block_registry
             .get_weak_redstone_power(
-                &side_block,
+                side_block,
                 world,
                 &side_pos,
-                &side_state,
+                side_state,
                 side.to_block_direction(),
             )
             .await

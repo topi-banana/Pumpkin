@@ -83,7 +83,7 @@ impl PumpkinBlock for TripwireHookBlock {
     async fn on_state_replaced(&self, args: OnStateReplacedArgs<'_>) {
         if args.moved
             || Block::from_state_id(args.old_state_id)
-                .is_some_and(|old_block| &old_block == args.block)
+                .is_some_and(|old_block| old_block == args.block)
         {
             return;
         }
@@ -170,7 +170,7 @@ impl TripwireHookBlock {
         for k in 1..42 {
             let current_pos = start_hook_pos.offset_dir(start_hook_props.facing.to_offset(), k);
             let current_block = world.get_block(&current_pos).await;
-            if current_block == Block::TRIPWIRE_HOOK {
+            if current_block == &Block::TRIPWIRE_HOOK {
                 let current_hook_props = {
                     let state_id = world.get_block_state_id(&current_pos).await;
                     TripwireHookProperties::from_state_id(state_id, &Block::TRIPWIRE_HOOK)
@@ -180,7 +180,7 @@ impl TripwireHookBlock {
                 }
                 break;
             }
-            if current_block == Block::TRIPWIRE || k == raw_wire_index {
+            if current_block == &Block::TRIPWIRE || k == raw_wire_index {
                 let current_wire_props = {
                     let ro_state_id = world.get_block_state_id(&current_pos).await;
                     let state_id = if k == raw_wire_index {

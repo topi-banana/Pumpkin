@@ -50,6 +50,6 @@ impl PumpkinBlock for TallPlantBlock {
             }
         }
         let block_below = args.block_accessor.get_block(&args.location.down()).await;
-        block_below.is_tagged_with("minecraft:dirt").unwrap() || block_below == Block::FARMLAND
+        block_below.is_tagged_with("minecraft:dirt").unwrap() || block_below == &Block::FARMLAND
     }
 }

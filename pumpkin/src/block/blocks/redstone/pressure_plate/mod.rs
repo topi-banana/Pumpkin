@@ -25,7 +25,7 @@ pub(crate) trait PressurePlate {
         let state = args.world.get_block_state(args.location).await;
         let output = self.get_redstone_output(args.block, state.id);
         if output > 0 {
-            self.update_plate_state(args.world, args.location, args.block, &state, output)
+            self.update_plate_state(args.world, args.location, args.block, state, output)
                 .await;
         }
     }

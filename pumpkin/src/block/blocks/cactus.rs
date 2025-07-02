@@ -96,12 +96,12 @@ async fn can_place_at(world: &dyn BlockAccessor, block_pos: &BlockPos) -> bool {
         let (block, state) = world
             .get_block_and_block_state(&block_pos.offset(direction.to_offset()))
             .await;
-        if state.is_solid() || block == Block::LAVA {
+        if state.is_solid() || block == &Block::LAVA {
             return false;
         }
     }
     let block = world.get_block(&block_pos.down()).await;
     // TODO: use tags
-    (block == Block::CACTUS || block.is_tagged_with("minecraft:sand").unwrap())
+    (block == &Block::CACTUS || block.is_tagged_with("minecraft:sand").unwrap())
         && !world.get_block_state(&block_pos.up()).await.is_liquid()
 }

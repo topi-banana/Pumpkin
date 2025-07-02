@@ -98,7 +98,7 @@ impl PumpkinBlock for ComparatorBlock {
                     self,
                     args.world,
                     *args.neighbor_location,
-                    &neighbor_state,
+                    neighbor_state,
                 )
                 .await
                 {
@@ -123,7 +123,7 @@ impl PumpkinBlock for ComparatorBlock {
 
     async fn on_scheduled_tick(&self, args: OnScheduledTickArgs<'_>) {
         let state = args.world.get_block_state(args.location).await;
-        self.update(args.world, *args.location, &state, args.block)
+        self.update(args.world, *args.location, state, args.block)
             .await;
     }
 
@@ -229,12 +229,12 @@ impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
         let source_pos = pos.offset(facing.to_offset());
         let (source_block, source_state) = world.get_block_and_block_state(&source_pos).await;
 
-        if let Some(pumpkin_block) = world.block_registry.get_pumpkin_block(&source_block) {
+        if let Some(pumpkin_block) = world.block_registry.get_pumpkin_block(source_block) {
             if let Some(level) = pumpkin_block
                 .get_comparator_output(GetComparatorOutputArgs {
                     world,
-                    block: &source_block,
-                    state: &source_state,
+                    block: source_block,
+                    state: source_state,
                     location: &source_pos,
                 })
                 .await
@@ -250,20 +250,19 @@ impl RedstoneGateBlock<ComparatorLikeProperties> for ComparatorBlock {
             let itemframe_level = self
                 .get_attached_itemframe_level(world, facing, source_pos)
                 .await;
-            let block_level = if let Some(pumpkin_block) =
-                world.block_registry.get_pumpkin_block(&source_block)
-            {
-                pumpkin_block
-                    .get_comparator_output(GetComparatorOutputArgs {
-                        world,
-                        block: &source_block,
-                        state: &source_state,
-                        location: &source_pos,
-                    })
-                    .await
-            } else {
-                None
-            };
+            let block_level =
+                if let Some(pumpkin_block) = world.block_registry.get_pumpkin_block(source_block) {
+                    pumpkin_block
+                        .get_comparator_output(GetComparatorOutputArgs {
+                            world,
+                            block: source_block,
+                            state: source_state,
+                            location: &source_pos,
+                        })
+                        .await
+                } else {
+                    None
+                };
             if let Some(level) = itemframe_level.max(block_level) {
                 return level;
             }
@@ -293,7 +292,7 @@ impl ComparatorBlock {
             .set_block_state(&block_pos, state_id, BlockFlags::empty())
             .await;
         if let Some(state) = get_state_by_state_id(state_id) {
-            self.update(world, block_pos, &state, block).await;
+            self.update(world, block_pos, state, block).await;
         }
     }
 

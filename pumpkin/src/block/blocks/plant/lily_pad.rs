@@ -27,6 +27,6 @@ impl PumpkinBlock for LilyPadBlock {
 
     async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
         let block_below = args.block_accessor.get_block(&args.location.down()).await;
-        block_below == Block::WATER || block_below == Block::ICE
+        block_below == &Block::WATER || block_below == &Block::ICE
     }
 }

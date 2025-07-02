@@ -28,7 +28,7 @@ impl BlockMetadata for FlowerbedBlock {
 impl PumpkinBlock for FlowerbedBlock {
     async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
         let block_below = args.block_accessor.get_block(&args.location.down()).await;
-        block_below.is_tagged_with("minecraft:dirt").unwrap() || block_below == Block::FARMLAND
+        block_below.is_tagged_with("minecraft:dirt").unwrap() || block_below == &Block::FARMLAND
     }
 
     async fn can_update_at(&self, args: CanUpdateAtArgs<'_>) -> bool {
@@ -46,7 +46,7 @@ impl PumpkinBlock for FlowerbedBlock {
         if args.direction == BlockDirection::Down {
             let block_below = args.world.get_block(&args.location.down()).await;
             if !(block_below.is_tagged_with("minecraft:dirt").unwrap()
-                || block_below == Block::FARMLAND)
+                || block_below == &Block::FARMLAND)
             {
                 return Block::AIR.default_state.id;
             }

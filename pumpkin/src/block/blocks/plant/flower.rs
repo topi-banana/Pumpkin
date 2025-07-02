@@ -22,7 +22,7 @@ impl BlockMetadata for FlowerBlock {
 impl PumpkinBlock for FlowerBlock {
     async fn can_place_at(&self, args: CanPlaceAtArgs<'_>) -> bool {
         let block_below = args.block_accessor.get_block(&args.location.down()).await;
-        block_below.is_tagged_with("minecraft:dirt").unwrap() || block_below == Block::FARMLAND
+        block_below.is_tagged_with("minecraft:dirt").unwrap() || block_below == &Block::FARMLAND
     }
 
     async fn random_tick(&self, args: RandomTickArgs<'_>) {

@@ -61,7 +61,7 @@ impl PumpkinBlock for RepeaterBlock {
 
         let now_powered = props.powered;
         let should_be_powered = self
-            .has_power(args.world, *args.location, &state, args.block)
+            .has_power(args.world, *args.location, state, args.block)
             .await;
 
         if now_powered && !should_be_powered {
@@ -171,7 +171,7 @@ impl PumpkinBlock for RepeaterBlock {
                     self,
                     args.world,
                     *args.neighbor_location,
-                    &neighbor_state,
+                    neighbor_state,
                 )
                 .await
                 {

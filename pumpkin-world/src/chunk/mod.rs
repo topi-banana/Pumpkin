@@ -4,6 +4,7 @@ use pumpkin_nbt::compound::NbtCompound;
 use pumpkin_nbt::nbt_long_array;
 use pumpkin_util::math::{position::BlockPos, vector2::Vector2};
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 use std::{collections::HashMap, sync::Arc};
 use thiserror::Error;
 
@@ -97,6 +98,65 @@ impl From<i32> for TickPriority {
             2 => TickPriority::VeryLow,
             3 => TickPriority::ExtremelyLow,
             _ => panic!("Invalid tick priority: {value}"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct ScheduledTickRegistry {
+    registry: VecDeque<ScheduledTick>,
+}
+
+impl ScheduledTickRegistry {
+    pub fn new() -> Self {
+        Self {
+            registry: VecDeque::new(),
+        }
+    }
+    pub fn tick_and_get(&mut self) -> Vec<ScheduledTick> {
+        let mut res = Vec::new();
+        self.registry.retain_mut(|tick| {
+            tick.delay = tick.delay.saturating_sub(1);
+            if tick.delay == 0 {
+                res.push(tick.to_owned());
+                false
+            } else {
+                true
+            }
+        });
+        res
+    }
+    pub fn take_by_chunk(&mut self, position: &Vector2<i32>) -> Vec<ScheduledTick> {
+        let mut res = Vec::new();
+        self.registry.retain(|tick| {
+            let (chunk_coord, _relative_coord) = tick.block_pos.chunk_and_chunk_relative_position();
+            if &chunk_coord == position {
+                res.push(*tick);
+                false
+            } else {
+                true
+            }
+        });
+        res
+    }
+    pub fn get(&self, position: &BlockPos) -> Option<ScheduledTick> {
+        self.registry
+            .iter()
+            .find(|x| &x.block_pos == position)
+            .copied()
+    }
+    pub fn push(&mut self, scheduled_tick: ScheduledTick) {
+        self.registry.push_back(scheduled_tick);
+    }
+    pub fn pop_front(&mut self) -> Option<ScheduledTick> {
+        self.registry.pop_front()
+    }
+}
+
+impl Extend<ScheduledTick> for ScheduledTickRegistry {
+    fn extend<T: IntoIterator<Item = ScheduledTick>>(&mut self, iter: T) {
+        for tick in iter {
+            self.push(tick);
         }
     }
 }

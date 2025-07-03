@@ -6,7 +6,7 @@ use pumpkin_config::{advanced_config, chunk::ChunkFormat};
 use pumpkin_data::Block;
 use pumpkin_util::math::{position::BlockPos, vector2::Vector2};
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::HashMap,
     path::PathBuf,
     sync::{
         Arc,
@@ -28,7 +28,7 @@ use crate::{
     block::RawBlockState,
     chunk::{
         ChunkData, ChunkEntityData, ChunkParsingError, ChunkReadingError, ScheduledTick,
-        TickPriority,
+        ScheduledTickRegistry, TickPriority,
         format::{anvil::AnvilChunkFile, linear::LinearFile},
         io::{Dirtiable, FileIO, LoadedData, file_manager::ChunkFileManager},
     },
@@ -69,9 +69,9 @@ pub struct Level {
 
     world_gen: Arc<dyn WorldGenerator>,
 
-    block_ticks: Arc<Mutex<Vec<ScheduledTick>>>,
-    remaining_block_ticks_this_tick: Arc<Mutex<VecDeque<ScheduledTick>>>,
-    fluid_ticks: Arc<Mutex<Vec<ScheduledTick>>>,
+    block_ticks: Arc<Mutex<ScheduledTickRegistry>>,
+    remaining_block_ticks_this_tick: Arc<Mutex<ScheduledTickRegistry>>,
+    fluid_ticks: Arc<Mutex<ScheduledTickRegistry>>,
     /// Semaphore to limit concurrent chunk generation tasks
     chunk_generation_semaphore: Arc<Semaphore>,
     /// Tracks tasks associated with this world instance
@@ -143,9 +143,9 @@ impl Level {
             chunk_watchers: Arc::new(DashMap::new()),
             tasks: TaskTracker::new(),
             shutdown_notifier: Notify::new(),
-            block_ticks: Arc::new(Mutex::new(Vec::new())),
-            remaining_block_ticks_this_tick: Arc::new(Mutex::new(VecDeque::new())),
-            fluid_ticks: Arc::new(Mutex::new(Vec::new())),
+            block_ticks: Arc::new(Mutex::new(ScheduledTickRegistry::new())),
+            remaining_block_ticks_this_tick: Arc::new(Mutex::new(ScheduledTickRegistry::new())),
+            fluid_ticks: Arc::new(Mutex::new(ScheduledTickRegistry::new())),
             // Limits concurrent chunk generation tasks to 2x the number of CPUs
             chunk_generation_semaphore: Arc::new(Semaphore::new(num_cpus::get() * 2)),
         }
@@ -576,26 +576,8 @@ impl Level {
             chunk_data.block_ticks.clear();
             chunk_data.fluid_ticks.clear();
             // Only keep ticks that are not saved in the chunk
-            block_ticks.retain(|tick| {
-                let (chunk_coord, _relative_coord) =
-                    tick.block_pos.chunk_and_chunk_relative_position();
-                if chunk_coord == *coord {
-                    chunk_data.block_ticks.push(*tick);
-                    false
-                } else {
-                    true
-                }
-            });
-            fluid_ticks.retain(|tick| {
-                let (chunk_coord, _relative_coord) =
-                    tick.block_pos.chunk_and_chunk_relative_position();
-                if chunk_coord == *coord {
-                    chunk_data.fluid_ticks.push(*tick);
-                    false
-                } else {
-                    true
-                }
-            });
+            chunk_data.block_ticks = block_ticks.take_by_chunk(coord);
+            chunk_data.fluid_ticks = fluid_ticks.take_by_chunk(coord);
         }
         drop(block_ticks);
         drop(fluid_ticks);
@@ -980,52 +962,33 @@ impl Level {
         self.loaded_entity_chunks.try_get(&coordinates).try_unwrap()
     }
 
-    pub async fn get_and_tick_block_ticks(&self) -> Arc<Mutex<VecDeque<ScheduledTick>>> {
+    pub async fn get_and_tick_block_ticks(&self) -> Arc<Mutex<ScheduledTickRegistry>> {
         let mut block_ticks = self.block_ticks.lock().await;
-        let mut ticks = VecDeque::new();
-        let mut remaining_ticks = Vec::new();
-        for mut tick in block_ticks.drain(..) {
-            tick.delay = tick.delay.saturating_sub(1);
-            if tick.delay == 0 {
-                ticks.push_back(tick);
-            } else {
-                remaining_ticks.push(tick);
-            }
-        }
-
-        *block_ticks = remaining_ticks;
-        ticks.make_contiguous().sort_by_key(|tick| tick.priority);
-        *self.remaining_block_ticks_this_tick.lock().await = ticks;
+        let mut remaining_ticks = ScheduledTickRegistry::new();
+        remaining_ticks.extend(block_ticks.tick_and_get());
+        *self.remaining_block_ticks_this_tick.lock().await = remaining_ticks;
         self.remaining_block_ticks_this_tick.clone()
     }
 
     pub async fn get_and_tick_fluid_ticks(&self) -> Vec<ScheduledTick> {
         let mut fluid_ticks = self.fluid_ticks.lock().await;
-        let mut ticks = Vec::new();
-        fluid_ticks.retain_mut(|tick| {
-            tick.delay = tick.delay.saturating_sub(1);
-            if tick.delay == 0 {
-                ticks.push(*tick);
-                false
-            } else {
-                true
-            }
-        });
-        ticks
+        fluid_ticks.tick_and_get()
     }
 
     pub async fn is_block_tick_scheduled(&self, block_pos: &BlockPos, block_id: u16) -> bool {
         let block_ticks = self.block_ticks.lock().await;
         let remaining_block_ticks_this_tick = self.remaining_block_ticks_this_tick.lock().await;
         block_ticks
-            .iter()
-            .chain(remaining_block_ticks_this_tick.iter())
-            .any(|tick| tick.block_pos == *block_pos && tick.target_block_id == block_id)
+            .get(block_pos)
+            .is_some_and(|tick| tick.target_block_id == block_id)
+            || remaining_block_ticks_this_tick
+                .get(block_pos)
+                .is_some_and(|tick| tick.target_block_id == block_id)
     }
 
     pub async fn is_fluid_tick_scheduled(&self, block_pos: &BlockPos) -> bool {
         let fluid_ticks = self.fluid_ticks.lock().await;
-        fluid_ticks.iter().any(|tick| tick.block_pos == *block_pos)
+        fluid_ticks.get(block_pos).is_some()
     }
 
     pub async fn schedule_block_tick(
@@ -1047,8 +1010,8 @@ impl Level {
     pub async fn schedule_fluid_tick(&self, block_id: u16, block_pos: &BlockPos, delay: u16) {
         let mut fluid_ticks = self.fluid_ticks.lock().await;
         if fluid_ticks
-            .iter()
-            .any(|tick| tick.block_pos == *block_pos && tick.target_block_id == block_id)
+            .get(block_pos)
+            .is_some_and(|tick| tick.target_block_id == block_id)
         {
             // If a fluid tick is already scheduled for this block, we don't need to schedule it again
             return;

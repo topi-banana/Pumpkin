@@ -18,17 +18,26 @@ impl CTabList {
 
     #[must_use]
     pub fn with_header(self, header: TextComponent) -> Self {
-        Self { header, footer: self.footer }
+        Self {
+            header,
+            footer: self.footer,
+        }
     }
 
     #[must_use]
     pub fn with_footer(self, footer: TextComponent) -> Self {
-        Self { header: self.header, footer }
+        Self {
+            header: self.header,
+            footer,
+        }
     }
 }
 
 impl Default for CTabList {
     fn default() -> Self {
-        Self { header: TextComponent::text(""), footer: TextComponent::text("") }
+        Self {
+            header: TextComponent::text(""),
+            footer: TextComponent::text(""),
+        }
     }
 }

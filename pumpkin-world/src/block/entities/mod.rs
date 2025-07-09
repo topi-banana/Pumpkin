@@ -18,6 +18,7 @@ use crate::{
 };
 
 pub mod barrel;
+pub mod beacon;
 pub mod bed;
 pub mod chest;
 pub mod chiseled_bookshelf;

@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::future::join_all;
-use pumpkin_data::{Block, chunk::ChunkStatus};
+use pumpkin_data::chunk::ChunkStatus;
 use pumpkin_nbt::{compound::NbtCompound, from_bytes, nbt_long_array};
 use uuid::Uuid;
 
@@ -17,14 +17,13 @@ use crate::{
     generation::section_coords,
     level::LevelFolder,
 };
-use pumpkin_util::math::{position::BlockPos, vector2::Vector2};
+use pumpkin_util::math::vector2::Vector2;
 use serde::{Deserialize, Serialize};
 
 use crate::block::BlockStateCodec;
 
 use super::{
-    ChunkData, ChunkHeightmaps, ChunkLight, ChunkParsingError, ChunkSections, ScheduledTick,
-    SubChunk, TickPriority,
+    ChunkData, ChunkHeightmaps, ChunkLight, ChunkParsingError, ChunkSections, SubChunk,
     palette::{BiomePalette, BlockPalette},
 };
 
@@ -186,38 +185,8 @@ impl ChunkData {
             position,
             // This chunk is read from disk, so it has not been modified
             dirty: false,
-            block_ticks: chunk_data
-                .block_ticks
-                .iter()
-                .map(|tick| ScheduledTick {
-                    block_pos: BlockPos::new(tick.x, tick.y, tick.z),
-                    delay: tick.delay as u16,
-                    priority: TickPriority::from(tick.priority),
-                    target_block_id: Block::from_registry_key(
-                        tick.target_block
-                            .strip_prefix("minecraft:")
-                            .unwrap_or(&tick.target_block),
-                    )
-                    .unwrap_or(&Block::AIR)
-                    .id,
-                })
-                .collect(),
-            fluid_ticks: chunk_data
-                .fluid_ticks
-                .iter()
-                .map(|tick| ScheduledTick {
-                    block_pos: BlockPos::new(tick.x, tick.y, tick.z),
-                    delay: tick.delay as u16,
-                    priority: TickPriority::from(tick.priority),
-                    target_block_id: Block::from_registry_key(
-                        tick.target_block
-                            .strip_prefix("minecraft:")
-                            .unwrap_or(&tick.target_block),
-                    )
-                    .unwrap_or(&Block::AIR)
-                    .id,
-                })
-                .collect(),
+            block_ticks: Default::default(), // TODO: Read from disk
+            fluid_ticks: Default::default(), // TODO: Read from disk
             block_entities: {
                 let mut block_entities = HashMap::new();
                 for nbt in chunk_data.block_entities {
@@ -268,38 +237,8 @@ impl ChunkData {
             status: ChunkStatus::Full,
             heightmaps: self.heightmap.clone(),
             sections,
-            block_ticks: {
-                self.block_ticks
-                    .iter()
-                    .map(|tick| SerializedScheduledTick {
-                        x: tick.block_pos.0.x,
-                        y: tick.block_pos.0.y,
-                        z: tick.block_pos.0.z,
-                        delay: tick.delay as i32,
-                        priority: tick.priority as i32,
-                        target_block: format!(
-                            "minecraft:{}",
-                            Block::from_id(tick.target_block_id).name
-                        ),
-                    })
-                    .collect()
-            },
-            fluid_ticks: {
-                self.fluid_ticks
-                    .iter()
-                    .map(|tick| SerializedScheduledTick {
-                        x: tick.block_pos.0.x,
-                        y: tick.block_pos.0.y,
-                        z: tick.block_pos.0.z,
-                        delay: tick.delay as i32,
-                        priority: tick.priority as i32,
-                        target_block: format!(
-                            "minecraft:{}",
-                            Block::from_id(tick.target_block_id).name
-                        ),
-                    })
-                    .collect()
-            },
+            block_ticks: Default::default(), // TODO: Serialize block ticks
+            fluid_ticks: Default::default(), // TODO: Serialize fluid ticks
             block_entities: join_all(self.block_entities.values().map(|block_entity| async move {
                 let mut nbt = NbtCompound::new();
                 block_entity.write_internal(&mut nbt).await;

@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::PathBuf};
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::future::join_all;
-use pumpkin_data::chunk::ChunkStatus;
+use pumpkin_data::{Block, chunk::ChunkStatus, fluid::Fluid};
 use pumpkin_nbt::{compound::NbtCompound, from_bytes, nbt_long_array};
 use uuid::Uuid;
 
@@ -16,6 +16,7 @@ use crate::{
     },
     generation::section_coords,
     level::LevelFolder,
+    tick::{ScheduledTick, scheduler::ChunkTickScheduler},
 };
 use pumpkin_util::math::vector2::Vector2;
 use serde::{Deserialize, Serialize};
@@ -185,8 +186,8 @@ impl ChunkData {
             position,
             // This chunk is read from disk, so it has not been modified
             dirty: false,
-            block_ticks: Default::default(), // TODO: Read from disk
-            fluid_ticks: Default::default(), // TODO: Read from disk
+            block_ticks: ChunkTickScheduler::from_vec(&chunk_data.block_ticks),
+            fluid_ticks: ChunkTickScheduler::from_vec(&chunk_data.fluid_ticks),
             block_entities: {
                 let mut block_entities = HashMap::new();
                 for nbt in chunk_data.block_entities {
@@ -237,8 +238,8 @@ impl ChunkData {
             status: ChunkStatus::Full,
             heightmaps: self.heightmap.clone(),
             sections,
-            block_ticks: Default::default(), // TODO: Serialize block ticks
-            fluid_ticks: Default::default(), // TODO: Serialize fluid ticks
+            block_ticks: self.block_ticks.to_vec(),
+            fluid_ticks: self.fluid_ticks.to_vec(),
             block_entities: join_all(self.block_entities.values().map(|block_entity| async move {
                 let mut nbt = NbtCompound::new();
                 block_entity.write_internal(&mut nbt).await;
@@ -470,22 +471,6 @@ impl Default for LightContainer {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct SerializedScheduledTick {
-    #[serde(rename = "x")]
-    x: i32,
-    #[serde(rename = "y")]
-    y: i32,
-    #[serde(rename = "z")]
-    z: i32,
-    #[serde(rename = "t")]
-    delay: i32,
-    #[serde(rename = "p")]
-    priority: i32,
-    #[serde(rename = "i")]
-    target_block: String,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "PascalCase")]
 struct ChunkNbt {
     data_version: i32,
@@ -500,9 +485,9 @@ struct ChunkNbt {
     sections: Vec<ChunkSectionNBT>,
     heightmaps: ChunkHeightmaps,
     #[serde(rename = "block_ticks")]
-    block_ticks: Vec<SerializedScheduledTick>,
+    block_ticks: Vec<ScheduledTick<&'static Block>>,
     #[serde(rename = "fluid_ticks")]
-    fluid_ticks: Vec<SerializedScheduledTick>,
+    fluid_ticks: Vec<ScheduledTick<&'static Fluid>>,
     #[serde(rename = "block_entities")]
     block_entities: Vec<NbtCompound>,
     #[serde(rename = "isLightOn")]

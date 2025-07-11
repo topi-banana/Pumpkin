@@ -39,6 +39,28 @@ impl<'a, T: std::hash::Hash + Eq> ChunkTickScheduler<&'a T> {
     pub fn is_scheduled(&self, pos: BlockPos, value: &'a T) -> bool {
         self.queued_ticks.contains(&(pos, value))
     }
+
+    pub fn to_vec(&self) -> Vec<ScheduledTick<&'a T>> {
+        let mut res = Vec::new();
+        for i in 0..MAX_TICK_DELAY {
+            let index = (self.offset + i) % MAX_TICK_DELAY;
+            res.extend(self.tick_queue[index].iter().map(|x| ScheduledTick {
+                delay: i as u8,
+                priority: x.priority,
+                position: x.position,
+                value: x.value,
+            }));
+        }
+        res
+    }
+
+    pub fn from_vec(ticks: &[ScheduledTick<&'a T>]) -> Self {
+        let mut scheduler = Self::default();
+        for tick in ticks {
+            scheduler.schedule_tick(tick.clone(), 0);
+        }
+        scheduler
+    }
 }
 
 impl<T> Default for ChunkTickScheduler<T> {
@@ -46,7 +68,6 @@ impl<T> Default for ChunkTickScheduler<T> {
         Self {
             tick_queue: std::array::from_fn(|_| Vec::new()),
             queued_ticks: HashSet::new(),
-
             offset: 0,
         }
     }

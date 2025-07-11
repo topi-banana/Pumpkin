@@ -6,8 +6,8 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize)]
 #[packet(PLAY_TAB_LIST)]
 pub struct CTabList {
-    header: TextComponent,
-    footer: TextComponent,
+    pub header: TextComponent,
+    pub footer: TextComponent,
 }
 
 impl CTabList {

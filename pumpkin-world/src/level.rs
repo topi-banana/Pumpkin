@@ -411,8 +411,8 @@ impl Level {
         let mut rng = SmallRng::from_os_rng();
         for chunk in self.loaded_chunks.iter() {
             let mut chunk = chunk.write().await;
-            ticks.block_ticks.extend(chunk.block_ticks.step_tick());
-            ticks.fluid_ticks.extend(chunk.fluid_ticks.step_tick());
+            ticks.block_ticks.append(&mut chunk.block_ticks.step_tick());
+            ticks.fluid_ticks.append(&mut chunk.fluid_ticks.step_tick());
 
             let chunk = chunk.downgrade();
 
@@ -459,8 +459,7 @@ impl Level {
                 }
             }
 
-            let cloned_entities = chunk.block_entities.values().cloned().collect::<Vec<_>>();
-            ticks.block_entities.extend(cloned_entities);
+            ticks.block_entities.extend(chunk.block_entities.values().cloned());
         }
 
         ticks.block_ticks.sort_unstable();

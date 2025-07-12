@@ -459,7 +459,9 @@ impl Level {
                 }
             }
 
-            ticks.block_entities.extend(chunk.block_entities.values().cloned());
+            ticks
+                .block_entities
+                .extend(chunk.block_entities.values().cloned());
         }
 
         ticks.block_ticks.sort_unstable();

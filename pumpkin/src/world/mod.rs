@@ -581,7 +581,7 @@ impl World {
         log::debug!(
             "Ticking world took {:?}, loaded chunks: {}, chunk tick took {:?}",
             start.elapsed(),
-            self.level.loaded_chunk_count(),
+            self.level.loaded_chunk_count().await,
             elapsed
         );
     }

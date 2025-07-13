@@ -414,13 +414,13 @@ impl Player {
         level.clean_chunks(&chunks_to_clean).await;
         level.clean_entity_chunks(&chunks_to_clean).await;
         // Remove left over entries from all possiblily loaded chunks
-        level.clean_memory();
+        level.clean_memory().await;
 
         log::debug!(
             "Removed player id {} from world {} ({} chunks remain cached)",
             self.gameprofile.name,
             "world", // TODO: Add world names
-            level.loaded_chunk_count(),
+            level.loaded_chunk_count().await,
         );
 
         level.clean_up_log().await;

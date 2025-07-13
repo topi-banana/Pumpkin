@@ -60,8 +60,8 @@ pub struct Level {
 
     // Chunks that are paired with chunk watchers. When a chunk is no longer watched, it is removed
     // from the loaded chunks map and sent to the underlying ChunkIO
-    loaded_chunks: Arc<DashMap<Vector2<i32>, SyncChunk>>,
-    loaded_entity_chunks: Arc<DashMap<Vector2<i32>, SyncEntityChunk>>,
+    loaded_chunks: Arc<Mutex<HashMap<Vector2<i32>, SyncChunk>>>,
+    loaded_entity_chunks: Arc<Mutex<HashMap<Vector2<i32>, SyncEntityChunk>>>,
 
     chunk_watchers: Arc<DashMap<Vector2<i32>, usize>>,
 
@@ -145,8 +145,8 @@ impl Level {
             chunk_saver,
             entity_saver,
             spawn_chunks: Arc::new(DashMap::new()),
-            loaded_chunks: Arc::new(DashMap::new()),
-            loaded_entity_chunks: Arc::new(DashMap::new()),
+            loaded_chunks: Arc::new(Mutex::new(HashMap::new())),
+            loaded_entity_chunks: Arc::new(Mutex::new(HashMap::new())),
             chunk_watchers: Arc::new(DashMap::new()),
             tasks: TaskTracker::new(),
             shutdown_notifier: Notify::new(),
@@ -179,12 +179,7 @@ impl Level {
         self.chunk_saver.block_and_await_ongoing_tasks().await;
 
         // save all chunks currently in memory
-        let chunks_to_write = self
-            .loaded_chunks
-            .iter()
-            .map(|chunk| (*chunk.key(), chunk.value().clone()))
-            .collect::<Vec<_>>();
-        self.loaded_chunks.clear();
+        let chunks_to_write = self.loaded_chunks.lock().await.drain().collect::<Vec<_>>();
 
         // TODO: I think the chunk_saver should be at the server level
         self.chunk_saver.clear_watched_chunks().await;
@@ -198,18 +193,18 @@ impl Level {
         // save all chunks currently in memory
         let chunks_to_write = self
             .loaded_entity_chunks
-            .iter()
-            .map(|chunk| (*chunk.key(), chunk.value().clone()))
+            .lock()
+            .await
+            .drain()
             .collect::<Vec<_>>();
-        self.loaded_entity_chunks.clear();
 
         // TODO: I think the chunk_saver should be at the server level
         self.entity_saver.clear_watched_chunks().await;
         self.write_entity_chunks(chunks_to_write).await;
     }
 
-    pub fn loaded_chunk_count(&self) -> usize {
-        self.loaded_chunks.len()
+    pub async fn loaded_chunk_count(&self) -> usize {
+        self.loaded_chunks.lock().await.len()
     }
 
     pub async fn clean_up_log(&self) {
@@ -217,9 +212,9 @@ impl Level {
         self.entity_saver.clean_up_log().await;
     }
 
-    pub fn list_cached(&self) {
-        for entry in self.loaded_chunks.iter() {
-            log::debug!("In map: {:?}", entry.key());
+    pub async fn list_cached(&self) {
+        for (entry, _) in self.loaded_chunks.lock().await.iter() {
+            log::debug!("In map: {entry:?}");
         }
     }
 
@@ -307,6 +302,8 @@ impl Level {
         // 4) Write (new) chunk from serializer
         // Now outdated chunk data is cached and will be written later
 
+        let mut loaded_chunks = self.loaded_chunks.lock().await;
+
         let chunks_with_no_watchers = chunks
             .iter()
             .filter_map(|pos| {
@@ -316,12 +313,13 @@ impl Level {
                     .get(pos)
                     .is_none_or(|count| count.is_zero())
                 {
-                    self.loaded_chunks.remove(pos).map(|chunk| (*pos, chunk.1))
+                    loaded_chunks.remove(pos).map(|chunk| (*pos, chunk))
                 } else {
                     None
                 }
             })
             .collect::<Vec<_>>();
+        drop(loaded_chunks);
 
         let level = self.clone();
         self.spawn_task(async move {
@@ -330,13 +328,11 @@ impl Level {
             level.write_chunks(chunks_with_no_watchers).await;
             // Only after we have written the chunks to the serializer do we remove them from the
             // cache
+            let mut loaded_chunks = level.loaded_chunks.lock().await;
             for (pos, chunk) in chunks_to_remove {
                 // Add them back if they have watchers
                 if level.chunk_watchers.get(&pos).is_some() {
-                    let entry = level.loaded_chunks.entry(pos);
-                    if let Entry::Vacant(vacant) = entry {
-                        vacant.insert(chunk);
-                    }
+                    loaded_chunks.entry(pos).or_insert(chunk);
                 }
             }
         });
@@ -350,6 +346,7 @@ impl Level {
         // 4) Write (new) chunk from serializer
         // Now outdated chunk data is cached and will be written later
 
+        let loaded_entity_chunks = self.loaded_entity_chunks.lock().await;
         let chunks_with_no_watchers = chunks
             .iter()
             .filter_map(|pos| {
@@ -359,14 +356,15 @@ impl Level {
                     .get(pos)
                     .is_none_or(|count| count.is_zero())
                 {
-                    self.loaded_entity_chunks
+                    loaded_entity_chunks
                         .get(pos)
-                        .map(|chunk| (*pos, chunk.value().clone()))
+                        .map(|chunk| (*pos, chunk.clone()))
                 } else {
                     None
                 }
             })
             .collect::<Vec<_>>();
+        drop(loaded_entity_chunks);
 
         let level = self.clone();
         self.spawn_task(async move {
@@ -374,33 +372,37 @@ impl Level {
             level.write_entity_chunks(chunks_with_no_watchers).await;
             // Only after we have written the chunks to the serializer do we remove them from the
             // cache
+            let mut loaded_entity_chunks = level.loaded_entity_chunks.lock().await;
             for (pos, _) in chunks_to_remove {
-                let _ = level.loaded_entity_chunks.remove_if(&pos, |_, _| {
-                    // Recheck that there is no one watching
-                    level
-                        .chunk_watchers
-                        .get(&pos)
-                        .is_none_or(|count| count.is_zero())
-                });
+                if
+                // Recheck that there is no one watching
+                level
+                    .chunk_watchers
+                    .get(&pos)
+                    .is_none_or(|count| count.is_zero())
+                {
+                    loaded_entity_chunks.remove(&pos);
+                }
             }
         });
     }
 
     // Gets random ticks, block ticks and fluid ticks
     pub async fn get_tick_data(&self) -> TickData {
+        let loaded_chunks = self.loaded_chunks.lock().await;
         let mut ticks = TickData {
             block_ticks: Vec::new(),
             fluid_ticks: Vec::new(),
-            random_ticks: Vec::with_capacity(self.loaded_chunks.len() * 3 * 16 * 16),
+            random_ticks: Vec::with_capacity(loaded_chunks.len() * 3 * 16 * 16),
             block_entities: Vec::new(),
         };
         let mut rng = SmallRng::from_os_rng();
-        for chunk in self.loaded_chunks.iter() {
+        for (pos, chunk) in loaded_chunks.iter() {
             use tokio::time::{Duration, timeout};
             let mut chunk = match timeout(Duration::from_millis(1), chunk.write()).await {
                 Ok(chunk_guard) => chunk_guard,
                 Err(_) => {
-                    log::info!("Chunk {:?} took too long to lock, skipping", chunk.key());
+                    log::info!("Chunk {pos:?} took too long to lock, skipping");
                     continue;
                 }
             };
@@ -472,12 +474,8 @@ impl Level {
         self.chunk_watchers.get(chunk).is_some()
     }
 
-    pub fn clean_memory(&self) {
+    pub async fn clean_memory(&self) {
         self.chunk_watchers.retain(|_, watcher| !watcher.is_zero());
-        self.loaded_chunks
-            .retain(|at, _| self.chunk_watchers.get(at).is_some());
-        self.loaded_entity_chunks
-            .retain(|at, _| self.chunk_watchers.get(at).is_some());
 
         // if the difference is too big, we can shrink the loaded chunks
         // (1024 chunks is the equivalent to a 32x32 chunks area)
@@ -485,14 +483,24 @@ impl Level {
             self.chunk_watchers.shrink_to_fit();
         }
 
-        // if the difference is too big, we can shrink the loaded chunks
-        // (1024 chunks is the equivalent to a 32x32 chunks area)
-        if self.loaded_chunks.capacity() - self.loaded_chunks.len() >= 4096 {
-            self.loaded_chunks.shrink_to_fit();
+        {
+            let mut loaded_chunks = self.loaded_chunks.lock().await;
+            loaded_chunks.retain(|at, _| self.chunk_watchers.get(at).is_some());
+
+            // if the difference is too big, we can shrink the loaded chunks
+            // (1024 chunks is the equivalent to a 32x32 chunks area)
+            if loaded_chunks.capacity() - loaded_chunks.len() >= 4096 {
+                loaded_chunks.shrink_to_fit();
+            }
         }
 
-        if self.loaded_entity_chunks.capacity() - self.loaded_entity_chunks.len() >= 4096 {
-            self.loaded_entity_chunks.shrink_to_fit();
+        {
+            let mut loaded_entity_chunks = self.loaded_entity_chunks.lock().await;
+            loaded_entity_chunks.retain(|at, _| self.chunk_watchers.get(at).is_some());
+
+            if loaded_entity_chunks.capacity() - loaded_entity_chunks.len() >= 4096 {
+                loaded_entity_chunks.shrink_to_fit();
+            }
         }
     }
 
@@ -546,7 +554,7 @@ impl Level {
         self: &Arc<Self>,
         chunk_coordinate: Vector2<i32>,
     ) -> Arc<RwLock<ChunkData>> {
-        match self.try_get_chunk(chunk_coordinate) {
+        match self.try_get_chunk(chunk_coordinate).await {
             Some(chunk) => chunk.clone(),
             None => self.receive_chunk(chunk_coordinate).await.0,
         }
@@ -556,7 +564,7 @@ impl Level {
         self: &Arc<Self>,
         chunk_coordinate: Vector2<i32>,
     ) -> Arc<RwLock<ChunkEntityData>> {
-        match self.try_get_entity_chunk(chunk_coordinate) {
+        match self.try_get_entity_chunk(chunk_coordinate).await {
             Some(chunk) => chunk.clone(),
             None => self.receive_entity_chunk(chunk_coordinate).await.0,
         }
@@ -703,13 +711,13 @@ impl Level {
         // First send all chunks that we have cached
         // We expect best case scenario to have all cached
         let mut remaining_chunks = Vec::new();
+        let mut loaded_chunks = self.loaded_chunks.lock().await;
         for chunk in chunks {
-            let is_ok = if let Some(chunk) = self.loaded_chunks.get(chunk) {
-                send_chunk(false, chunk.value().clone(), &channel)
+            let is_ok = if let Some(chunk) = loaded_chunks.get(chunk) {
+                send_chunk(false, chunk.clone(), &channel)
             } else if let Some(spawn_chunk) = self.spawn_chunks.get(chunk) {
                 // Also clone the arc into the loaded chunks
-                self.loaded_chunks
-                    .insert(*chunk, spawn_chunk.value().clone());
+                loaded_chunks.insert(*chunk, spawn_chunk.value().clone());
                 send_chunk(false, spawn_chunk.value().clone(), &channel)
             } else {
                 remaining_chunks.push(*chunk);
@@ -720,6 +728,7 @@ impl Level {
                 return;
             }
         }
+        drop(loaded_chunks);
 
         if remaining_chunks.is_empty() {
             return;
@@ -740,9 +749,10 @@ impl Level {
                         let position = chunk.read().await.position;
 
                         let value = loaded_chunks
+                            .lock()
+                            .await
                             .entry(position)
                             .or_insert(chunk)
-                            .value()
                             .clone();
                         send_chunk(false, value, &load_channel)
                     }
@@ -818,14 +828,14 @@ impl Level {
                             // Wait for the chunk to be generated by another task
                             notify.notified().await;
                             // After being notified, the chunk should be in loaded_chunks
-                            loaded_chunks.get(&pos).unwrap().clone()
+                            loaded_chunks.lock().await.get(&pos).unwrap().clone()
                         } else {
                             // We are responsible for generating the chunk
                             let generated_chunk = world_gen
                                 .generate_chunk(&self_clone, block_registry.as_ref(), &pos)
                                 .await;
                             let arc_chunk = Arc::new(RwLock::new(generated_chunk));
-                            loaded_chunks.insert(pos, arc_chunk.clone());
+                            loaded_chunks.lock().await.insert(pos, arc_chunk.clone());
                             // Remove the notify and wake up any waiters
                             let notify = {
                                 let mut locks = self_clone.chunk_generation_locks.lock().await;
@@ -876,9 +886,10 @@ impl Level {
         // First send all chunks that we have cached
         // We expect best case scenario to have all cached
         let mut remaining_chunks = Vec::new();
+        let loaded_entity_chunks = self.loaded_entity_chunks.lock().await;
         for chunk in chunks {
-            let is_ok = if let Some(chunk) = self.loaded_entity_chunks.get(chunk) {
-                send_chunk(false, chunk.value().clone(), &channel)
+            let is_ok = if let Some(chunk) = loaded_entity_chunks.get(chunk) {
+                send_chunk(false, chunk.clone(), &channel)
             } else {
                 remaining_chunks.push(*chunk);
                 true
@@ -888,6 +899,7 @@ impl Level {
                 return;
             }
         }
+        drop(loaded_entity_chunks);
 
         if remaining_chunks.is_empty() {
             return;
@@ -908,9 +920,10 @@ impl Level {
                         let position = chunk.read().await.chunk_position;
 
                         let value = loaded_chunks
+                            .lock()
+                            .await
                             .entry(position)
                             .or_insert(chunk)
-                            .value()
                             .clone();
                         send_chunk(false, value, &load_channel)
                     }
@@ -966,23 +979,16 @@ impl Level {
                     }
 
                     let result = {
-                        let entry = loaded_chunks.entry(pos); // Get the entry for the position
-
-                        // Check if the entry already exists.
-                        // If not, generate the chunk asynchronously and insert it.
-                        match entry {
-                            Entry::Occupied(entry) => entry.into_ref(),
-                            Entry::Vacant(entry) => {
-                                let generated_chunk = ChunkEntityData {
-                                    chunk_position: pos,
-                                    data: HashMap::new(),
-                                    dirty: true,
-                                };
-                                entry.insert(Arc::new(RwLock::new(generated_chunk)))
-                            }
-                        }
-                        .value()
-                        .clone()
+                        loaded_chunks
+                            .lock()
+                            .await
+                            .entry(pos)
+                            .or_insert(Arc::new(RwLock::new(ChunkEntityData {
+                                chunk_position: pos,
+                                data: HashMap::new(),
+                                dirty: true,
+                            })))
+                            .clone()
                     };
 
                     if !send_chunk(true, result, &channel) {
@@ -1005,17 +1011,18 @@ impl Level {
         tracker.wait().await;
     }
 
-    pub fn try_get_chunk(
-        &self,
-        coordinates: Vector2<i32>,
-    ) -> Option<dashmap::mapref::one::Ref<'_, Vector2<i32>, Arc<RwLock<ChunkData>>>> {
-        self.loaded_chunks.try_get(&coordinates).try_unwrap()
+    pub async fn try_get_chunk(&self, coordinates: Vector2<i32>) -> Option<Arc<RwLock<ChunkData>>> {
+        self.loaded_chunks.lock().await.get(&coordinates).cloned()
     }
 
-    pub fn try_get_entity_chunk(
+    pub async fn try_get_entity_chunk(
         &self,
         coordinates: Vector2<i32>,
-    ) -> Option<dashmap::mapref::one::Ref<'_, Vector2<i32>, Arc<RwLock<ChunkEntityData>>>> {
-        self.loaded_entity_chunks.try_get(&coordinates).try_unwrap()
+    ) -> Option<Arc<RwLock<ChunkEntityData>>> {
+        self.loaded_entity_chunks
+            .lock()
+            .await
+            .get(&coordinates)
+            .cloned()
     }
 }

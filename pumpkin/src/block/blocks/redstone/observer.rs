@@ -124,12 +124,6 @@ impl ObserverBlock {
     }
 
     async fn schedule_tick(world: &World, block_pos: &BlockPos) {
-        if world
-            .is_block_tick_scheduled(block_pos, &Block::OBSERVER)
-            .await
-        {
-            return;
-        }
         world
             .schedule_block_tick(&Block::OBSERVER, *block_pos, 2, TickPriority::Normal)
             .await;

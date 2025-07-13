@@ -1834,9 +1834,6 @@ impl World {
                 .await;
         }
 
-        let block_state = self.get_block_state(position).await;
-        let new_fluid = self.get_fluid(position).await;
-
         // WorldChunk.java line 318
         if !flags.contains(BlockFlags::SKIP_BLOCK_ADDED_CALLBACK) && new_block != old_block {
             self.block_registry
@@ -1849,6 +1846,7 @@ impl World {
                     block_moved,
                 )
                 .await;
+            let new_fluid = self.get_fluid(position).await;
             self.block_registry
                 .on_placed_fluid(
                     self,
@@ -1862,7 +1860,7 @@ impl World {
         }
 
         // Ig they do this cause it could be modified in chunkPos.setBlockState?
-        if block_state.id == block_state_id {
+        if self.get_block_state_id(position).await == block_state_id {
             if flags.contains(BlockFlags::NOTIFY_LISTENERS) {
                 // Mob AI update
             }
@@ -2049,19 +2047,44 @@ impl World {
         block
             .properties(id)
             .and_then(|props| {
-                props
-                    .to_props()
-                    .into_iter()
-                    .find(|p| p.0 == "waterlogged")
-                    .map(|(_, value)| {
-                        if value == true.to_string() {
-                            &Fluid::FLOWING_WATER
-                        } else {
-                            &Fluid::EMPTY
-                        }
-                    })
+                props.to_props().get("waterlogged").map(|value| {
+                    if value == "true" {
+                        &Fluid::FLOWING_WATER
+                    } else {
+                        &Fluid::EMPTY
+                    }
+                })
             })
             .unwrap_or(&Fluid::EMPTY)
+    }
+
+    pub async fn get_block_and_fluid(
+        &self,
+        position: &BlockPos,
+    ) -> (
+        &'static pumpkin_data::Block,
+        &'static pumpkin_data::fluid::Fluid,
+    ) {
+        let id = self.get_block_state_id(position).await;
+        let block = get_block_by_state_id(id);
+
+        let fluid = Fluid::from_state_id(id)
+            .ok_or(&Fluid::EMPTY)
+            .unwrap_or_else(|_| {
+                block
+                    .properties(id)
+                    .and_then(|props| {
+                        props.to_props().get("waterlogged").map(|value| {
+                            if value == "true" {
+                                &Fluid::FLOWING_WATER
+                            } else {
+                                &Fluid::EMPTY
+                            }
+                        })
+                    })
+                    .unwrap_or(&Fluid::EMPTY)
+            });
+        (block, fluid)
     }
 
     pub async fn get_block_state_id(&self, position: &BlockPos) -> BlockStateId {
@@ -2099,8 +2122,7 @@ impl World {
             }
 
             let neighbor_pos = block_pos.offset(direction.to_offset());
-            let neighbor_block = self.get_block(&neighbor_pos).await;
-            let neighbor_fluid = self.get_fluid(&neighbor_pos).await;
+            let (neighbor_block, neighbor_fluid) = self.get_block_and_fluid(&neighbor_pos).await;
 
             if let Some(neighbor_pumpkin_block) =
                 self.block_registry.get_pumpkin_block(neighbor_block)
@@ -2153,7 +2175,8 @@ impl World {
         direction: BlockDirection,
         flags: BlockFlags,
     ) {
-        let (block, block_state) = self.get_block_and_block_state(block_pos).await;
+        let block_state_id = self.get_block_state_id(block_pos).await;
+        let block = get_block_by_state_id(block_state_id);
 
         if flags.contains(BlockFlags::SKIP_REDSTONE_WIRE_STATE_REPLACEMENT)
             && block.id == Block::REDSTONE_WIRE.id
@@ -2169,7 +2192,7 @@ impl World {
             .get_state_for_neighbor_update(
                 self,
                 block,
-                block_state.id,
+                block_state_id,
                 block_pos,
                 direction,
                 &neighbor_pos,
@@ -2177,7 +2200,7 @@ impl World {
             )
             .await;
 
-        if new_state_id != block_state.id {
+        if new_state_id != block_state_id {
             let flags = flags & !BlockFlags::SKIP_DROPS;
             if get_state_by_state_id(new_state_id).is_air() {
                 self.break_block(block_pos, None, flags).await;

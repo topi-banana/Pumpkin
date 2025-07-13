@@ -556,7 +556,7 @@ impl Level {
         self: &Arc<Self>,
         chunk_coordinate: Vector2<i32>,
     ) -> Arc<RwLock<ChunkData>> {
-        match self.try_get_chunk(chunk_coordinate) {
+        match self.try_get_chunk(&chunk_coordinate) {
             Some(chunk) => chunk.clone(),
             None => self.receive_chunk(chunk_coordinate).await.0,
         }
@@ -1045,9 +1045,9 @@ impl Level {
 
     pub fn try_get_chunk(
         &self,
-        coordinates: Vector2<i32>,
+        coordinates: &Vector2<i32>,
     ) -> Option<dashmap::mapref::one::Ref<'_, Vector2<i32>, Arc<RwLock<ChunkData>>>> {
-        self.loaded_chunks.try_get(&coordinates).try_unwrap()
+        self.loaded_chunks.try_get(coordinates).try_unwrap()
     }
 
     pub fn try_get_entity_chunk(

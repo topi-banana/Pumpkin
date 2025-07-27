@@ -77,7 +77,6 @@ pub struct ChunkData {
     pub dirty: bool,
 }
 
-
 #[derive(Clone)]
 pub struct ChunkEntityData {
     pub chunk_position: Vector2<i32>,

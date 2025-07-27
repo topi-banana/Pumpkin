@@ -21,12 +21,11 @@ use crate::{
 use pumpkin_util::math::vector2::Vector2;
 use serde::{Deserialize, Serialize};
 
-use crate::block::BlockStateCodec;
-
 use super::{
     ChunkData, ChunkHeightmaps, ChunkLight, ChunkParsingError, ChunkSections, SubChunk,
     palette::{BiomePalette, BlockPalette},
 };
+use crate::block::BlockStateCodec;
 
 pub mod anvil;
 pub mod linear;

@@ -2,11 +2,22 @@ use std::str;
 
 use serde::{Deserialize, Serialize};
 
+#[derive(Deserialize, Serialize, Clone)]
+pub enum ChunkConfig {
+    Anvil(AnvilChunkConfig),
+    Linear(LinearChunkConfig),
+}
+
+impl Default for ChunkConfig {
+    fn default() -> Self {
+        Self::Anvil(Default::default())
+    }
+}
+
 #[derive(Deserialize, Serialize, Default, Clone)]
 #[serde(default)]
-pub struct ChunkConfig {
+pub struct AnvilChunkConfig {
     pub compression: ChunkCompression,
-    pub format: ChunkFormat,
     pub write_in_place: bool,
 }
 
@@ -25,7 +36,7 @@ impl Default for ChunkCompression {
     }
 }
 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, Copy)]
 pub enum Compression {
     /// GZip Compression
     GZip,
@@ -37,9 +48,14 @@ pub enum Compression {
     Custom,
 }
 
-#[derive(Deserialize, Serialize, Clone, Default)]
-pub enum ChunkFormat {
+#[derive(Deserialize, Serialize, Default, Clone)]
+pub struct LinearChunkConfig {
+    pub linear_version: LinearVersion,
+}
+
+#[derive(Deserialize, Serialize, Default, Clone)]
+pub enum LinearVersion {
     #[default]
-    Anvil,
-    Linear,
+    V1,
+    // TODO: V2,
 }

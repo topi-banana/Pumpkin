@@ -5,13 +5,13 @@ use crate::logging::{GzipRollingLogger, ReadlineLogWrapper};
 use crate::net::DisconnectReason;
 use crate::net::bedrock::BedrockClient;
 use crate::net::java::JavaClient;
-use crate::net::{lan_broadcast, query, rcon::RCONServer};
+use crate::net::{lan_broadcast::LANBroadcast, query, rcon::RCONServer};
 use crate::server::{Server, ticker::Ticker};
 use log::{Level, LevelFilter};
 use net::authentication::fetch_mojang_public_keys;
 use plugin::PluginManager;
 use plugin::server::server_command::ServerCommandEvent;
-use pumpkin_config::{BASIC_CONFIG, advanced_config};
+use pumpkin_config::advanced_config;
 use pumpkin_macros::send_cancellable;
 use pumpkin_protocol::ConnectionState::Play;
 use pumpkin_util::permission::{PermissionManager, PermissionRegistry};
@@ -200,7 +200,7 @@ impl PumpkinServer {
         }
 
         // Setup the TCP server socket.
-        let listener = tokio::net::TcpListener::bind(BASIC_CONFIG.java_edition_address)
+        let listener = tokio::net::TcpListener::bind(server.basic_config.java_edition_address)
             .await
             .expect("Failed to start `TcpListener`");
         // In the event the user puts 0 for their port, this will allow us to know what port it is running on
@@ -208,20 +208,25 @@ impl PumpkinServer {
             .local_addr()
             .expect("Unable to get the address of the server!");
 
-        if advanced_config().networking.query.enabled {
+        if server.advanced_config.networking.query.enabled {
             log::info!("Query protocol is enabled. Starting...");
             server.spawn_task(query::start_query_handler(
                 server.clone(),
-                advanced_config().networking.query.address,
+                server.advanced_config.networking.query.address,
             ));
         }
 
-        if advanced_config().networking.lan_broadcast.enabled {
+        if server.advanced_config.networking.lan_broadcast.enabled {
             log::info!("LAN broadcast is enabled. Starting...");
-            server.spawn_task(lan_broadcast::start_lan_broadcast(addr));
+
+            let lan_broadcast = LANBroadcast::new(
+                &server.advanced_config.networking.lan_broadcast,
+                &server.basic_config,
+            );
+            server.spawn_task(lan_broadcast.start(addr));
         }
 
-        if BASIC_CONFIG.allow_chat_reports {
+        if server.basic_config.allow_chat_reports {
             let mojang_public_keys = fetch_mojang_public_keys().unwrap();
             *server.mojang_public_keys.lock().await = mojang_public_keys;
         }
@@ -234,7 +239,7 @@ impl PumpkinServer {
             });
         };
 
-        let udp_socket = UdpSocket::bind(BASIC_CONFIG.bedrock_edition_address)
+        let udp_socket = UdpSocket::bind(server.basic_config.bedrock_edition_address)
             .await
             .expect("Failed to bind UDP Socket");
 
@@ -334,7 +339,7 @@ impl PumpkinServer {
                         let client_id = *master_client_id_counter;
                         *master_client_id_counter += 1;
 
-                        let formatted_address = if BASIC_CONFIG.scrub_ips {
+                        let formatted_address = if self.server.basic_config.scrub_ips {
                             scrub_address(&format!("{client_addr}"))
                         } else {
                             format!("{client_addr}")

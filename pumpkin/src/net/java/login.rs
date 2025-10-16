@@ -1,6 +1,6 @@
 use std::sync::LazyLock;
 
-use pumpkin_config::{BASIC_CONFIG, advanced_config};
+use pumpkin_config::advanced_config;
 use pumpkin_protocol::{
     ConnectionState, KnownPack, Label, Link, LinkType,
     java::client::{
@@ -93,7 +93,7 @@ impl JavaClient {
         // Don't allow new logons when the server is full.
         // If `max_players` is set to zero, then there is no max player count enforced.
         // TODO: If client is an operator or has otherwise suitable elevated permissions, allow the client to bypass this requirement.
-        let max_players = BASIC_CONFIG.max_players;
+        let max_players = server.basic_config.max_players;
         if max_players > 0 && server.get_player_count().await >= max_players as usize {
             self.kick(TextComponent::translate(
                 "multiplayer.disconnect.server_full",
@@ -132,7 +132,7 @@ impl JavaClient {
                 }
             }
         } else {
-            let id = if BASIC_CONFIG.online_mode {
+            let id = if server.basic_config.online_mode {
                 login_start.uuid
             } else {
                 offline_uuid(&login_start.name).expect("This is very not safe and bad")
@@ -149,11 +149,11 @@ impl JavaClient {
                 self.enable_compression().await;
             }
 
-            if BASIC_CONFIG.encryption {
+            if server.basic_config.encryption {
                 let verify_token: [u8; 4] = rand::random();
                 // Wait until we have sent the encryption packet to the client
                 self.send_packet_now(
-                    &server.encryption_request(&verify_token, BASIC_CONFIG.online_mode),
+                    &server.encryption_request(&verify_token, server.basic_config.online_mode),
                 )
                 .await;
             } else {
@@ -184,7 +184,7 @@ impl JavaClient {
             return;
         };
 
-        if BASIC_CONFIG.online_mode {
+        if server.basic_config.online_mode {
             // Online mode auth
             match self
                 .authenticate(server, &shared_secret, &profile.name)

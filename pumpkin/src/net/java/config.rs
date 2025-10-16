@@ -6,7 +6,7 @@ use crate::{
     server::Server,
 };
 use core::str;
-use pumpkin_config::{BASIC_CONFIG, advanced_config};
+use pumpkin_config::advanced_config;
 use pumpkin_protocol::{
     ConnectionState,
     java::client::config::{CFinishConfig, CRegistryData},
@@ -179,7 +179,7 @@ impl JavaClient {
             .await
         {
             world
-                .spawn_java_player(&BASIC_CONFIG, player.clone(), server)
+                .spawn_java_player(&server.basic_config, player.clone(), server)
                 .await;
             *self.player.lock().await = Some(player);
         }

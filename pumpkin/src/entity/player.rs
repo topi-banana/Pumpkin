@@ -25,7 +25,7 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
-use pumpkin_config::{BASIC_CONFIG, advanced_config};
+use pumpkin_config::advanced_config;
 use pumpkin_data::damage::DamageType;
 use pumpkin_data::data_component_impl::{AttributeModifiersImpl, Operation};
 use pumpkin_data::data_component_impl::{EquipmentSlot, EquippableImpl};
@@ -570,9 +570,10 @@ impl Player {
 
     pub async fn attack(&self, victim: Arc<dyn EntityBase>) {
         let world = self.world();
+        let server = world.server.upgrade().unwrap();
         let victim_entity = victim.get_entity();
         let attacker_entity = &self.living_entity.entity;
-        let config = &advanced_config().pvp;
+        let config = &server.advanced_config.pvp;
 
         let inventory = self.inventory();
         let item_stack = inventory.held_item();
@@ -604,7 +605,11 @@ impl Player {
 
         let attack_speed = base_attack_speed + add_speed;
 
-        let attack_cooldown_progress = self.get_attack_cooldown_progress(0.5, attack_speed);
+        let attack_cooldown_progress = self.get_attack_cooldown_progress(
+            f64::from(server.basic_config.tps),
+            0.5,
+            attack_speed,
+        );
         self.last_attacked_ticks.store(0, Ordering::Relaxed);
 
         // Only reduce attack damage if in cooldown
@@ -1052,10 +1057,10 @@ impl Player {
         self.client_loaded.store(loaded, Ordering::Relaxed);
     }
 
-    pub fn get_attack_cooldown_progress(&self, base_time: f64, attack_speed: f64) -> f64 {
+    pub fn get_attack_cooldown_progress(&self, tps: f64, base_time: f64, attack_speed: f64) -> f64 {
         let x = f64::from(self.last_attacked_ticks.load(Ordering::Acquire)) + base_time;
 
-        let progress_per_tick = f64::from(BASIC_CONFIG.tps) / attack_speed;
+        let progress_per_tick = tps / attack_speed;
         let progress = x / progress_per_tick;
         progress.clamp(0.0, 1.0)
     }

@@ -3,7 +3,7 @@ use std::{
     sync::Arc,
 };
 
-use pumpkin_config::{BASIC_CONFIG, advanced_config};
+use pumpkin_config::advanced_config;
 use pumpkin_macros::send_cancellable;
 use pumpkin_protocol::{
     bedrock::{
@@ -160,6 +160,7 @@ impl BedrockClient {
     }
 
     pub async fn handle_chat_message(&self, player: &Arc<Player>, packet: SText) {
+        let server = player.world().server.upgrade().unwrap();
         let gameprofile = &player.gameprofile;
 
         send_cancellable! {{
@@ -182,7 +183,7 @@ impl BedrockClient {
                 );
 
                 let entity = &player.living_entity.entity;
-                if BASIC_CONFIG.allow_chat_reports {
+                if server.basic_config.allow_chat_reports {
                     //TODO Alex help, what is this?
                     //world.broadcast_secure_player_chat(player, &message, decorated_message).await;
                 } else {

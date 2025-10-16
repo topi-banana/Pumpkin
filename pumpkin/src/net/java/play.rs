@@ -24,7 +24,7 @@ use crate::plugin::player::player_interact_event::{InteractAction, PlayerInterac
 use crate::plugin::player::player_move::PlayerMoveEvent;
 use crate::server::{Server, seasonal_events};
 use crate::world::{World, chunker};
-use pumpkin_config::{BASIC_CONFIG, advanced_config};
+use pumpkin_config::advanced_config;
 use pumpkin_data::block_properties::{BlockProperties, WaterLikeProperties};
 use pumpkin_data::data_component_impl::{ConsumableImpl, EquipmentSlot, EquippableImpl, FoodImpl};
 use pumpkin_data::item::Item;
@@ -744,6 +744,7 @@ impl JavaClient {
     }
 
     pub async fn handle_chat_message(&self, player: &Arc<Player>, chat_message: SChatMessage) {
+        let server = player.world().server.upgrade().unwrap();
         let gameprofile = &player.gameprofile;
 
         if let Err(err) = self.validate_chat_message(player, &chat_message).await {
@@ -783,7 +784,7 @@ impl JavaClient {
 
                 let entity = &player.living_entity.entity;
                 let world = &entity.world;
-                if BASIC_CONFIG.allow_chat_reports {
+                if server.basic_config.allow_chat_reports {
                     world.broadcast_secure_player_chat(player, &chat_message, decorated_message).await;
                 } else {
                     let je_packet = CSystemChatMessage::new(
@@ -806,6 +807,7 @@ impl JavaClient {
         player: &Arc<Player>,
         chat_message: &SChatMessage,
     ) -> Result<(), ChatError> {
+        let server = player.world().server.upgrade().unwrap();
         // Check for oversized messages
         if chat_message.message.len() > 256 {
             return Err(ChatError::OversizedMessage);
@@ -819,7 +821,7 @@ impl JavaClient {
             return Err(ChatError::IllegalCharacters);
         }
         // These checks are only run in secure chat mode
-        if BASIC_CONFIG.allow_chat_reports {
+        if server.basic_config.allow_chat_reports {
             // Check for unsigned chat
             if let Some(signature) = &chat_message.signature {
                 if signature.len() != 256 {
@@ -865,7 +867,7 @@ impl JavaClient {
         session: SPlayerSession,
     ) {
         // Keep the chat session default if we don't want reports
-        if !BASIC_CONFIG.allow_chat_reports {
+        if !server.basic_config.allow_chat_reports {
             return;
         }
 

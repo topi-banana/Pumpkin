@@ -55,6 +55,7 @@ use tokio::sync::RwLock;
 
 use pumpkin::{LOGGER_IMPL, PumpkinServer, SHOULD_STOP, STOP_INTERRUPT, init_log, stop_server};
 
+use pumpkin_config::{AdvancedConfiguration, BasicConfiguration, LoadConfiguration};
 use pumpkin_util::{
     permission::{PermissionManager, PermissionRegistry},
     text::{TextComponent, color::NamedColor},
@@ -110,11 +111,19 @@ async fn main() {
 
     let time = Instant::now();
 
+    let exec_dir = std::env::current_dir().unwrap();
+    let config_dir = exec_dir.join("config");
+
+    let basic_config = BasicConfiguration::load(&config_dir);
+    let advanced_config = AdvancedConfiguration::load(&config_dir);
+
+    pumpkin::init_logger(&advanced_config);
+
     init_log!();
 
     let default_panic = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        if let Some((wrapper, _)) = LOGGER_IMPL.as_ref() {
+        if let Some((wrapper, _)) = LOGGER_IMPL.wait() {
             // Drop readline to reset terminal state
             let _ = wrapper.take_readline();
         }
@@ -147,7 +156,7 @@ async fn main() {
             .expect("Unable to setup signal handlers");
     });
 
-    let pumpkin_server = PumpkinServer::new().await;
+    let pumpkin_server = PumpkinServer::new(basic_config, advanced_config).await;
     pumpkin_server.init_plugins().await;
 
     log::info!("Started server; took {}ms", time.elapsed().as_millis());

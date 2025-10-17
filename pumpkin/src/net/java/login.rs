@@ -1,6 +1,3 @@
-use std::sync::LazyLock;
-
-use pumpkin_config::advanced_config;
 use pumpkin_protocol::{
     ConnectionState, KnownPack, Label, Link, LinkType,
     java::client::{
@@ -25,66 +22,6 @@ use crate::{
     },
     server::Server,
 };
-
-static LINKS: LazyLock<Vec<Link>> = LazyLock::new(|| {
-    let mut links: Vec<Link> = Vec::new();
-
-    let bug_report = &advanced_config().server_links.bug_report;
-    if !bug_report.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::BugReport), bug_report));
-    }
-
-    let support = &advanced_config().server_links.support;
-    if !support.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::Support), support));
-    }
-
-    let status = &advanced_config().server_links.status;
-    if !status.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::Status), status));
-    }
-
-    let feedback = &advanced_config().server_links.feedback;
-    if !feedback.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::Feedback), feedback));
-    }
-
-    let community = &advanced_config().server_links.community;
-    if !community.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::Community), community));
-    }
-
-    let website = &advanced_config().server_links.website;
-    if !website.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::Website), website));
-    }
-
-    let forums = &advanced_config().server_links.forums;
-    if !forums.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::Forums), forums));
-    }
-
-    let news = &advanced_config().server_links.news;
-    if !news.is_empty() {
-        links.push(Link::new(Label::BuiltIn(LinkType::News), news));
-    }
-
-    let announcements = &advanced_config().server_links.announcements;
-    if !announcements.is_empty() {
-        links.push(Link::new(
-            Label::BuiltIn(LinkType::Announcements),
-            announcements,
-        ));
-    }
-
-    for (key, value) in &advanced_config().server_links.custom {
-        links.push(Link::new(
-            Label::TextComponent(TextComponent::text(key).into()),
-            value,
-        ));
-    }
-    links
-});
 
 impl JavaClient {
     pub async fn handle_login_start(&self, server: &Server, login_start: SLoginStart) {
@@ -111,7 +48,7 @@ impl JavaClient {
         // Default game profile, when no online mode
         // TODO: Make offline UUID
         let mut gameprofile = self.gameprofile.lock().await;
-        let proxy = &advanced_config().networking.proxy;
+        let proxy = &server.advanced_config.networking.proxy;
         if proxy.enabled {
             if proxy.velocity.enabled {
                 velocity::velocity_login(self).await;
@@ -145,8 +82,8 @@ impl JavaClient {
                 profile_actions: None,
             };
 
-            if advanced_config().networking.packet_compression.enabled {
-                self.enable_compression().await;
+            if server.advanced_config.networking.packet_compression.enabled {
+                self.enable_compression(server).await;
             }
 
             if server.basic_config.encryption {
@@ -244,8 +181,13 @@ impl JavaClient {
         self.finish_login(profile).await;
     }
 
-    async fn enable_compression(&self) {
-        let compression = advanced_config().networking.packet_compression.info.clone();
+    async fn enable_compression(&self, server: &Server) {
+        let compression = server
+            .advanced_config
+            .networking
+            .packet_compression
+            .info
+            .clone();
         // We want to wait until we have sent the compression packet to the client
         self.send_packet_now(&CSetCompression::new(
             compression.threshold.try_into().unwrap(),
@@ -267,17 +209,24 @@ impl JavaClient {
     ) -> Result<GameProfile, AuthError> {
         let hash = server.digest_secret(shared_secret);
         let ip = self.address.lock().await.ip();
-        let profile = authentication::authenticate(username, &hash, &ip)?;
+        let profile = authentication::authenticate(
+            username,
+            &hash,
+            &ip,
+            &server.advanced_config.networking.authentication,
+        )?;
 
         // Check if the player should join
         if let Some(actions) = &profile.profile_actions {
-            if advanced_config()
+            if server
+                .advanced_config
                 .networking
                 .authentication
                 .player_profile
                 .allow_banned_players
             {
-                for allowed in &advanced_config()
+                for allowed in &server
+                    .advanced_config
                     .networking
                     .authentication
                     .player_profile
@@ -298,7 +247,7 @@ impl JavaClient {
         for property in &profile.properties {
             authentication::validate_textures(
                 property,
-                &advanced_config().networking.authentication.textures,
+                &server.advanced_config.networking.authentication.textures,
             )
             .map_err(AuthError::TextureError)?;
         }
@@ -313,9 +262,13 @@ impl JavaClient {
             packet.payload.as_ref().map(|p| p.len())
         );
     }
-    pub async fn handle_plugin_response(&self, plugin_response: SLoginPluginResponse) {
+    pub async fn handle_plugin_response(
+        &self,
+        server: &Server,
+        plugin_response: SLoginPluginResponse,
+    ) {
         log::debug!("Handling plugin");
-        let velocity_config = &advanced_config().networking.proxy.velocity;
+        let velocity_config = &server.advanced_config.networking.proxy.velocity;
         if velocity_config.enabled {
             let mut address = self.address.lock().await;
             match velocity::receive_velocity_plugin_response(
@@ -339,8 +292,65 @@ impl JavaClient {
         self.connection_state.store(ConnectionState::Config);
         self.send_packet_now(&server.get_branding()).await;
 
-        if advanced_config().server_links.enabled {
-            self.send_packet_now(&CConfigServerLinks::new(&LINKS)).await;
+        if server.advanced_config.server_links.enabled {
+            let mut links: Vec<Link> = Vec::new();
+
+            let bug_report = &server.advanced_config.server_links.bug_report;
+            if !bug_report.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::BugReport), bug_report));
+            }
+
+            let support = &server.advanced_config.server_links.support;
+            if !support.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::Support), support));
+            }
+
+            let status = &server.advanced_config.server_links.status;
+            if !status.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::Status), status));
+            }
+
+            let feedback = &server.advanced_config.server_links.feedback;
+            if !feedback.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::Feedback), feedback));
+            }
+
+            let community = &server.advanced_config.server_links.community;
+            if !community.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::Community), community));
+            }
+
+            let website = &server.advanced_config.server_links.website;
+            if !website.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::Website), website));
+            }
+
+            let forums = &server.advanced_config.server_links.forums;
+            if !forums.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::Forums), forums));
+            }
+
+            let news = &server.advanced_config.server_links.news;
+            if !news.is_empty() {
+                links.push(Link::new(Label::BuiltIn(LinkType::News), news));
+            }
+
+            let announcements = &server.advanced_config.server_links.announcements;
+            if !announcements.is_empty() {
+                links.push(Link::new(
+                    Label::BuiltIn(LinkType::Announcements),
+                    announcements,
+                ));
+            }
+
+            for (key, value) in &server.advanced_config.server_links.custom {
+                links.push(Link::new(
+                    Label::TextComponent(TextComponent::text(key.clone()).into()),
+                    value,
+                ));
+            }
+
+            self.send_packet_now(&CConfigServerLinks::new(&links)).await;
         }
 
         // Send tags.
@@ -356,7 +366,7 @@ impl JavaClient {
         ]))
         .await;
 
-        let resource_config = &advanced_config().resource_pack;
+        let resource_config = &server.advanced_config.resource_pack;
         if resource_config.enabled {
             let uuid = Uuid::new_v3(&uuid::Uuid::NAMESPACE_DNS, resource_config.url.as_bytes());
             let resource_pack = CConfigAddResourcePack::new(
@@ -367,7 +377,7 @@ impl JavaClient {
                 if resource_config.prompt_message.is_empty() {
                     None
                 } else {
-                    Some(TextComponent::text(&resource_config.prompt_message))
+                    Some(TextComponent::text(resource_config.prompt_message.clone()))
                 },
             );
 

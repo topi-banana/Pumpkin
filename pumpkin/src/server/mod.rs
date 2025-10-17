@@ -12,7 +12,7 @@ use crate::world::custom_bossbar::CustomBossbars;
 use crate::{command::dispatcher::CommandDispatcher, entity::player::Player, world::World};
 use connection_cache::{CachedBranding, CachedStatus};
 use key_store::KeyStore;
-use pumpkin_config::{AdvancedConfiguration, BasicConfiguration, LoadConfiguration};
+use pumpkin_config::{AdvancedConfiguration, BasicConfiguration};
 
 use crate::command::CommandSender;
 use pumpkin_macros::send_cancellable;
@@ -112,13 +112,10 @@ impl Server {
     #[allow(clippy::new_without_default)]
     #[allow(clippy::too_many_lines)]
     #[must_use]
-    pub async fn new() -> Arc<Self> {
-        let exec_dir = std::env::current_dir().unwrap();
-        let config_dir = exec_dir.join("config");
-
-        let basic_config = BasicConfiguration::load(&config_dir);
-        let advanced_config = AdvancedConfiguration::load(&config_dir);
-
+    pub async fn new(
+        basic_config: BasicConfiguration,
+        advanced_config: AdvancedConfiguration,
+    ) -> Arc<Self> {
         // First register the default commands. After that, plugins can put in their own.
         let command_dispatcher = RwLock::new(default_dispatcher(&basic_config).await);
         let world_path = basic_config.get_world_path();
@@ -166,6 +163,7 @@ impl Server {
         let player_data_storage = ServerPlayerData::new(
             world_path.join("playerdata"),
             Duration::from_secs(advanced_config.player_data.save_player_cron_interval),
+            advanced_config.player_data.save_player_data,
         );
         let white_list = AtomicBool::new(basic_config.white_list);
 

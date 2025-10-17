@@ -1,5 +1,4 @@
 use fun::FunConfig;
-use log::warn;
 use logging::LoggingConfig;
 use pumpkin_util::world_seed::Seed;
 use pumpkin_util::{Difficulty, GameMode, PermissionLvl};
@@ -38,43 +37,6 @@ use networking::NetworkingConfig;
 use player_data::PlayerDataConfig;
 use resource_pack::ResourcePackConfig;
 use world::LevelConfig;
-
-#[cfg(not(feature = "test_helper"))]
-static ADVANCED_CONFIG: std::sync::LazyLock<AdvancedConfiguration> =
-    std::sync::LazyLock::new(|| {
-        let exec_dir = std::env::current_dir().unwrap();
-        AdvancedConfiguration::load(&exec_dir)
-    });
-
-#[cfg(not(feature = "test_helper"))]
-pub fn advanced_config() -> &'static AdvancedConfiguration {
-    &ADVANCED_CONFIG
-}
-
-// This is pretty jank but it works :(
-// TODO: Can we refactor this better?
-#[cfg(feature = "test_helper")]
-use std::cell::RefCell;
-
-// Yes, we are leaking memory here, but it is only for tests. Need to maintain pairity with the
-// non-test code
-#[cfg(feature = "test_helper")]
-thread_local! {
-    // Needs to be thread local so we don't override the config while another test is running
-    static ADVANCED_CONFIG: RefCell<&'static AdvancedConfiguration> = RefCell::new(Box::leak(Box::new(AdvancedConfiguration::default())));
-}
-
-#[cfg(feature = "test_helper")]
-pub fn override_config_for_testing(config: AdvancedConfiguration) {
-    ADVANCED_CONFIG.with_borrow_mut(|ref_config| {
-        *ref_config = Box::leak(Box::new(config));
-    });
-}
-
-#[cfg(feature = "test_helper")]
-pub fn advanced_config() -> &'static AdvancedConfiguration {
-    ADVANCED_CONFIG.with_borrow(|config| *config)
-}
 
 /// The idea is that Pumpkin should very customizable.
 /// You can enable or disable features depending on your needs.
@@ -220,9 +182,10 @@ pub trait LoadConfiguration {
                     path.file_name().unwrap().to_str().unwrap()
                 );
                 if let Err(err) = fs::write(&path, toml::to_string(&merged_config).unwrap()) {
-                    warn!(
+                    log::warn!(
                         "Couldn't write merged config to {:?}. Reason: {}",
-                        &path, err
+                        &path,
+                        err
                     );
                 }
             }
@@ -232,9 +195,10 @@ pub trait LoadConfiguration {
             let content = Self::default();
 
             if let Err(err) = fs::write(&path, toml::to_string(&content).unwrap()) {
-                warn!(
+                log::warn!(
                     "Couldn't write default config to {:?}. Reason: {}",
-                    &path, err
+                    &path,
+                    err
                 );
             }
 

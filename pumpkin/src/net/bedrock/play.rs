@@ -3,7 +3,6 @@ use std::{
     sync::Arc,
 };
 
-use pumpkin_config::advanced_config;
 use pumpkin_macros::send_cancellable;
 use pumpkin_protocol::{
     bedrock::{
@@ -159,8 +158,7 @@ impl BedrockClient {
         }
     }
 
-    pub async fn handle_chat_message(&self, player: &Arc<Player>, packet: SText) {
-        let server = player.world().server.upgrade().unwrap();
+    pub async fn handle_chat_message(&self, server: &Server, player: &Arc<Player>, packet: SText) {
         let gameprofile = &player.gameprofile;
 
         send_cancellable! {{
@@ -169,9 +167,9 @@ impl BedrockClient {
             'after: {
                 log::info!("<chat> {}: {}", gameprofile.name, event.message);
 
-                let config = advanced_config();
+                let config = &server.advanced_config;
 
-                let message = match seasonal_events::modify_chat_message(&event.message) {
+                let message = match seasonal_events::modify_chat_message(&event.message, config) {
                     Some(m) => m,
                     None => event.message.clone(),
                 };
@@ -233,7 +231,7 @@ impl BedrockClient {
                         .await;
                 });
 
-                if advanced_config().commands.log_console {
+                if server.advanced_config.commands.log_console {
                     log::info!(
                         "Player ({}): executed command /{}",
                         player.gameprofile.name,

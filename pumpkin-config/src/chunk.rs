@@ -3,8 +3,11 @@ use std::str;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Clone)]
+#[serde(tag = "type")]
 pub enum ChunkConfig {
+    #[serde(rename = "anvil")]
     Anvil(AnvilChunkConfig),
+    #[serde(rename = "linear")]
     Linear(LinearChunkConfig),
 }
 

@@ -25,7 +25,6 @@ use tokio::sync::{Mutex, RwLock};
 use tokio::task::JoinHandle;
 use uuid::Uuid;
 
-use pumpkin_config::advanced_config;
 use pumpkin_data::damage::DamageType;
 use pumpkin_data::data_component_impl::{AttributeModifiersImpl, Operation};
 use pumpkin_data::data_component_impl::{EquipmentSlot, EquippableImpl};
@@ -418,6 +417,8 @@ impl Player {
             }
         }
 
+        let server = world.server.upgrade().unwrap();
+
         let player_uuid = gameprofile.id;
 
         let living_entity = LivingEntity::new(Entity::new(
@@ -480,7 +481,7 @@ impl Player {
             // Minecraft has no way to change the default permission level of new players.
             // Minecraft's default permission level is 0.
             permission_lvl: OPERATOR_CONFIG.read().await.get_entry(&player_uuid).map_or(
-                AtomicCell::new(advanced_config().commands.default_op_level),
+                AtomicCell::new(server.advanced_config.commands.default_op_level),
                 |op| AtomicCell::new(op.level),
             ),
             inventory,

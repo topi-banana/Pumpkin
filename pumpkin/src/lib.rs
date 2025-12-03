@@ -163,10 +163,21 @@ pub fn stop_server() {
     STOP_INTERRUPT.notify_waiters();
 }
 
+fn resolve_some<T: Future, D, F: FnOnce(D) -> T>(
+    opt: Option<D>,
+    func: F,
+) -> futures::future::Either<T, std::future::Pending<T::Output>> {
+    use futures::future::Either;
+    match opt {
+        Some(val) => Either::Left(func(val)),
+        None => Either::Right(std::future::pending()),
+    }
+}
+
 pub struct PumpkinServer {
     pub server: Arc<Server>,
-    pub tcp_listener: TcpListener,
-    pub udp_socket: Arc<UdpSocket>,
+    pub tcp_listener: Option<TcpListener>,
+    pub udp_socket: Option<Arc<UdpSocket>>,
 }
 
 impl PumpkinServer {
@@ -205,31 +216,37 @@ impl PumpkinServer {
             });
         }
 
-        // Setup the TCP server socket.
-        let listener = tokio::net::TcpListener::bind(server.basic_config.java_edition_address)
-            .await
-            .expect("Failed to start `TcpListener`");
-        // In the event the user puts 0 for their port, this will allow us to know what port it is running on
-        let addr = listener
-            .local_addr()
-            .expect("Unable to get the address of the server!");
+        let mut tcp_listener = None;
 
-        if server.advanced_config.networking.query.enabled {
-            log::info!("Query protocol is enabled. Starting...");
-            server.spawn_task(query::start_query_handler(
-                server.clone(),
-                server.advanced_config.networking.query.address,
-            ));
-        }
+        if server.basic_config.java_edition {
+            // Setup the TCP server socket.
+            let listener = tokio::net::TcpListener::bind(server.basic_config.java_edition_address)
+                .await
+                .expect("Failed to start `TcpListener`");
+            // In the event the user puts 0 for their port, this will allow us to know what port it is running on
+            let addr = listener
+                .local_addr()
+                .expect("Unable to get the address of the server!");
 
-        if server.advanced_config.networking.lan_broadcast.enabled {
-            log::info!("LAN broadcast is enabled. Starting...");
+            if server.advanced_config.networking.query.enabled {
+                log::info!("Query protocol is enabled. Starting...");
+                server.spawn_task(query::start_query_handler(
+                    server.clone(),
+                    server.advanced_config.networking.query.address,
+                ));
+            }
 
-            let lan_broadcast = LANBroadcast::new(
-                &server.advanced_config.networking.lan_broadcast,
-                &server.basic_config,
-            );
-            server.spawn_task(lan_broadcast.start(addr));
+            if server.advanced_config.networking.lan_broadcast.enabled {
+                log::info!("LAN broadcast is enabled. Starting...");
+
+                let lan_broadcast = LANBroadcast::new(
+                    &server.advanced_config.networking.lan_broadcast,
+                    &server.basic_config,
+                );
+                server.spawn_task(lan_broadcast.start(addr));
+            }
+
+            tcp_listener = Some(listener);
         }
 
         if server.basic_config.allow_chat_reports {
@@ -247,14 +264,20 @@ impl PumpkinServer {
             });
         };
 
-        let udp_socket = UdpSocket::bind(server.basic_config.bedrock_edition_address)
-            .await
-            .expect("Failed to bind UDP Socket");
+        let mut udp_socket = None;
+
+        if server.basic_config.bedrock_edition {
+            udp_socket = Some(Arc::new(
+                UdpSocket::bind(server.basic_config.bedrock_edition_address)
+                    .await
+                    .expect("Failed to bind UDP Socket"),
+            ));
+        }
 
         Self {
             server: server.clone(),
-            tcp_listener: listener,
-            udp_socket: Arc::new(udp_socket),
+            tcp_listener,
+            udp_socket,
         }
     }
 
@@ -337,7 +360,7 @@ impl PumpkinServer {
 
         select! {
             // Branch for TCP connections (Java Edition)
-            tcp_result = self.tcp_listener.accept() => {
+            tcp_result = resolve_some(self.tcp_listener.as_ref(), |listener| listener.accept()) => {
                 match tcp_result {
                     Ok((connection, client_addr)) => {
                         if let Err(e) = connection.set_nodelay(true) {
@@ -391,7 +414,7 @@ impl PumpkinServer {
             },
 
             // Branch for UDP packets (Bedrock Edition)
-            udp_result = self.udp_socket.recv_from(&mut udp_buf) => {
+            udp_result = resolve_some(self.udp_socket.as_ref(), |sock: &Arc<UdpSocket>| sock.recv_from(&mut udp_buf)) => {
                 match udp_result {
                     Ok((len, client_addr)) => {
                         if len == 0 {
@@ -415,7 +438,7 @@ impl PumpkinServer {
                                 } else if let Ok(packet) = BedrockClient::is_connection_request(&mut Cursor::new(&udp_buf[4..len])) {
                                     *master_client_id_counter += 1;
 
-                                    let mut platform = BedrockClient::new(self.udp_socket.clone(), client_addr, be_clients);
+                                    let mut platform = BedrockClient::new(self.udp_socket.clone().unwrap(), client_addr, be_clients);
                                     platform.handle_connection_request(packet).await;
                                     platform.start_outgoing_packet_task();
 
@@ -428,7 +451,7 @@ impl PumpkinServer {
                                 // Please keep the function as simple as possible!
                                 // We dont care about the result, the client just resends the packet
                                 // Since offline packets are very small we dont need to move and clone the data
-                                let _ = BedrockClient::handle_offline_packet(&self.server, id, &mut Cursor::new(&udp_buf[1..len]), client_addr, &self.udp_socket).await;
+                                let _ = BedrockClient::handle_offline_packet(&self.server, id, &mut Cursor::new(&udp_buf[1..len]), client_addr, self.udp_socket.as_ref().unwrap()).await;
                             }
 
                         }
@@ -479,7 +502,7 @@ async fn setup_stdin_console(server: Arc<Server>) {
                     'after: {
                         let dispatcher = &server.command_dispatcher.read().await;
                         dispatcher
-                            .handle_command(&mut command::CommandSender::Console, &server, command.as_str())
+                            .handle_command(&command::CommandSender::Console, &server, command.as_str())
                             .await;
                     };
                 }}
@@ -512,7 +535,7 @@ fn setup_console(rl: Readline, server: Arc<Server>) {
                             let dispatcher = server.command_dispatcher.read().await;
 
                             dispatcher
-                                .handle_command(&mut command::CommandSender::Console, &server, &line)
+                                .handle_command(&command::CommandSender::Console, &server, &line)
                                 .await;
                             rl.add_history_entry(line).unwrap();
                         }

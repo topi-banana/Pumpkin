@@ -6,7 +6,6 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::chunk::format::anvil::{AnvilChunkFile, SingleChunkDataSerializer};
 use crate::chunk::io::{ChunkSerializer, LoadedData};
 use crate::chunk::{ChunkReadingError, ChunkWritingError};
-use async_trait::async_trait;
 use bytes::{Buf, BufMut, Bytes};
 use log::error;
 use pumpkin_config::chunk::LinearChunkConfig;
@@ -164,7 +163,6 @@ impl<S: SingleChunkDataSerializer> Default for LinearFile<S> {
     }
 }
 
-#[async_trait]
 impl<S: SingleChunkDataSerializer> ChunkSerializer for LinearFile<S> {
     type Data = S;
     type WriteBackend = PathBuf;
@@ -379,7 +377,7 @@ impl<S: SingleChunkDataSerializer> ChunkSerializer for LinearFile<S> {
 /*
 #[cfg(test)]
 mod tests {
-    use async_trait::async_trait;
+
     use core::panic;
     use pumpkin_data::BlockDirection;
     use pumpkin_util::math::position::BlockPos;
@@ -401,7 +399,6 @@ mod tests {
 
     struct BlockRegistry;
 
-    #[async_trait]
     impl BlockRegistryExt for BlockRegistry {
         fn can_place_at(
             &self,

@@ -105,7 +105,7 @@ pub struct Server {
     world_info_writer: Arc<dyn WorldInfoWriter>,
     // Gets unlocked when dropped
     // TODO: Make this a trait
-    _locker: Arc<AnvilLevelLocker>,
+    _locker: Arc<Option<AnvilLevelLocker>>,
 }
 
 impl Server {
@@ -144,9 +144,15 @@ impl Server {
                 fs::copy(dat_path, backup_path).unwrap();
             }
         }
-        // if we fail to lock, lets crash ???. maybe not the best solution when we have a large server with many worlds and one is locked.
-        // So TODO
-        let locker = AnvilLevelLocker::lock(&world_path).expect("Failed to lock level");
+        let locker = match AnvilLevelLocker::lock(&world_path) {
+            Ok(l) => Some(l),
+            Err(err) => {
+                log::warn!(
+                    "Could not lock the level file. Data corruption is possible if the world is accessed by multiple processes simultaneously. Error: {err}"
+                );
+                None
+            }
+        };
 
         let level_info = level_info.unwrap_or_else(|err| {
             log::warn!("Failed to get level_info, using default instead: {err}");

@@ -638,7 +638,7 @@ impl LivingEntity {
     }
 
     pub fn get_swim_height(&self) -> f64 {
-        let eye_height = self.entity.standing_eye_height;
+        let eye_height = self.entity.entity_dimension.load().eye_height;
 
         if self.entity.entity_type == &EntityType::BREEZE {
             f64::from(eye_height)

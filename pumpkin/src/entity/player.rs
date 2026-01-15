@@ -1081,11 +1081,7 @@ impl Player {
     }
 
     pub fn eye_position(&self) -> Vector3<f64> {
-        let eye_height = if self.living_entity.entity.pose.load() == EntityPose::Crouching {
-            1.27
-        } else {
-            f64::from(self.living_entity.entity.standing_eye_height)
-        };
+        let eye_height = f64::from(self.living_entity.entity.entity_dimension.load().eye_height);
         Vector3::new(
             self.living_entity.entity.pos.load().x,
             self.living_entity.entity.pos.load().y + eye_height,
@@ -1388,7 +1384,7 @@ impl Player {
         let d = self.block_interaction_range() + additional_range;
         let box_pos = BoundingBox::from_block(position);
         let entity_pos = self.living_entity.entity.pos.load();
-        let standing_eye_height = self.living_entity.entity.standing_eye_height;
+        let standing_eye_height = self.living_entity.entity.entity_dimension.load().eye_height;
         box_pos.squared_magnitude(Vector3 {
             x: entity_pos.x,
             y: entity_pos.y + f64::from(standing_eye_height),

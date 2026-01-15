@@ -882,11 +882,10 @@ impl Player {
         //     return;
         // }
 
-        if self.packet_sequence.load(Ordering::Relaxed) > -1 {
+        let seq = self.packet_sequence.swap(-1, Ordering::Relaxed);
+        if seq != -1 {
             self.client
-                .enqueue_packet(&CAcknowledgeBlockChange::new(
-                    self.packet_sequence.swap(-1, Ordering::Relaxed).into(),
-                ))
+                .send_packet_now(&CAcknowledgeBlockChange::new(seq.into()))
                 .await;
         }
         {

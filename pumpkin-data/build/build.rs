@@ -39,6 +39,7 @@ mod potion;
 mod potion_brewing;
 mod recipe_remainder;
 mod recipes;
+mod registry;
 mod scoreboard_slot;
 mod screen;
 mod sound;
@@ -67,6 +68,7 @@ pub fn main() {
         (chunk_status::build, "chunk_status.rs"),
         (game_event::build, "game_event.rs"),
         (game_rules::build, "game_rules.rs"),
+        (registry::build, "registry.rs"),
         (dimension::build, "dimension.rs"),
         (sound_category::build, "sound_category.rs"),
         (entity_pose::build, "entity_pose.rs"),

@@ -1624,7 +1624,7 @@ impl GenerationSchedule {
         level: Arc<Level>,
         lock: IOLock,
     ) {
-        log::info!("io read thread start");
+        log::debug!("io read thread start");
         use crate::biome::hash_seed;
         let biome_mixer_seed = hash_seed(level.world_gen.random_config.seed);
         let dimension = &level.world_gen.dimension;
@@ -1687,7 +1687,7 @@ impl GenerationSchedule {
                 break;
             }
         }
-        log::info!("io read thread stop");
+        log::debug!("io read thread stop");
     }
 
     async fn io_write_work(recv: AsyncRx<Vec<(ChunkPos, Chunk)>>, level: Arc<Level>, lock: IOLock) {

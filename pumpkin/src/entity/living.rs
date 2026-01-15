@@ -1077,6 +1077,14 @@ impl EntityBase for LivingEntity {
         })
     }
 
+    fn tick_in_void<'a>(&'a self, dyn_self: &'a dyn EntityBase) -> EntityBaseFuture<'a, ()> {
+        Box::pin(async move {
+            dyn_self
+                .damage(dyn_self, 4.0, DamageType::OUT_OF_WORLD)
+                .await;
+        })
+    }
+
     fn get_gravity(&self) -> f64 {
         const GRAVITY: f64 = 0.08;
         GRAVITY

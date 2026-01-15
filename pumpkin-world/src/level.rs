@@ -309,7 +309,7 @@ impl Level {
         };
 
         for handle in handles {
-            log::info!(
+            log::debug!(
                 "Waiting for thread {:?} ({}) to stop",
                 handle.thread().id(),
                 handle.thread().name().unwrap_or("unknown")

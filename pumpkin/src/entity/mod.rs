@@ -126,6 +126,10 @@ pub trait EntityBase: Send + Sync + NBTStorage {
         0.0
     }
 
+    fn tick_in_void<'a>(&'a self, _dyn_self: &'a dyn EntityBase) -> EntityBaseFuture<'a, ()> {
+        Box::pin(async move { self.get_entity().remove().await })
+    }
+
     /// Returns if damage was successful or not
     fn damage<'a>(
         &'a self,
@@ -1776,10 +1780,7 @@ impl Entity {
 
     pub async fn check_out_of_world(&self, dyn_self: &dyn EntityBase) {
         if self.pos.load().y < f64::from(self.world.dimension.min_y) - 64.0 {
-            // Tick out of world damage
-            dyn_self
-                .damage(dyn_self, 4.0, DamageType::OUT_OF_WORLD)
-                .await;
+            dyn_self.tick_in_void(dyn_self).await;
         }
     }
 

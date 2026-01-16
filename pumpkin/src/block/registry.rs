@@ -692,21 +692,21 @@ impl BlockRegistry {
         block: &Block,
         flags: BlockFlags,
     ) {
-        let state = world.get_block_state(position).await;
+        let state_id = world.get_block_state_id(position).await;
         for direction in BlockDirection::all() {
             let neighbor_pos = position.offset(direction.to_offset());
-            let neighbor_state = world.get_block_state(&neighbor_pos).await;
+            let neighbor_state_id = world.get_block_state_id(&neighbor_pos).await;
             let pumpkin_block = self.get_pumpkin_block(block);
             if let Some(pumpkin_block) = pumpkin_block {
                 let new_state = pumpkin_block
                     .get_state_for_neighbor_update(GetStateForNeighborUpdateArgs {
                         world,
                         block,
-                        state_id: state.id,
+                        state_id,
                         position,
                         direction: direction.opposite(),
                         neighbor_position: &neighbor_pos,
-                        neighbor_state_id: neighbor_state.id,
+                        neighbor_state_id,
                     })
                     .await;
                 world.set_block_state(&neighbor_pos, new_state, flags).await;

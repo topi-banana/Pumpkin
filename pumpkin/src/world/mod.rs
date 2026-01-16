@@ -3452,6 +3452,13 @@ impl BlockAccessor for World {
         Box::pin(async move { Self::get_block_state(self, position).await })
     }
 
+    fn get_block_state_id<'a>(
+        &'a self,
+        position: &'a BlockPos,
+    ) -> Pin<Box<dyn Future<Output = BlockStateId> + Send + 'a>> {
+        Box::pin(async move { Self::get_block_state_id(self, position).await })
+    }
+
     fn get_block_and_state<'a>(
         &'a self,
         position: &'a BlockPos,

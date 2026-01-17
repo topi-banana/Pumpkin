@@ -70,7 +70,7 @@ impl MobEntity {
     }
 
     pub async fn set_attacking(&self, attacking: bool) {
-        self.set_mob_flag(Self::ATTACKING_FLAG, attacking).await
+        self.set_mob_flag(Self::ATTACKING_FLAG, attacking).await;
     }
 
     async fn set_mob_flag(&self, flag: u8, value: bool) {

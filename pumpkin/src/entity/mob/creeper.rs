@@ -54,7 +54,6 @@ impl CreeperEntity {
     }
 
     pub async fn set_fuse_speed(&self, speed: i32) {
-        dbg!(speed);
         self.fuse_speed.store(speed, Ordering::Relaxed);
         self.mob_entity
             .living_entity
@@ -64,7 +63,7 @@ impl CreeperEntity {
                 MetaDataType::Integer,
                 speed,
             )])
-            .await
+            .await;
     }
 }
 

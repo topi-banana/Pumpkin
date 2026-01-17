@@ -54,7 +54,7 @@ rand.workspace = true
 num-bigint.workspace = true
 
 # Console line reading
-rustyline-async.workspace = true
+rustyline.workspace = true
 
 # encryption
 rsa = { workspace = true, features = ["sha1"] }

@@ -121,13 +121,12 @@ impl Goal for MeleeAttackGoal {
         Box::pin(async {
             let mut target = mob.get_mob_entity().target.lock().await;
 
-            if let Some(entity) = target.as_deref() {
-                if !EntityPredicate::ExceptCreativeOrSpectator
+            if let Some(entity) = target.as_deref()
+                && !EntityPredicate::ExceptCreativeOrSpectator
                     .test(entity.get_entity())
                     .await
-                {
-                    *target = None;
-                }
+            {
+                *target = None;
             }
 
             let mut navigator = mob.get_mob_entity().navigator.lock().await;

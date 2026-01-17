@@ -54,7 +54,7 @@ base64 = "0.22.1"
 bitflags = "2.10.0"
 cesu8 = "1.1"
 cfb8 = "0.8"
-colored = "3.0"
+colored = "3.1"
 console-subscriber = { version = "0.5.0", default-features = false }
 crc-fast = "1.9.0"
 criterion = { version = "0.8", default-features = false }

@@ -61,6 +61,7 @@ pub mod hunger;
 pub mod item;
 pub mod living;
 pub mod mob;
+pub mod passive;
 pub mod player;
 pub mod projectile;
 pub mod projectile_deflection;

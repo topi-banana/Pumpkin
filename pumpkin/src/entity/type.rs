@@ -11,7 +11,8 @@ use crate::{
             armor_stand::ArmorStandEntity, end_crystal::EndCrystalEntity, painting::PaintingEntity,
         },
         living::LivingEntity,
-        mob::{drowned::DrownedEntity, zombie::ZombieEntity},
+        mob::{creeper::CreeperEntity, drowned::DrownedEntity, zombie::ZombieEntity},
+        passive::wolf::WolfEntity,
     },
     world::World,
 };
@@ -27,6 +28,8 @@ pub async fn from_type(
     let mob: Arc<dyn EntityBase> = match entity_type.id {
         id if id == EntityType::ZOMBIE.id => ZombieEntity::make(entity).await,
         id if id == EntityType::DROWNED.id => DrownedEntity::make(entity).await,
+        id if id == EntityType::CREEPER.id => CreeperEntity::make(entity).await,
+        id if id == EntityType::WOLF.id => WolfEntity::make(entity).await,
         id if id == EntityType::ARMOR_STAND.id => Arc::new(ArmorStandEntity::new(entity)),
         id if id == EntityType::PAINTING.id => Arc::new(PaintingEntity::new(entity)),
         id if id == EntityType::END_CRYSTAL.id => Arc::new(EndCrystalEntity::new(entity)),

@@ -120,18 +120,18 @@ impl Goal for MeleeAttackGoal {
     fn stop<'a>(&'a mut self, mob: &'a dyn Mob) -> GoalFuture<'a, ()> {
         Box::pin(async {
             let mut target = mob.get_mob_entity().target.lock().await;
-            if target.is_none() {
-                return;
+
+            if let Some(entity) = target.as_deref() {
+                if !EntityPredicate::ExceptCreativeOrSpectator
+                    .test(entity.get_entity())
+                    .await
+                {
+                    *target = None;
+                }
             }
 
-            if !EntityPredicate::ExceptCreativeOrSpectator
-                .test(mob.get_entity())
-                .await
-            {
-                *target = None;
-            }
-
-            // TODO: set attacking to false and stop navigation
+            let mut navigator = mob.get_mob_entity().navigator.lock().await;
+            navigator.cancel();
         })
     }
 

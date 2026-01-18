@@ -690,8 +690,7 @@ impl Player {
                 _ => {}
             }
             if config.knockback {
-                combat::handle_knockback(attacker_entity, world, victim_entity, knockback_strength)
-                    .await;
+                combat::handle_knockback(attacker_entity, victim_entity, knockback_strength);
             }
         }
 

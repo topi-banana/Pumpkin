@@ -807,58 +807,46 @@ impl Entity {
         */
     }
 
-    // Returns whether the entity's eye level is in a wall
-
     async fn tick_block_collisions(&self, caller: &Arc<dyn EntityBase>, server: &Server) -> bool {
         let bounding_box = self.bounding_box.load();
-
-        let mut suffocating = false;
-
         let aabb = bounding_box.expand(-0.001, -0.001, -0.001);
 
         let min = aabb.min_block_pos();
-
         let max = aabb.max_block_pos();
 
-        let mut eye_level_box = aabb;
-
         let eye_height = f64::from(self.entity_dimension.load().eye_height);
-
+        let mut eye_level_box = aabb;
         eye_level_box.min.y += eye_height;
-
         eye_level_box.max.y = eye_level_box.min.y;
 
-        for x in min.0.x..=max.0.x {
-            for y in min.0.y..=max.0.y {
-                for z in min.0.z..=max.0.z {
-                    let pos = BlockPos::new(x, y, z);
+        let mut suffocating = false;
+        let pos_iter = BlockPos::iterate(min, max);
 
-                    let (block, state) = self.world.get_block_and_state(&pos).await;
+        for pos in pos_iter {
+            let (block, state) = self.world.get_block_and_state(&pos).await;
+            if state.is_air() {
+                continue;
+            }
 
-                    let collided = World::check_outline(
-                        &bounding_box,
-                        pos,
-                        state,
-                        !suffocating && state.is_solid(),
-                        |collision_shape: &BoundingBox| {
-                            suffocating = collision_shape.intersects(&eye_level_box);
-                        },
-                    );
+            let check_suffocation = !suffocating && state.is_solid();
 
-                    if collided {
-                        self.world
-                            .block_registry
-                            .on_entity_collision(
-                                block,
-                                &self.world,
-                                caller.as_ref(),
-                                &pos,
-                                state,
-                                server,
-                            )
-                            .await;
+            let collided = World::check_outline(
+                &bounding_box,
+                pos,
+                state,
+                check_suffocation,
+                |collision_shape: &BoundingBox| {
+                    if collision_shape.intersects(&eye_level_box) {
+                        suffocating = true;
                     }
-                }
+                },
+            );
+
+            if collided {
+                self.world
+                    .block_registry
+                    .on_entity_collision(block, &self.world, caller.as_ref(), &pos, state, server)
+                    .await;
             }
         }
 

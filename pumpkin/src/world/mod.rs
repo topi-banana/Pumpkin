@@ -1044,33 +1044,29 @@ impl World {
 
         let mut positions = Vec::new();
 
-        // Include downwards for fences
-
         let min = BlockPos::floored_v(bounding_box.min.add_raw(0.0, -0.50001, 0.0));
-
         let max = bounding_box.max_block_pos();
+        let pos_iter = BlockPos::iterate(min, max);
 
-        for x in min.0.x..=max.0.x {
-            for y in min.0.y..=max.0.y {
-                for z in min.0.z..=max.0.z {
-                    let pos = BlockPos::new(x, y, z);
+        for pos in pos_iter {
+            let state = self.get_block_state(&pos).await;
 
-                    let state = self.get_block_state(&pos).await;
+            if state.is_air() {
+                continue;
+            }
 
-                    let collided = Self::check_collision(
-                        &bounding_box,
-                        pos,
-                        state,
-                        true,
-                        |collision_shape: &BoundingBox| {
-                            collisions.push(*collision_shape);
-                        },
-                    );
+            let collided = Self::check_collision(
+                &bounding_box,
+                pos,
+                state,
+                true,
+                |collision_shape: &BoundingBox| {
+                    collisions.push(*collision_shape);
+                },
+            );
 
-                    if collided {
-                        positions.push((collisions.len(), pos));
-                    }
-                }
+            if collided {
+                positions.push((collisions.len(), pos));
             }
         }
 

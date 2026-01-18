@@ -1154,7 +1154,7 @@ impl EntityBase for LivingEntity {
             }
             if self.health.load() <= 0.0 {
                 let time = self.death_time.fetch_add(1, Relaxed);
-                if time == 20 {
+                if time >= 20 && self.entity.is_alive() {
                     // Spawn Death particles
                     self.entity
                         .world

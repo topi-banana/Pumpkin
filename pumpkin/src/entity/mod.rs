@@ -54,6 +54,7 @@ use tokio::sync::Mutex;
 use uuid::Uuid;
 
 pub mod ai;
+pub mod boss;
 pub mod decoration;
 pub mod effect;
 pub mod experience_orb;

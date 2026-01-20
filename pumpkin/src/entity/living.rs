@@ -1161,8 +1161,8 @@ impl EntityBase for LivingEntity {
             self.tick_movement(server, caller.clone()).await;
             // TODO
             if caller.get_player().is_none() {
-                self.entity.send_pos_rot().await;
-                self.entity.send_velocity().await;
+                // self.entity.send_pos_rot().await;
+                // self.entity.send_velocity().await;
             }
             self.tick_effects().await;
             // Current active item

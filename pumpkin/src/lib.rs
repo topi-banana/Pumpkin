@@ -28,8 +28,9 @@ use std::time::Duration;
 use std::{net::SocketAddr, sync::LazyLock};
 use tokio::net::{TcpListener, UdpSocket};
 use tokio::select;
-use tokio::sync::{Mutex, Notify, RwLock};
+use tokio::sync::{Mutex, RwLock};
 use tokio::time::sleep;
+use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
 
 pub mod block;
@@ -159,11 +160,11 @@ pub fn init_logger(advanced_config: &AdvancedConfiguration) {
 }
 
 pub static SHOULD_STOP: AtomicBool = AtomicBool::new(false);
-pub static STOP_INTERRUPT: LazyLock<Notify> = LazyLock::new(Notify::new);
+pub static STOP_INTERRUPT: LazyLock<CancellationToken> = LazyLock::new(CancellationToken::new);
 
 pub fn stop_server() {
     SHOULD_STOP.store(true, Ordering::Relaxed);
-    STOP_INTERRUPT.notify_waiters();
+    STOP_INTERRUPT.cancel();
 }
 
 fn resolve_some<T: Future, D, F: FnOnce(D) -> T>(
@@ -492,7 +493,7 @@ impl PumpkinServer {
             },
 
             // Branch for the global stop signal
-            () = STOP_INTERRUPT.notified() => {
+            () = STOP_INTERRUPT.cancelled() => {
                 return false;
             }
         }
@@ -583,7 +584,7 @@ fn setup_console(mut rl: Editor<PumpkinCommandCompleter, FileHistory>, server: A
     server.clone().spawn_task(async move {
         while !SHOULD_STOP.load(Ordering::Relaxed) {
             let t1 = rx.recv();
-            let t2 = STOP_INTERRUPT.notified();
+            let t2 = STOP_INTERRUPT.cancelled();
 
             let result = select! {
                 line = t1 => line,

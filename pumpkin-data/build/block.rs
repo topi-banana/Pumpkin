@@ -428,10 +428,15 @@ impl PistonBehavior {
 }
 
 impl BlockState {
+    const IS_AIR: u16 = 1 << 0;
     const HAS_RANDOM_TICKS: u16 = 1 << 9;
 
     fn has_random_ticks(&self) -> bool {
         self.state_flags & Self::HAS_RANDOM_TICKS != 0
+    }
+
+    pub const fn is_air(&self) -> bool {
+        self.state_flags & Self::IS_AIR != 0
     }
 
     fn to_tokens(&self) -> TokenStream {
@@ -659,6 +664,8 @@ pub(crate) fn build() -> TokenStream {
             .collect();
 
     let mut random_tick_states = Vec::new();
+    let mut air_states = Vec::new();
+
     let mut constants_list = Vec::new();
     let mut block_from_name_entries = Vec::new();
     let mut block_from_item_id_arms = Vec::new();
@@ -678,6 +685,10 @@ pub(crate) fn build() -> TokenStream {
             if state.has_random_ticks() {
                 let state_id = LitInt::new(&state.id.to_string(), Span::call_site());
                 random_tick_states.push(state_id);
+            }
+            if state.is_air() {
+                let state_id = LitInt::new(&state.id.to_string(), Span::call_site());
+                air_states.push(state_id);
             }
         }
 
@@ -817,6 +828,8 @@ pub(crate) fn build() -> TokenStream {
         .iter()
         .map(|shape| shape.to_token_stream());
 
+    let air_state_ids = quote! { #(#air_states)|* };
+
     let block_props = block_properties.iter().map(|prop| prop.to_token_stream());
     let properties = property_enums.values().map(|prop| prop.to_token_stream());
 
@@ -907,6 +920,11 @@ pub(crate) fn build() -> TokenStream {
         pub const BLOCK_ENTITY_TYPES: &[&str] = &[
             #(#block_entity_types),*
         ];
+
+        #[inline(always)]
+        pub fn is_air(state_id: u16) -> bool {
+            matches!(state_id, #air_state_ids)
+        }
 
         #[inline(always)]
         pub fn has_random_ticks(state_id: u16) -> bool {

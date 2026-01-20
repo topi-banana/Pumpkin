@@ -20,7 +20,7 @@ use rustyline::Editor;
 use rustyline::history::FileHistory;
 use rustyline::{Config, error::ReadlineError};
 use std::collections::HashMap;
-use std::io::{Cursor, IsTerminal, stdin};
+use std::io::{Cursor, ErrorKind, IsTerminal, stdin};
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
@@ -222,10 +222,36 @@ impl PumpkinServer {
         let mut tcp_listener = None;
 
         if server.basic_config.java_edition {
+            let address = server.basic_config.java_edition_address;
             // Setup the TCP server socket.
-            let listener = tokio::net::TcpListener::bind(server.basic_config.java_edition_address)
-                .await
-                .expect("Failed to start `TcpListener`");
+            let listener = match TcpListener::bind(address).await {
+                Ok(l) => l,
+                Err(e) => match e.kind() {
+                    ErrorKind::AddrInUse => {
+                        log::error!("Error: Address {} is already in use.", address);
+                        log::error!(
+                            "Make sure another instance of the server isn't already running"
+                        );
+                        std::process::exit(1);
+                    }
+                    ErrorKind::PermissionDenied => {
+                        log::error!("Error: Permission denied when binding to {}.", address);
+                        log::error!("You might need sudo/admin privileges to use ports below 1024");
+                        std::process::exit(1);
+                    }
+                    ErrorKind::AddrNotAvailable => {
+                        log::error!(
+                            "Error: The address {} is not available on this machine",
+                            address
+                        );
+                        std::process::exit(1);
+                    }
+                    _ => {
+                        log::error!("Failed to start TcpListener on {}: {}", address, e);
+                        std::process::exit(1);
+                    }
+                },
+            };
             // In the event the user puts 0 for their port, this will allow us to know what port it is running on
             let addr = listener
                 .local_addr()

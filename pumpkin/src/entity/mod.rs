@@ -1773,10 +1773,11 @@ impl Entity {
         }
     }
 
-    #[expect(clippy::unused_async)]
     pub async fn reset_state(&self) {
         self.pose.store(EntityPose::Standing);
         self.fall_flying.store(false, Relaxed);
+        self.extinguish();
+        self.set_on_fire(false).await;
     }
 }
 

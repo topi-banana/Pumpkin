@@ -14,7 +14,6 @@ use pumpkin_world::item::ItemStack;
 use pumpkin_world::world::BlockFlags;
 use std::pin::Pin;
 use std::sync::Arc;
-use uuid::Uuid;
 
 pub struct HoeItem;
 
@@ -88,13 +87,7 @@ impl ItemBehaviour for HoeItem {
                         BlockDirection::West => location.up().to_f64().add_raw(-1.0, -0.4, 0.0),
                         BlockDirection::East => location.up().to_f64().add_raw(1.0, -0.4, 0.0),
                     };
-                    let entity = Entity::new(
-                        Uuid::new_v4(),
-                        world.clone(),
-                        location,
-                        &EntityType::ITEM,
-                        false,
-                    );
+                    let entity = Entity::new(world.clone(), location, &EntityType::ITEM);
                     // TODO: Merge stacks together
                     let item_entity = Arc::new(
                         ItemEntity::new(entity, ItemStack::new(1, &Item::HANGING_ROOTS)).await,

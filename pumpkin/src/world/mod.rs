@@ -1126,20 +1126,16 @@ impl World {
                         != &Block::LIGHTNING_ROD
                 {
                     let entity = Entity::new(
-                        Uuid::new_v4(),
                         self.clone(),
                         random_pos.to_f64(),
                         &EntityType::SKELETON_HORSE,
-                        false,
                     );
                     self.spawn_entity(Arc::new(entity)).await;
                 }
                 let entity = Entity::new(
-                    Uuid::new_v4(),
                     self.clone(),
                     random_pos.to_f64().add_raw(0.5, 0., 0.5),
                     &EntityType::LIGHTNING_BOLT,
-                    false,
                 );
                 self.spawn_entity(Arc::new(entity)).await;
             }
@@ -2762,7 +2758,7 @@ impl World {
             f64::from(pos.0.z) + 0.5 + rand::rng().random_range(-0.25..0.25),
         );
 
-        let entity = Entity::new(Uuid::new_v4(), self.clone(), pos, &EntityType::ITEM, false);
+        let entity = Entity::new(self.clone(), pos, &EntityType::ITEM);
         let item_entity = Arc::new(ItemEntity::new(entity, stack).await);
         self.spawn_entity(item_entity).await;
     }
@@ -2808,13 +2804,7 @@ impl World {
                 rng.next_triangular(XZ_MODE, TRIANGULAR_DEVIATION),
             );
 
-            let entity = Entity::new(
-                Uuid::new_v4(),
-                self.clone(),
-                Vector3::new(x, y, z),
-                &EntityType::ITEM,
-                false,
-            );
+            let entity = Entity::new(self.clone(), Vector3::new(x, y, z), &EntityType::ITEM);
             let entity = Arc::new(ItemEntity::new_with_velocity(entity, item, velocity, 10).await);
             self.spawn_entity(entity).await;
         }

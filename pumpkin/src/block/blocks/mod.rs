@@ -8,6 +8,7 @@ pub mod candle_cakes;
 pub mod candles;
 pub mod carpet;
 pub mod carved_pumpkin;
+pub mod wither_skull;
 pub mod chain;
 pub mod chests;
 pub mod chiseled_bookshelf;

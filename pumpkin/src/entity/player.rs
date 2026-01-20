@@ -426,13 +426,16 @@ impl Player {
 
         let player_uuid = gameprofile.id;
 
-        let living_entity = LivingEntity::new(Entity::new(
+        let living_entity = LivingEntity::new(Entity::from_uuid(
             player_uuid,
             world.clone(),
             Vector3::new(0.0, 100.0, 0.0),
             &EntityType::PLAYER,
-            matches!(gamemode, GameMode::Creative | GameMode::Spectator),
         ));
+        living_entity.entity.invulnerable.store(
+            matches!(gamemode, GameMode::Creative | GameMode::Spectator),
+            Ordering::Relaxed,
+        );
 
         let inventory = Arc::new(PlayerInventory::new(
             living_entity.entity_equipment.clone(),
@@ -1723,13 +1726,7 @@ impl Player {
     pub async fn drop_item(&self, item_stack: ItemStack) {
         let item_pos = self.living_entity.entity.pos.load()
             + Vector3::new(0.0, f64::from(EntityType::PLAYER.eye_height) - 0.3, 0.0);
-        let entity = Entity::new(
-            Uuid::new_v4(),
-            self.world().clone(),
-            item_pos,
-            &EntityType::ITEM,
-            false,
-        );
+        let entity = Entity::new(self.world().clone(), item_pos, &EntityType::ITEM);
 
         let pitch = f64::from(self.living_entity.entity.pitch.load()).to_radians();
         let yaw = f64::from(self.living_entity.entity.yaw.load()).to_radians();

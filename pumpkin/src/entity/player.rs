@@ -1353,7 +1353,10 @@ impl Player {
         let yaw = yaw.unwrap_or(new_world.level_info.read().await.spawn_yaw);
         let pitch = pitch.unwrap_or(new_world.level_info.read().await.spawn_pitch);
 
+        let server = new_world.server.upgrade().unwrap();
+
         send_cancellable! {{
+            server;
             PlayerChangeWorldEvent {
                 player: self.clone(),
                 previous_world: current_world.clone(),
@@ -1430,8 +1433,9 @@ impl Player {
         // This is the ultra special magic code used to create the teleport id
         // This returns the old value
         // This operation wraps around on overflow.
-
+        let server = self.world().server.upgrade().unwrap();
         send_cancellable! {{
+            server;
             PlayerTeleportEvent {
                 player: self.clone(),
                 from: self.living_entity.entity.pos.load(),
@@ -1583,7 +1587,9 @@ impl Player {
             gamemode,
             "Attempt to set the gamemode to the already current gamemode"
         );
+        let server = self.world().server.upgrade().unwrap();
         send_cancellable! {{
+            server;
             PlayerGamemodeChangeEvent {
                 player: self.clone(),
                 new_gamemode: gamemode,
@@ -2550,7 +2556,9 @@ impl EntityBase for Player {
                 // Same world
                 let yaw = yaw.unwrap_or(self.living_entity.entity.yaw.load());
                 let pitch = pitch.unwrap_or(self.living_entity.entity.pitch.load());
+                let server = self.world().server.upgrade().unwrap();
                 send_cancellable! {{
+                    server;
                     PlayerTeleportEvent {
                         player: self.clone(),
                         from: self.living_entity.entity.pos.load(),

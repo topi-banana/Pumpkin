@@ -490,7 +490,7 @@ impl JavaClient {
 
     async fn handle_config_packet(
         self: &Arc<Self>,
-        server: &Server,
+        server: &Arc<Server>,
         packet: &RawPacket,
     ) -> Result<(), ReadingError> {
         log::debug!("Handling config group");
@@ -576,12 +576,16 @@ impl JavaClient {
                 // TODO
             }
             SPlayerPosition::PACKET_ID => {
-                self.handle_position(player, SPlayerPosition::read(payload)?)
+                self.handle_position(player, server, SPlayerPosition::read(payload)?)
                     .await;
             }
             SPlayerPositionRotation::PACKET_ID => {
-                self.handle_position_rotation(player, SPlayerPositionRotation::read(payload)?)
-                    .await;
+                self.handle_position_rotation(
+                    player,
+                    server,
+                    SPlayerPositionRotation::read(payload)?,
+                )
+                .await;
             }
             SPlayerRotation::PACKET_ID => {
                 self.handle_rotation(player, SPlayerRotation::read(payload)?)

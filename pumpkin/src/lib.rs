@@ -10,7 +10,6 @@ use crate::net::{lan_broadcast::LANBroadcast, query, rcon::RCONServer};
 use crate::server::{Server, ticker::Ticker};
 use log::{Level, LevelFilter};
 use net::authentication::fetch_mojang_public_keys;
-use plugin::PluginManager;
 use plugin::server::server_command::ServerCommandEvent;
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration};
 use pumpkin_macros::send_cancellable;
@@ -44,9 +43,6 @@ pub mod net;
 pub mod plugin;
 pub mod server;
 pub mod world;
-
-pub static PLUGIN_MANAGER: LazyLock<Arc<PluginManager>> =
-    LazyLock::new(|| Arc::new(PluginManager::new()));
 
 pub type LoggerOption = Option<(ReadlineLogWrapper, LevelFilter)>;
 pub static LOGGER_IMPL: LazyLock<Arc<OnceLock<LoggerOption>>> =
@@ -304,15 +300,21 @@ impl PumpkinServer {
     }
 
     pub async fn init_plugins(&self) {
-        PLUGIN_MANAGER.set_self_ref(PLUGIN_MANAGER.clone()).await;
-        PLUGIN_MANAGER.set_server(self.server.clone()).await;
-        if let Err(err) = PLUGIN_MANAGER.load_plugins().await {
+        self.server
+            .plugin_manager
+            .set_self_ref(self.server.plugin_manager.clone())
+            .await;
+        self.server
+            .plugin_manager
+            .set_server(self.server.clone())
+            .await;
+        if let Err(err) = self.server.plugin_manager.load_plugins().await {
             log::error!("{err}");
         };
     }
 
     pub async fn unload_plugins(&self) {
-        if let Err(err) = PLUGIN_MANAGER.unload_all_plugins().await {
+        if let Err(err) = self.server.plugin_manager.unload_all_plugins().await {
             log::error!("Error unloading plugins: {err}");
         } else {
             log::info!("All plugins unloaded successfully");
@@ -518,6 +520,7 @@ async fn setup_stdin_console(server: Arc<Server>) {
         while !SHOULD_STOP.load(Ordering::Relaxed) {
             if let Some(command) = rx.recv().await {
                 send_cancellable! {{
+                    &server;
                     ServerCommandEvent::new(command.clone());
 
                     'after: {
@@ -585,6 +588,7 @@ fn setup_console(mut rl: Editor<PumpkinCommandCompleter, FileHistory>, server: A
 
             if let Some(line) = result {
                 send_cancellable! {{
+                    &server;
                     ServerCommandEvent::new(line.clone());
 
                     'after: {

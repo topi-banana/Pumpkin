@@ -41,7 +41,6 @@
 #[cfg(target_os = "wasi")]
 compile_error!("Compiling for WASI targets is not supported!");
 
-use plugin::PluginManager;
 use pumpkin_data::packet::CURRENT_MC_PROTOCOL;
 use std::{
     io::{self},
@@ -72,9 +71,6 @@ pub mod net;
 pub mod plugin;
 pub mod server;
 pub mod world;
-
-pub static PLUGIN_MANAGER: LazyLock<Arc<PluginManager>> =
-    LazyLock::new(|| Arc::new(PluginManager::new()));
 
 pub static LOGGER_IMPL: LazyLock<Arc<OnceLock<LoggerOption>>> =
     LazyLock::new(|| Arc::new(OnceLock::new()));

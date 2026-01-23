@@ -189,7 +189,7 @@ impl JavaClient {
         self.send_packet_now(&CFinishConfig).await;
     }
 
-    pub async fn handle_config_acknowledged(self: &Arc<Self>, server: &Server) {
+    pub async fn handle_config_acknowledged(self: &Arc<Self>, server: &Arc<Server>) {
         log::debug!("Handling config acknowledgement");
         self.connection_state.store(ConnectionState::Play);
 

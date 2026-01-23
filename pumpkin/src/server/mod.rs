@@ -6,6 +6,7 @@ use crate::data::player_server_data::ServerPlayerData;
 use crate::entity::{EntityBase, NBTStorage};
 use crate::item::registry::ItemRegistry;
 use crate::net::{ClientPlatform, DisconnectReason, EncryptionError, GameProfile, PlayerConfig};
+use crate::plugin::PluginManager;
 use crate::plugin::player::player_login::PlayerLoginEvent;
 use crate::plugin::server::server_broadcast::ServerBroadcastEvent;
 use crate::server::tick_rate_manager::ServerTickRateManager;
@@ -60,6 +61,9 @@ pub struct Server {
     pub advanced_config: AdvancedConfiguration,
 
     pub data: VanillaData,
+
+    /// Plugin manager
+    pub plugin_manager: Arc<PluginManager>,
 
     /// Permission manager for the server.
     pub permission_manager: Arc<RwLock<PermissionManager>>,
@@ -188,6 +192,7 @@ impl Server {
             basic_config,
             advanced_config,
             data: vanilla_data,
+            plugin_manager: Arc::new(PluginManager::new()),
             permission_manager: Arc::new(RwLock::new(PermissionManager::new(
                 permission_registry.clone(),
             ))),
@@ -416,6 +421,7 @@ impl Server {
         let player = Arc::new(player);
 
         send_cancellable! {{
+            self;
             PlayerLoginEvent::new(player.clone(), TextComponent::text("You have been kicked from the server"));
             'after: {
                 player.screen_handler_sync_handler.store_player(player.clone()).await;
@@ -495,6 +501,7 @@ impl Server {
         target_name: Option<&TextComponent>,
     ) {
         send_cancellable! {{
+            self;
             ServerBroadcastEvent::new(message.clone(), sender_name.clone());
 
             'after: {

@@ -153,6 +153,7 @@ impl BedrockClient {
         let gameprofile = &player.gameprofile;
 
         send_cancellable! {{
+            server;
             PlayerChatEvent::new(player.clone(), packet.message, vec![]);
 
             'after: {
@@ -200,6 +201,7 @@ impl BedrockClient {
         let player_clone = player.clone();
         let server_clone: Arc<Server> = server.clone();
         send_cancellable! {{
+            server;
             PlayerCommandSendEvent {
                 player: player.clone(),
                 command: command.command.clone(),

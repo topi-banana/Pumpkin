@@ -59,7 +59,7 @@ cesu8 = "1.1"
 cfb8 = "0.8"
 colored = "3.1"
 console-subscriber = { version = "0.5.0", default-features = false }
-crc-fast = "1.9.0"
+crc-fast = "1.10.0"
 criterion = { version = "0.8", default-features = false }
 crossbeam-utils = "0.8.21"
 crossfire = "2.1.10"
@@ -72,7 +72,7 @@ heck = "0.5"
 hmac = "=0.13.0-rc.3"
 indexmap = "2.13"
 itertools = "0.14.0"
-libloading = "0.8"
+libloading = "0.9"
 lru = "0.16.3"
 lz4-java-wrc = "0.2.0"
 md5 = "0.8"
@@ -82,7 +82,7 @@ num-traits = "0.2"
 num_cpus = "1.17.0"
 p384 = "0.13.1"
 phf = "0.13.1"
-pkcs8 = "=0.11.0-rc.8"
+pkcs8 = "=0.11.0-rc.9"
 proc-macro2 = "1.0"
 pumpkin-config = { path = "pumpkin-config" }
 pumpkin-data = { path = "pumpkin-data" }
@@ -94,7 +94,7 @@ pumpkin-util = { path = "pumpkin-util" }
 pumpkin-world = { path = "pumpkin-world" }
 quote = "1.0"
 rand = { git = "https://github.com/rust-random/rand"}
-rsa = "=0.10.0-rc.12"
+rsa = "=0.10.0-rc.13"
 rustc-hash = "2.1.1"
 rustyline = "17.0.2"
 ruzstd = "0.8.2"

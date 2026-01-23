@@ -88,7 +88,6 @@ use crate::entity::EntityBase;
 use crate::entity::player::Player;
 use crate::server::Server;
 use crate::world::World;
-use pumpkin_data::fluid;
 use pumpkin_data::fluid::Fluid;
 use pumpkin_data::item::Item;
 use pumpkin_data::{Block, BlockDirection, BlockState};
@@ -338,22 +337,20 @@ impl BlockRegistryExt for BlockRegistry {
 
 impl BlockRegistry {
     pub fn register<T: BlockBehaviour + BlockMetadata + 'static>(&mut self, block: T) {
-        let names = block.names();
+        let ids = T::ids();
         let val = Arc::new(block);
-        self.blocks.reserve(names.len());
-        for i in names {
-            self.blocks
-                .insert(Block::from_name(i.as_str()).unwrap().id, val.clone());
+        self.blocks.reserve(ids.len());
+        for i in ids {
+            self.blocks.insert(i, val.clone());
         }
     }
 
     pub fn register_fluid<T: FluidBehaviour + BlockMetadata + 'static>(&mut self, fluid: T) {
-        let names = fluid.names();
+        let ids = T::ids();
         let val = Arc::new(fluid);
-        self.fluids.reserve(names.len());
-        for i in names {
-            self.fluids
-                .insert(fluid::get_fluid(i.as_str()).unwrap().id, val.clone());
+        self.fluids.reserve(ids.len());
+        for i in ids {
+            self.fluids.insert(i, val.clone());
         }
     }
 

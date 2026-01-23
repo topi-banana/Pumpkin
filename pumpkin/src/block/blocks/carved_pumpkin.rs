@@ -17,12 +17,8 @@ use crate::{
 pub struct CarvedPumpkinBlock;
 
 impl BlockMetadata for CarvedPumpkinBlock {
-    fn namespace(&self) -> &'static str {
-        "minecraft"
-    }
-
-    fn ids(&self) -> &'static [&'static str] {
-        &[Block::JACK_O_LANTERN.name, Block::CARVED_PUMPKIN.name]
+    fn ids() -> Box<[u16]> {
+        [Block::JACK_O_LANTERN.id, Block::CARVED_PUMPKIN.id].into()
     }
 }
 

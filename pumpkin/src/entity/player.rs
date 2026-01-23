@@ -77,7 +77,6 @@ use pumpkin_world::level::{Level, SyncChunk, SyncEntityChunk};
 use crate::block::blocks::bed::BedBlock;
 use crate::command::client_suggestions;
 use crate::command::dispatcher::CommandDispatcher;
-use crate::data::op_data::OPERATOR_CONFIG;
 use crate::entity::{EntityBaseFuture, NbtFuture, TeleportFuture};
 use crate::net::{ClientPlatform, GameProfile};
 use crate::net::{DisconnectReason, PlayerConfig};
@@ -488,10 +487,16 @@ impl Player {
             client_loaded_timeout: AtomicU32::new(60),
             // Minecraft has no way to change the default permission level of new players.
             // Minecraft's default permission level is 0.
-            permission_lvl: OPERATOR_CONFIG.read().await.get_entry(&player_uuid).map_or(
-                AtomicCell::new(server.advanced_config.commands.default_op_level),
-                |op| AtomicCell::new(op.level),
-            ),
+            permission_lvl: server
+                .data
+                .operator_config
+                .read()
+                .await
+                .get_entry(&player_uuid)
+                .map_or(
+                    AtomicCell::new(server.advanced_config.commands.default_op_level),
+                    |op| AtomicCell::new(op.level),
+                ),
             inventory,
             ender_chest_inventory,
             experience_level: AtomicI32::new(0),

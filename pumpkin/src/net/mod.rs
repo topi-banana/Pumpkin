@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    data::{op_data::OPERATOR_CONFIG, whitelist_data::WHITELIST_CONFIG},
+    data::whitelist_data::WHITELIST_CONFIG,
     entity::player::ChatMode,
     net::{bedrock::BedrockClient, java::JavaClient},
     server::Server,
@@ -199,7 +199,7 @@ pub async fn can_not_join(
     drop(banned_players);
 
     if server.white_list.load(Ordering::Relaxed) {
-        let ops = OPERATOR_CONFIG.read().await;
+        let ops = server.data.operator_config.read().await;
         let whitelist = WHITELIST_CONFIG.read().await;
 
         if ops.get_entry(&profile.id).is_none() && !whitelist.is_whitelisted(profile) {

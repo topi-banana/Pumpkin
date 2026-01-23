@@ -17,6 +17,7 @@ pub struct VanillaData {
     pub banned_ip_list: RwLock<banned_ip_data::BannedIpList>,
     pub banned_player_list: RwLock<banned_player_data::BannedPlayerList>,
     pub operator_config: RwLock<op_data::OperatorConfig>,
+    pub whitelist_config: RwLock<whitelist_data::WhitelistConfig>,
 }
 
 impl VanillaData {
@@ -26,6 +27,7 @@ impl VanillaData {
             banned_ip_list: RwLock::new(banned_ip_data::BannedIpList::load()),
             banned_player_list: RwLock::new(banned_player_data::BannedPlayerList::load()),
             operator_config: RwLock::new(op_data::OperatorConfig::load()),
+            whitelist_config: RwLock::new(whitelist_data::WhitelistConfig::load()),
         }
     }
 }

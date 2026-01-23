@@ -15,6 +15,7 @@ use connection_cache::{CachedBranding, CachedStatus};
 use key_store::KeyStore;
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration};
 use pumpkin_data::dimension::Dimension;
+use pumpkin_util::permission::PermissionManager;
 use pumpkin_world::dimension::into_level;
 
 use crate::command::CommandSender;
@@ -59,6 +60,9 @@ pub struct Server {
     pub advanced_config: AdvancedConfiguration,
 
     pub data: VanillaData,
+
+    /// Permission manager for the server.
+    pub permission_manager: Arc<RwLock<PermissionManager>>,
 
     /// Handles cryptographic keys for secure communication.
     key_store: OnceCell<Arc<KeyStore>>,
@@ -180,6 +184,9 @@ impl Server {
             basic_config,
             advanced_config,
             data: vanilla_data,
+            permission_manager: Arc::new(RwLock::new(PermissionManager::new(
+                crate::PERMISSION_REGISTRY.clone(),
+            ))),
             container_id: 0.into(),
             worlds: RwLock::new(vec![]),
             dimensions: vec![

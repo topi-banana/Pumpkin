@@ -67,7 +67,7 @@ impl CommandExecutor for Executor {
                 {
                     let command_dispatcher = server.command_dispatcher.read().await;
                     player
-                        .set_permission_lvl(new_level, &command_dispatcher)
+                        .set_permission_lvl(server, new_level, &command_dispatcher)
                         .await;
                 };
 

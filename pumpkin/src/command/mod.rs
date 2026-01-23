@@ -110,10 +110,10 @@ impl CommandSender {
     }
 
     /// Check if the sender has a specific permission
-    pub async fn has_permission(&self, node: &str) -> bool {
+    pub async fn has_permission(&self, server: &Server, node: &str) -> bool {
         match self {
             Self::Console | Self::Rcon(_) => true, // Console and RCON always have all permissions
-            Self::Player(p) => p.has_permission(node).await,
+            Self::Player(p) => p.has_permission(server, node).await,
             Self::CommandBlock(..) => {
                 let perm_reg = crate::PERMISSION_REGISTRY.read().await;
                 let Some(p) = perm_reg.get_permission(node) else {

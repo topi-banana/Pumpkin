@@ -258,7 +258,7 @@ impl CommandDispatcher {
             )));
         };
 
-        if !src.has_permission(permission.as_str()).await {
+        if !src.has_permission(server, permission.as_str()).await {
             return Err(PermissionDenied);
         }
 

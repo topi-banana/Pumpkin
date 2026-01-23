@@ -1385,7 +1385,7 @@ impl World {
         player.send_difficulty_update().await;
         {
             let command_dispatcher = server.command_dispatcher.read().await;
-            client_suggestions::send_c_commands_packet(&player, &command_dispatcher).await;
+            client_suggestions::send_c_commands_packet(&player, server, &command_dispatcher).await;
         };
 
         // Spawn in initial chunks

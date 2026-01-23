@@ -74,6 +74,7 @@ use pumpkin_world::cylindrical_chunk_iterator::Cylindrical;
 use pumpkin_world::item::ItemStack;
 use pumpkin_world::level::{Level, SyncChunk, SyncEntityChunk};
 
+use crate::block;
 use crate::block::blocks::bed::BedBlock;
 use crate::command::client_suggestions;
 use crate::command::dispatcher::CommandDispatcher;
@@ -85,7 +86,6 @@ use crate::plugin::player::player_gamemode_change::PlayerGamemodeChangeEvent;
 use crate::plugin::player::player_teleport::PlayerTeleportEvent;
 use crate::server::Server;
 use crate::world::World;
-use crate::{PERMISSION_MANAGER, block};
 
 use super::combat::{self, AttackType, player_attack_sound};
 use super::hunger::HungerManager;
@@ -1292,12 +1292,13 @@ impl Player {
     /// Sets the player's permission level and notifies the client.
     pub async fn set_permission_lvl(
         self: &Arc<Self>,
+        server: &Server,
         lvl: PermissionLvl,
         command_dispatcher: &CommandDispatcher,
     ) {
         self.permission_lvl.store(lvl);
         self.send_permission_lvl_update().await;
-        client_suggestions::send_c_commands_packet(self, command_dispatcher).await;
+        client_suggestions::send_c_commands_packet(self, server, command_dispatcher).await;
     }
 
     /// Sends the world time to only this player.
@@ -2238,8 +2239,8 @@ impl Player {
     }
 
     /// Check if the player has a specific permission
-    pub async fn has_permission(&self, node: &str) -> bool {
-        let perm_manager = PERMISSION_MANAGER.read().await;
+    pub async fn has_permission(&self, server: &Server, node: &str) -> bool {
+        let perm_manager = server.permission_manager.read().await;
         perm_manager
             .has_permission(&self.gameprofile.id, node, self.permission_lvl.load())
             .await

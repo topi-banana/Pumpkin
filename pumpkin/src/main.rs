@@ -58,7 +58,7 @@ use pumpkin::{LoggerOption, PumpkinServer, SHOULD_STOP, STOP_INTERRUPT, stop_ser
 
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration, LoadConfiguration};
 use pumpkin_util::{
-    permission::{PermissionManager, PermissionRegistry},
+    permission::PermissionRegistry,
     text::{TextComponent, color::NamedColor},
 };
 use std::time::Instant;
@@ -82,12 +82,6 @@ pub static PLUGIN_MANAGER: LazyLock<Arc<PluginManager>> =
 
 pub static PERMISSION_REGISTRY: LazyLock<Arc<RwLock<PermissionRegistry>>> =
     LazyLock::new(|| Arc::new(RwLock::new(PermissionRegistry::new())));
-
-pub static PERMISSION_MANAGER: LazyLock<Arc<RwLock<PermissionManager>>> = LazyLock::new(|| {
-    Arc::new(RwLock::new(PermissionManager::new(
-        PERMISSION_REGISTRY.clone(),
-    )))
-});
 
 pub static LOGGER_IMPL: LazyLock<Arc<OnceLock<LoggerOption>>> =
     LazyLock::new(|| Arc::new(OnceLock::new()));

@@ -15,7 +15,7 @@ use plugin::server::server_command::ServerCommandEvent;
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration};
 use pumpkin_macros::send_cancellable;
 use pumpkin_protocol::ConnectionState::Play;
-use pumpkin_util::permission::{PermissionManager, PermissionRegistry};
+use pumpkin_util::permission::PermissionRegistry;
 use pumpkin_util::text::TextComponent;
 use rustyline::Editor;
 use rustyline::history::FileHistory;
@@ -51,12 +51,6 @@ pub static PLUGIN_MANAGER: LazyLock<Arc<PluginManager>> =
 
 pub static PERMISSION_REGISTRY: LazyLock<Arc<RwLock<PermissionRegistry>>> =
     LazyLock::new(|| Arc::new(RwLock::new(PermissionRegistry::new())));
-
-pub static PERMISSION_MANAGER: LazyLock<Arc<RwLock<PermissionManager>>> = LazyLock::new(|| {
-    Arc::new(RwLock::new(PermissionManager::new(
-        PERMISSION_REGISTRY.clone(),
-    )))
-});
 
 pub type LoggerOption = Option<(ReadlineLogWrapper, LevelFilter)>;
 pub static LOGGER_IMPL: LazyLock<Arc<OnceLock<LoggerOption>>> =

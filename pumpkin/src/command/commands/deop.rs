@@ -45,7 +45,11 @@ impl CommandExecutor for Executor {
                 {
                     let command_dispatcher = server.command_dispatcher.read().await;
                     player
-                        .set_permission_lvl(pumpkin_util::PermissionLvl::Zero, &command_dispatcher)
+                        .set_permission_lvl(
+                            server,
+                            pumpkin_util::PermissionLvl::Zero,
+                            &command_dispatcher,
+                        )
                         .await;
                 };
 

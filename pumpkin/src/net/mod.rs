@@ -5,10 +5,7 @@ use std::{
 };
 
 use crate::{
-    data::{
-        banned_player_data::BANNED_PLAYER_LIST, op_data::OPERATOR_CONFIG,
-        whitelist_data::WHITELIST_CONFIG,
-    },
+    data::{op_data::OPERATOR_CONFIG, whitelist_data::WHITELIST_CONFIG},
     entity::player::ChatMode,
     net::{bedrock::BedrockClient, java::JavaClient},
     server::Server,
@@ -183,7 +180,7 @@ pub async fn can_not_join(
         "[year]-[month]-[day] at [hour]:[minute]:[second] [offset_hour sign:mandatory]:[offset_minute]"
     );
 
-    let mut banned_players = BANNED_PLAYER_LIST.write().await;
+    let mut banned_players = server.data.banned_player_list.write().await;
     if let Some(entry) = banned_players.get_entry(profile) {
         let text = TextComponent::translate(
             "multiplayer.disconnect.banned.reason",

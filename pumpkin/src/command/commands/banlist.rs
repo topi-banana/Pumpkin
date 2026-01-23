@@ -1,10 +1,7 @@
-use crate::{
-    command::{
-        CommandError, CommandExecutor, CommandResult, CommandSender,
-        args::{Arg, ConsumedArgs, simple::SimpleArgConsumer},
-        tree::{CommandTree, builder::argument},
-    },
-    data::banned_player_data::BANNED_PLAYER_LIST,
+use crate::command::{
+    CommandError, CommandExecutor, CommandResult, CommandSender,
+    args::{Arg, ConsumedArgs, simple::SimpleArgConsumer},
+    tree::{CommandTree, builder::argument},
 };
 use CommandError::InvalidConsumption;
 use pumpkin_util::text::TextComponent;
@@ -46,7 +43,7 @@ impl CommandExecutor for ListExecutor {
                     handle_banlist(entries, sender).await;
                 }
                 "players" => {
-                    let lock = &BANNED_PLAYER_LIST.read().await;
+                    let lock = &server.data.banned_player_list.read().await;
                     let entries = lock
                         .banned_players
                         .iter()
@@ -84,7 +81,7 @@ impl CommandExecutor for ListAllExecutor {
     ) -> CommandResult<'a> {
         Box::pin(async move {
             let mut entries = Vec::new();
-            for entry in &BANNED_PLAYER_LIST.read().await.banned_players {
+            for entry in &server.data.banned_player_list.read().await.banned_players {
                 entries.push((
                     entry.name.clone(),
                     entry.source.clone(),

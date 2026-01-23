@@ -15,7 +15,6 @@ use plugin::server::server_command::ServerCommandEvent;
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration};
 use pumpkin_macros::send_cancellable;
 use pumpkin_protocol::ConnectionState::Play;
-use pumpkin_util::permission::PermissionRegistry;
 use pumpkin_util::text::TextComponent;
 use rustyline::Editor;
 use rustyline::history::FileHistory;
@@ -29,7 +28,7 @@ use std::time::Duration;
 use std::{net::SocketAddr, sync::LazyLock};
 use tokio::net::{TcpListener, UdpSocket};
 use tokio::select;
-use tokio::sync::{Mutex, RwLock};
+use tokio::sync::Mutex;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
 use tokio_util::task::TaskTracker;
@@ -48,9 +47,6 @@ pub mod world;
 
 pub static PLUGIN_MANAGER: LazyLock<Arc<PluginManager>> =
     LazyLock::new(|| Arc::new(PluginManager::new()));
-
-pub static PERMISSION_REGISTRY: LazyLock<Arc<RwLock<PermissionRegistry>>> =
-    LazyLock::new(|| Arc::new(RwLock::new(PermissionRegistry::new())));
 
 pub type LoggerOption = Option<(ReadlineLogWrapper, LevelFilter)>;
 pub static LOGGER_IMPL: LazyLock<Arc<OnceLock<LoggerOption>>> =

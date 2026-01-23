@@ -439,12 +439,15 @@ impl CommandDispatcher {
 #[cfg(test)]
 mod test {
     use pumpkin_config::BasicConfiguration;
+    use pumpkin_util::permission::PermissionRegistry;
+    use tokio::sync::RwLock;
 
     use crate::command::{commands::default_dispatcher, tree::CommandTree};
     #[tokio::test]
     async fn test_dynamic_command() {
         let config = BasicConfiguration::default();
-        let mut dispatcher = default_dispatcher(&config).await;
+        let registry = RwLock::new(PermissionRegistry::new());
+        let mut dispatcher = default_dispatcher(&registry, &config).await;
         let tree = CommandTree::new(["test"], "test_desc");
         dispatcher.register(tree, "minecraft:test");
     }

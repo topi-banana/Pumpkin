@@ -51,16 +51,12 @@ use std::{
 use tokio::signal::ctrl_c;
 #[cfg(unix)]
 use tokio::signal::unix::{SignalKind, signal};
-use tokio::sync::RwLock;
 
 use pumpkin::data::VanillaData;
 use pumpkin::{LoggerOption, PumpkinServer, SHOULD_STOP, STOP_INTERRUPT, stop_server};
 
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration, LoadConfiguration};
-use pumpkin_util::{
-    permission::PermissionRegistry,
-    text::{TextComponent, color::NamedColor},
-};
+use pumpkin_util::text::{TextComponent, color::NamedColor};
 use std::time::Instant;
 
 // Setup some tokens to allow us to identify which event is for which socket.
@@ -79,9 +75,6 @@ pub mod world;
 
 pub static PLUGIN_MANAGER: LazyLock<Arc<PluginManager>> =
     LazyLock::new(|| Arc::new(PluginManager::new()));
-
-pub static PERMISSION_REGISTRY: LazyLock<Arc<RwLock<PermissionRegistry>>> =
-    LazyLock::new(|| Arc::new(RwLock::new(PermissionRegistry::new())));
 
 pub static LOGGER_IMPL: LazyLock<Arc<OnceLock<LoggerOption>>> =
     LazyLock::new(|| Arc::new(OnceLock::new()));

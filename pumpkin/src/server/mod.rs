@@ -15,7 +15,7 @@ use connection_cache::{CachedBranding, CachedStatus};
 use key_store::KeyStore;
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration};
 use pumpkin_data::dimension::Dimension;
-use pumpkin_util::permission::PermissionManager;
+use pumpkin_util::permission::{PermissionManager, PermissionRegistry};
 use pumpkin_world::dimension::into_level;
 
 use crate::command::CommandSender;
@@ -63,6 +63,8 @@ pub struct Server {
 
     /// Permission manager for the server.
     pub permission_manager: Arc<RwLock<PermissionManager>>,
+    /// Permission registry for the server.
+    pub permission_registry: Arc<RwLock<PermissionRegistry>>,
 
     /// Handles cryptographic keys for secure communication.
     key_store: OnceCell<Arc<KeyStore>>,
@@ -121,8 +123,10 @@ impl Server {
         advanced_config: AdvancedConfiguration,
         vanilla_data: VanillaData,
     ) -> Arc<Self> {
+        let permission_registry = Arc::new(RwLock::new(PermissionRegistry::new()));
         // First register the default commands. After that, plugins can put in their own.
-        let command_dispatcher = RwLock::new(default_dispatcher(&basic_config).await);
+        let command_dispatcher =
+            RwLock::new(default_dispatcher(&permission_registry, &basic_config).await);
         let world_path = basic_config.get_world_path();
 
         let block_registry = super::block::registry::default_registry();
@@ -185,8 +189,9 @@ impl Server {
             advanced_config,
             data: vanilla_data,
             permission_manager: Arc::new(RwLock::new(PermissionManager::new(
-                crate::PERMISSION_REGISTRY.clone(),
+                permission_registry.clone(),
             ))),
+            permission_registry,
             container_id: 0.into(),
             worlds: RwLock::new(vec![]),
             dimensions: vec![

@@ -1,6 +1,7 @@
 // Not warn event sending macros
 #![allow(unused_labels)]
 
+use crate::data::VanillaData;
 use crate::logging::{GzipRollingLogger, PumpkinCommandCompleter, ReadlineLogWrapper};
 use crate::net::DisconnectReason;
 use crate::net::bedrock::BedrockClient;
@@ -188,8 +189,9 @@ impl PumpkinServer {
     pub async fn new(
         basic_config: BasicConfiguration,
         advanced_config: AdvancedConfiguration,
+        vanilla_data: VanillaData,
     ) -> Self {
-        let server = Server::new(basic_config, advanced_config).await;
+        let server = Server::new(basic_config, advanced_config, vanilla_data).await;
 
         let rcon = server.advanced_config.networking.rcon.clone();
 

@@ -53,6 +53,7 @@ use tokio::signal::ctrl_c;
 use tokio::signal::unix::{SignalKind, signal};
 use tokio::sync::RwLock;
 
+use pumpkin::data::VanillaData;
 use pumpkin::{LoggerOption, PumpkinServer, SHOULD_STOP, STOP_INTERRUPT, stop_server};
 
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration, LoadConfiguration};
@@ -108,6 +109,8 @@ async fn main() {
     let basic_config = BasicConfiguration::load(&config_dir);
     let advanced_config = AdvancedConfiguration::load(&config_dir);
 
+    let vanilla_data = VanillaData::load();
+
     pumpkin::init_logger(&advanced_config);
 
     if let Some((logger_impl, level)) = pumpkin::LOGGER_IMPL.wait() {
@@ -146,7 +149,7 @@ async fn main() {
             .expect("Unable to setup signal handlers");
     });
 
-    let pumpkin_server = PumpkinServer::new(basic_config, advanced_config).await;
+    let pumpkin_server = PumpkinServer::new(basic_config, advanced_config, vanilla_data).await;
     pumpkin_server.init_plugins().await;
 
     log::info!("Started server; took {}ms", time.elapsed().as_millis());

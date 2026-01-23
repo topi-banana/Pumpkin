@@ -12,6 +12,19 @@ pub mod banned_player_data;
 pub mod player_server_data;
 pub mod whitelist_data;
 
+pub struct VanillaData {
+    // TODO
+}
+
+impl VanillaData {
+    #[must_use]
+    pub fn load() -> Self {
+        Self {
+            // TODO
+        }
+    }
+}
+
 pub trait LoadJSONConfiguration {
     #[must_use]
     fn load() -> Self

@@ -1,6 +1,7 @@
 use crate::block::registry::BlockRegistry;
 use crate::command::commands::default_dispatcher;
 use crate::command::commands::defaultgamemode::DefaultGamemode;
+use crate::data::VanillaData;
 use crate::data::player_server_data::ServerPlayerData;
 use crate::entity::{EntityBase, NBTStorage};
 use crate::item::registry::ItemRegistry;
@@ -57,6 +58,8 @@ pub struct Server {
     pub basic_config: BasicConfiguration,
     pub advanced_config: AdvancedConfiguration,
 
+    pub data: VanillaData,
+
     /// Handles cryptographic keys for secure communication.
     key_store: OnceCell<Arc<KeyStore>>,
     /// Manages server status information.
@@ -112,6 +115,7 @@ impl Server {
     pub async fn new(
         basic_config: BasicConfiguration,
         advanced_config: AdvancedConfiguration,
+        vanilla_data: VanillaData,
     ) -> Arc<Self> {
         // First register the default commands. After that, plugins can put in their own.
         let command_dispatcher = RwLock::new(default_dispatcher(&basic_config).await);
@@ -175,6 +179,7 @@ impl Server {
         let server = Self {
             basic_config,
             advanced_config,
+            data: vanilla_data,
             container_id: 0.into(),
             worlds: RwLock::new(vec![]),
             dimensions: vec![

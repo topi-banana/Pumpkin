@@ -6,8 +6,8 @@ use std::{
 
 use crate::{
     data::{
-        banned_ip_data::BANNED_IP_LIST, banned_player_data::BANNED_PLAYER_LIST,
-        op_data::OPERATOR_CONFIG, whitelist_data::WHITELIST_CONFIG,
+        banned_player_data::BANNED_PLAYER_LIST, op_data::OPERATOR_CONFIG,
+        whitelist_data::WHITELIST_CONFIG,
     },
     entity::player::ChatMode,
     net::{bedrock::BedrockClient, java::JavaClient},
@@ -213,7 +213,13 @@ pub async fn can_not_join(
         }
     }
 
-    if let Some(entry) = BANNED_IP_LIST.write().await.get_entry(&address.ip()) {
+    if let Some(entry) = server
+        .data
+        .banned_ip_list
+        .write()
+        .await
+        .get_entry(&address.ip())
+    {
         let text = TextComponent::translate(
             "multiplayer.disconnect.banned_ip.reason",
             [TextComponent::text(entry.reason.clone())],

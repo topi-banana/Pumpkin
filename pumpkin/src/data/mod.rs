@@ -1,6 +1,7 @@
 use std::{env, fs, path::Path};
 
 use serde::{Deserialize, Serialize};
+use tokio::sync::RwLock;
 
 const DATA_FOLDER: &str = "data/";
 
@@ -13,14 +14,14 @@ pub mod player_server_data;
 pub mod whitelist_data;
 
 pub struct VanillaData {
-    // TODO
+    pub banned_ip_list: RwLock<banned_ip_data::BannedIpList>,
 }
 
 impl VanillaData {
     #[must_use]
     pub fn load() -> Self {
         Self {
-            // TODO
+            banned_ip_list: RwLock::new(banned_ip_data::BannedIpList::load()),
         }
     }
 }

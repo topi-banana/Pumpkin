@@ -4,12 +4,21 @@ use pumpkin_data::packet::clientbound::PLAY_SET_DEFAULT_SPAWN_POSITION;
 use pumpkin_macros::packet;
 use pumpkin_util::math::position::BlockPos;
 
+/// Sent by the server to set the client's default spawn point and compass target.
+///
+/// This packet updates where the player will respawn upon death (if no bed or anchor is set)
+/// and dictates the coordinates that a compass will point toward.
 #[derive(Serialize)]
 #[packet(PLAY_SET_DEFAULT_SPAWN_POSITION)]
 pub struct CPlayerSpawnPosition {
+    /// The namespaced ID of the dimension (e.g., "minecraft:overworld").
+    /// Required for the client to determine if the spawn point is in their current world.
     pub dimension_name: String,
+    /// The X, Y, and Z coordinates of the spawn location.
     pub location: BlockPos,
+    /// The horizontal rotation (0-360 degrees) the player's camera should face upon respawning.
     pub yaw: f32,
+    /// The vertical rotation (-90 to 90 degrees) the player's camera should face upon respawning.
     pub pitch: f32,
 }
 

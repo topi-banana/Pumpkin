@@ -4,9 +4,15 @@ use pumpkin_util::text::TextComponent;
 use pumpkin_macros::packet;
 use serde::Serialize;
 
+/// Updates the text displayed above the player's hotbar (the Action Bar).
+///
+/// Unlike chat messages, Action Bar text is transient and generally used for
+/// non-critical status information like "Now entering: Wilderness" or
+/// mana/stamina counters.
 #[derive(Serialize)]
 #[packet(PLAY_SET_ACTION_BAR_TEXT)]
 pub struct CActionBar<'a> {
+    /// The text component to be displayed.
     pub action_bar: &'a TextComponent,
 }
 

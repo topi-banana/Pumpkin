@@ -56,6 +56,10 @@ use pumpkin_data::{
 use pumpkin_data::{BlockDirection, BlockState};
 use pumpkin_inventory::screen_handler::InventoryPlayer;
 use pumpkin_nbt::{compound::NbtCompound, to_bytes_unnamed};
+use pumpkin_protocol::bedrock::client::set_actor_data::{
+    CSetActorData, EntityMetadata, MetadataValue, PropertySyncData, entity_data_flag,
+    entity_data_key,
+};
 use pumpkin_protocol::bedrock::client::start_game::CStartGame;
 use pumpkin_protocol::bedrock::frame_set::FrameSet;
 use pumpkin_protocol::java::client::play::CPlayerSpawnPosition;
@@ -1316,6 +1320,26 @@ impl World {
             let mut abilities = player.abilities.lock().await;
             abilities.set_for_gamemode(player.gamemode.load());
         };
+        let mut metadata = EntityMetadata::default();
+
+        metadata.set(entity_data_key::WIDTH, MetadataValue::Float(0.6));
+        metadata.set(entity_data_key::HEIGHT, MetadataValue::Float(1.8));
+
+        // This is super important, oterwise the client will float by default
+        metadata.set_flag(entity_data_flag::HAS_GRAVITY);
+
+        // Prevents the client from showing air buddles on hud even when not in water
+        metadata.set_flag(entity_data_flag::BREATHING);
+        let actor_data = CSetActorData {
+            actor_runtime_id: VarULong(runtime_id),
+            metadata,
+            synced_properties: PropertySyncData {
+                int_properties: HashMap::new(),
+                float_properties: HashMap::new(),
+            },
+            tick: VarULong(0),
+        };
+        client.send_game_packet(&actor_data).await;
 
         player.send_abilities_update().await;
 

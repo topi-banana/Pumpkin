@@ -7,9 +7,15 @@ use pumpkin_data::packet::clientbound::PLAY_BOSS_EVENT;
 use pumpkin_macros::packet;
 use pumpkin_util::version::MinecraftVersion;
 
+/// Updates the "Boss Bar" displayed at the top of the player's screen.
+///
+/// This packet is used to manage health bars for entities like the Ender Dragon
+/// or Wither, as well as custom progress bars for server events or raids.
 #[packet(PLAY_BOSS_EVENT)]
 pub struct CBossEvent<'a> {
+    /// A unique identifier for this specific boss bar instance.
     pub uuid: &'a uuid::Uuid,
+    /// The action to perform (Add, Remove, Update Health, etc.).
     pub action: BosseventAction,
 }
 

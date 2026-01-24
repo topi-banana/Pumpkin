@@ -5,10 +5,16 @@ use serde::Serialize;
 
 use crate::VarInt;
 
+/// Notifies the client that a player has died.
+///
+/// This packet is responsible for triggering the death screen on the client
+/// and displaying the death message in the chat for the deceased player.
 #[derive(Serialize)]
 #[packet(PLAY_PLAYER_COMBAT_KILL)]
 pub struct CCombatDeath<'a> {
+    /// The Entity ID of the player who died.
     pub player_id: VarInt,
+    /// The death message to be displayed (e.g., "Player was pricked to death by a Cactus").
     pub message: &'a TextComponent,
 }
 

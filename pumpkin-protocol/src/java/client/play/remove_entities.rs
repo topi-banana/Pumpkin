@@ -4,9 +4,14 @@ use serde::Serialize;
 
 use crate::VarInt;
 
+/// Sent by the server to instruct the client to remove (despawn) one or more entities.
+///
+/// This is typically sent when an entity leaves the player's tracking range,
+/// is killed, or is otherwise removed from the world.
 #[derive(Serialize)]
 #[packet(PLAY_REMOVE_ENTITIES)]
 pub struct CRemoveEntities<'a> {
+    /// A list of entity IDs to be removed.
     pub entity_ids: &'a [VarInt],
 }
 

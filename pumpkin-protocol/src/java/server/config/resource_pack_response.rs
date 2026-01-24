@@ -16,11 +16,17 @@ pub enum ResourcePackResponseResult {
     Unknown(i32),
 }
 
+/// Sent by the client to inform the server of the status of a requested resource pack.
+///
+/// This allows the server to know if the player is using the required textures
+/// or if the download failed.
 #[derive(serde::Deserialize, Serialize)]
 #[packet(CONFIG_RESOURCE_PACK)]
 pub struct SConfigResourcePack {
+    /// The unique identifier of the resource pack this response refers to.
     #[serde(with = "uuid::serde::compact")]
     pub uuid: uuid::Uuid,
+    /// The status code of the operation, mapped to [ResourcePackResponseResult].
     result: VarInt,
 }
 

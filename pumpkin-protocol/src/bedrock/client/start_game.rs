@@ -15,8 +15,12 @@ use uuid::Uuid;
 #[derive(PacketWrite)]
 #[packet(11)]
 pub struct CStartGame {
-    // https://mojang.github.io/bedrock-protocol-docs/html/StartGamePacket.html
+    // The unique ID is a value that remains consistent across
+    // different sessions of the same world, but most servers simply fill the runtime ID of the entity out for
+    // this field.
     pub entity_id: VarLong,
+    // The runtime ID is unique for each world session, and
+    // entities are generally identified in packets using this runtime ID.
     pub runtime_entity_id: VarULong,
     pub player_gamemode: GameMode,
     pub position: Vector3<f32>,

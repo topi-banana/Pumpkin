@@ -4,11 +4,17 @@ use serde::Serialize;
 
 use crate::VarInt;
 
+/// Triggers a specific animation for an entity that is visible to the client.
+///
+/// This is primarily used for player-driven animations like swinging an arm
+/// or showing damage, but it can apply to other entities as well.
 #[derive(Serialize)]
 #[packet(PLAY_ANIMATE)]
 pub struct CEntityAnimation {
+    /// The Entity ID of the entity performing the animation.
     pub entity_id: VarInt,
-    /// See `Animation`
+    /// The ID of the animation to play.
+    /// See the table below for standard values.
     pub animation: u8,
 }
 

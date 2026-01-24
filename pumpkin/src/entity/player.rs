@@ -1227,6 +1227,8 @@ impl Player {
                         ability_value |= 1 << (ability as u32);
                     }
                 };
+                dbg!(abilities.allow_flying);
+                dbg!(abilities.flying);
 
                 // Base Permissions
                 set_ability(Ability::MayFly, abilities.allow_flying);

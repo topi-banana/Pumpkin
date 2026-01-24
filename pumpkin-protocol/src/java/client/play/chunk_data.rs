@@ -10,6 +10,11 @@ use pumpkin_world::chunk::format::LightContainer;
 use pumpkin_world::chunk::{ChunkData, palette::NetworkPalette};
 use std::io::Write;
 
+/// Sent by the server to provide the client with the full data for a chunk.
+///
+/// This includes heightmaps, the actual block and biome data (organized into sections),
+/// block entities (like signs or chests), and the light level information for both
+/// sky and block light.
 #[packet(PLAY_LEVEL_CHUNK_WITH_LIGHT)]
 pub struct CChunkData<'a>(pub &'a ChunkData);
 

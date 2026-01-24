@@ -22,10 +22,31 @@ pub mod commands;
 pub mod dispatcher;
 pub mod tree;
 
+/// Represents the source of a command execution.
+///
+/// Different senders have different permissions, output targets, and
+/// positions in the world. This enum abstracts those differences for the
+/// command dispatcher.
 pub enum CommandSender {
+    /// A remote console connection via the RCON protocol.
+    ///
+    /// Stores an asynchronous buffer to capture command output
+    /// so it can be sent back over the network to the RCON client.
     Rcon(Arc<tokio::sync::Mutex<Vec<String>>>),
+    /// The local server terminal/console.
+    ///
+    /// This sender typically has absolute permissions (bypass) and
+    /// outputs directly to the server logs.
     Console,
+    /// A player currently connected to the server.
+    ///
+    /// Contains a reference to the [Player] struct to access their
+    /// location, permissions, and session.
     Player(Arc<Player>),
+    /// A Command Block or Command Block Minecart.
+    ///
+    /// Contains the block entity responsible for the command and the
+    /// world context it exists in for coordinate-relative execution (e.g., `~ ~ ~`).
     CommandBlock(Arc<dyn BlockEntity>, Arc<World>),
 }
 

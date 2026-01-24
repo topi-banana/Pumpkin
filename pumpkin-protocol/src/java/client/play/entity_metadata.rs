@@ -4,11 +4,18 @@ use serde::Serialize;
 
 use crate::{VarInt, ser::network_serialize_no_prefix};
 
+/// Updates the "Data Tracker" values for an entity.
+///
+/// Entity Metadata (or DataWatchers) controls persistent visual states that
+/// don't require a full packet to update, such as whether an entity is on fire,
+/// crouching, glowing, or the custom name displayed above its head.
 #[derive(Serialize)]
 #[packet(PLAY_SET_ENTITY_DATA)]
 pub struct CSetEntityMetadata {
+    /// The Entity ID of the entity whose metadata is being updated.
     pub entity_id: VarInt,
-    // TODO: We should migrate the serialization of this into this file
+    /// A serialized collection of metadata entries.
+    /// Ends with a terminal byte (0xFF).
     #[serde(serialize_with = "network_serialize_no_prefix")]
     pub metadata: Box<[u8]>,
 }

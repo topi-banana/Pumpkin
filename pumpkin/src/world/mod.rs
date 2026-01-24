@@ -1325,7 +1325,7 @@ impl World {
         metadata.set(entity_data_key::WIDTH, MetadataValue::Float(0.6));
         metadata.set(entity_data_key::HEIGHT, MetadataValue::Float(1.8));
 
-        // This is super important, oterwise the client will float by default
+        // This is super important, otherwise the client will float by default
         metadata.set_flag(entity_data_flag::HAS_GRAVITY);
 
         // Prevents the client from showing air buddles on hud even when not in water

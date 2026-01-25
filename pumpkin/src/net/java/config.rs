@@ -1,8 +1,11 @@
-use std::{num::NonZeroU8, sync::Arc};
+use std::num::NonZeroU8;
 
 use crate::{
     entity::player::ChatMode,
-    net::{ClientPlatform, PlayerConfig, can_not_join, java::JavaClient},
+    net::{
+        PlayerConfig, can_not_join,
+        java::{JavaClient, PacketHandlerResult},
+    },
     server::Server,
 };
 use core::str;
@@ -189,7 +192,7 @@ impl JavaClient {
         self.send_packet_now(&CFinishConfig).await;
     }
 
-    pub async fn handle_config_acknowledged(self: &Arc<Self>, server: &Server) {
+    pub async fn handle_config_acknowledged(&self, server: &Server) -> PacketHandlerResult {
         log::debug!("Handling config acknowledgement");
         self.connection_state.store(ConnectionState::Play);
 
@@ -199,19 +202,10 @@ impl JavaClient {
 
         if let Some(reason) = can_not_join(&profile, &address, server).await {
             self.kick(reason).await;
-            return;
+            return PacketHandlerResult::Stop;
         }
 
         let config = self.config.lock().await;
-
-        if let Some((player, world)) = server
-            .add_player(ClientPlatform::Java(self.clone()), profile, config.clone())
-            .await
-        {
-            world
-                .spawn_java_player(&server.basic_config, player.clone(), server)
-                .await;
-            *self.player.lock().await = Some(player);
-        }
+        PacketHandlerResult::ReadyToPlay(profile, config.clone().unwrap_or_default())
     }
 }

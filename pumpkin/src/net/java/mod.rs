@@ -79,7 +79,6 @@ pub struct JavaClient {
     pub address: Mutex<SocketAddr>,
     /// The client's brand or modpack information, Optional.
     pub brand: Mutex<Option<String>>,
-    pub player: Mutex<Option<Arc<Player>>>,
     /// A collection of tasks associated with this client. The tasks await completion when removing the client.
     tasks: TaskTracker,
     /// An notifier that is triggered when this client is closed.
@@ -92,6 +91,12 @@ pub struct JavaClient {
     network_writer: Arc<Mutex<TCPNetworkEncoder<BufWriter<OwnedWriteHalf>>>>,
     /// The packet decoder for incoming packets.
     network_reader: Mutex<TCPNetworkDecoder<BufReader<OwnedReadHalf>>>,
+}
+
+pub enum PacketHandlerResult {
+    Stop,
+    // Signal to spawn the player
+    ReadyToPlay(GameProfile, PlayerConfig),
 }
 
 impl JavaClient {
@@ -114,7 +119,6 @@ impl JavaClient {
             network_writer: Arc::new(Mutex::new(TCPNetworkEncoder::new(BufWriter::new(write)))),
             network_reader: Mutex::new(TCPNetworkDecoder::new(BufReader::new(read))),
             brand: Mutex::new(None),
-            player: Mutex::new(None),
         }
     }
     pub async fn set_encryption(
@@ -158,16 +162,45 @@ impl JavaClient {
     /// # Arguments
     ///
     /// * `server`: A reference to the `Server` instance.
-    pub async fn process_packets(self: &Arc<Self>, server: &Arc<Server>) {
+    pub async fn handle_login_sequence(&self, server: &Server) -> PacketHandlerResult {
         while let Some(packet) = self.get_packet().await {
-            if let Err(error) = self.handle_packet(server, &packet).await {
-                let text = format!("Error while reading incoming packet {error}");
-                log::error!(
-                    "Failed to read incoming packet with id {}: {}",
-                    packet.id,
-                    error
-                );
-                self.kick(TextComponent::text(text)).await;
+            match self.handle_packet(server, &packet).await {
+                Ok(result) => {
+                    if let Some(result) = result {
+                        return result;
+                    }
+                }
+                Err(error) => {
+                    let text = format!("Error while reading incoming packet {error}");
+                    log::error!(
+                        "Failed to read incoming packet with id {}: {}",
+                        packet.id,
+                        error
+                    );
+                    self.kick(TextComponent::text(text)).await;
+                }
+            }
+        }
+        PacketHandlerResult::Stop
+    }
+
+    pub async fn progress_player_packets(&self, player: &Arc<Player>, server: &Arc<Server>) {
+        while let Some(packet) = self.get_packet().await {
+            match self.handle_play_packet(player, server, &packet).await {
+                Ok(()) => {}
+                Err(e) => {
+                    if e.is_kick() {
+                        if let Some(kick_reason) = e.client_kick_reason() {
+                            self.kick(TextComponent::text(kick_reason)).await;
+                        } else {
+                            self.kick(TextComponent::text(format!(
+                                "Error while handling incoming packet {e}"
+                            )))
+                            .await;
+                        }
+                    }
+                    e.log();
+                }
             }
         }
     }
@@ -327,10 +360,10 @@ impl JavaClient {
     ///
     /// Returns a `DeserializerError` if an error occurs during packet deserialization.
     pub async fn handle_packet(
-        self: &Arc<Self>,
-        server: &Arc<Server>,
+        &self,
+        server: &Server,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         match self.connection_state.load() {
             ConnectionState::HandShake => self.handle_handshake_packet(packet).await,
             ConnectionState::Status => self.handle_status_packet(server, packet).await,
@@ -339,37 +372,20 @@ impl JavaClient {
                 self.handle_login_packet(server, packet).await
             }
             ConnectionState::Config => self.handle_config_packet(server, packet).await,
-            ConnectionState::Play => {
-                if let Some(player) = self.player.lock().await.as_ref() {
-                    match self.handle_play_packet(player, server, packet).await {
-                        Ok(()) => {}
-                        Err(e) => {
-                            if e.is_kick() {
-                                if let Some(kick_reason) = e.client_kick_reason() {
-                                    self.kick(TextComponent::text(kick_reason)).await;
-                                } else {
-                                    self.kick(TextComponent::text(format!(
-                                        "Error while handling incoming packet {e}"
-                                    )))
-                                    .await;
-                                }
-                            }
-                            e.log();
-                        }
-                    }
-                }
-                Ok(())
-            }
+            ConnectionState::Play => Ok(None),
         }
     }
 
-    async fn handle_handshake_packet(&self, packet: &RawPacket) -> Result<(), ReadingError> {
+    async fn handle_handshake_packet(
+        &self,
+        packet: &RawPacket,
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         log::debug!("Handling handshake group");
         let payload = &packet.payload[..];
         match packet.id {
             0 => {
                 self.handle_handshake(SHandShake::read(payload)?).await;
-                Ok(())
+                Ok(None)
             }
             _ => Err(ReadingError::Message(format!(
                 "Failed to handle packet id {} in Handshake State",
@@ -382,18 +398,18 @@ impl JavaClient {
         &self,
         server: &Server,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         log::debug!("Handling status group");
         let payload = &packet.payload[..];
         match packet.id {
             SStatusRequest::PACKET_ID => {
                 self.handle_status_request(server).await;
-                Ok(())
+                Ok(None)
             }
             SStatusPingRequest::PACKET_ID => {
                 self.handle_ping_request(SStatusPingRequest::read(payload)?)
                     .await;
-                Ok(())
+                Ok(None)
             }
             _ => Err(ReadingError::Message(format!(
                 "Failed to handle java client packet id {} in Status State",
@@ -456,7 +472,7 @@ impl JavaClient {
         &self,
         server: &Server,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         log::debug!("Handling login group for id");
         let payload = &packet.payload[..];
         match packet.id {
@@ -485,14 +501,14 @@ impl JavaClient {
                 );
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     async fn handle_config_packet(
-        self: &Arc<Self>,
+        &self,
         server: &Server,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         log::debug!("Handling config group");
         let payload = &packet.payload[..];
         match packet.id {
@@ -505,7 +521,7 @@ impl JavaClient {
                     .await;
             }
             SAcknowledgeFinishConfig::PACKET_ID => {
-                self.handle_config_acknowledged(server).await;
+                return Ok(Some(self.handle_config_acknowledged(server).await));
             }
             SKnownPacks::PACKET_ID => {
                 self.handle_known_packs(SKnownPacks::read(payload)?).await;
@@ -524,7 +540,7 @@ impl JavaClient {
                 );
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     #[expect(clippy::too_many_lines)]

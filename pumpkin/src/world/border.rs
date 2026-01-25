@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use pumpkin_protocol::java::client::play::{
     CInitializeWorldBorder, CSetBorderCenter, CSetBorderLerpSize, CSetBorderSize,
     CSetBorderWarningDelay, CSetBorderWarningDistance,
@@ -46,7 +44,7 @@ impl Worldborder {
         }
     }
 
-    pub async fn init_client(&self, client: &Arc<JavaClient>) {
+    pub async fn init_client(&self, client: &JavaClient) {
         client
             .enqueue_packet(&CInitializeWorldBorder::new(
                 self.center_x,

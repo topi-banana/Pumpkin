@@ -16,6 +16,25 @@ pub enum Color {
     Named(NamedColor),
 }
 
+pub fn hsv_to_rgb(h: f32, s: f32, v: f32) -> (u8, u8, u8) {
+    let c = v * s;
+    let x = c * (1.0 - ((h / 60.0) % 2.0 - 1.0).abs());
+    let m = v - c;
+    let (r, g, b) = match (h as i32 / 60) % 6 {
+        0 => (c, x, 0.0),
+        1 => (x, c, 0.0),
+        2 => (0.0, c, x),
+        3 => (0.0, x, c),
+        4 => (x, 0.0, c),
+        _ => (c, 0.0, x),
+    };
+    (
+        ((r + m) * 255.0) as u8,
+        ((g + m) * 255.0) as u8,
+        ((b + m) * 255.0) as u8,
+    )
+}
+
 impl<'de> Deserialize<'de> for Color {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s = String::deserialize(deserializer)?;
@@ -75,9 +94,9 @@ impl Color {
 
 #[derive(Debug, Deserialize, Clone, Copy, Eq, Hash, PartialEq)]
 pub struct RGBColor {
-    red: u8,
-    green: u8,
-    blue: u8,
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
 }
 
 impl RGBColor {
@@ -140,6 +159,29 @@ pub enum NamedColor {
     LightPurple,
     Yellow,
     White,
+}
+
+impl NamedColor {
+    pub fn to_rgb(&self) -> RGBColor {
+        match self {
+            NamedColor::Black => RGBColor::new(0, 0, 0),
+            NamedColor::DarkBlue => RGBColor::new(0, 0, 170),
+            NamedColor::DarkGreen => RGBColor::new(0, 170, 0),
+            NamedColor::DarkAqua => RGBColor::new(0, 170, 170),
+            NamedColor::DarkRed => RGBColor::new(170, 0, 0),
+            NamedColor::DarkPurple => RGBColor::new(170, 0, 170),
+            NamedColor::Gold => RGBColor::new(255, 170, 0),
+            NamedColor::Gray => RGBColor::new(170, 170, 170),
+            NamedColor::DarkGray => RGBColor::new(85, 85, 85),
+            NamedColor::Blue => RGBColor::new(85, 85, 255),
+            NamedColor::Green => RGBColor::new(85, 255, 85),
+            NamedColor::Aqua => RGBColor::new(85, 255, 255),
+            NamedColor::Red => RGBColor::new(255, 85, 85),
+            NamedColor::LightPurple => RGBColor::new(255, 85, 255),
+            NamedColor::Yellow => RGBColor::new(255, 255, 85),
+            NamedColor::White => RGBColor::new(255, 255, 255),
+        }
+    }
 }
 
 impl TryFrom<&str> for NamedColor {

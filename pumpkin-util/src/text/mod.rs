@@ -1,4 +1,4 @@
-use crate::text::color::ARGBColor;
+use crate::text::color::{ARGBColor, hsv_to_rgb};
 use crate::translation::{
     Locale, get_translation, get_translation_text, reorder_substitutions, translation_to_pretty,
 };
@@ -349,6 +349,82 @@ impl TextComponent {
 
     pub fn color_rgb(mut self, color: color::RGBColor) -> Self {
         self.0.style.color = Some(Color::Rgb(color));
+        self
+    }
+
+    /// Applies a color gradient to the text
+    pub fn gradient_named(self, colors: &[color::NamedColor]) -> Self {
+        let rgb_colors: Vec<color::RGBColor> = colors.iter().map(|c| c.to_rgb()).collect();
+        self.gradient(&rgb_colors)
+    }
+
+    /// Applies a color gradient to the text
+    pub fn gradient(self, colors: &[color::RGBColor]) -> Self {
+        if colors.len() < 2 {
+            return self;
+        }
+
+        self.apply_color_effect(|i, len| {
+            if len <= 1 {
+                return colors[0];
+            }
+            let total_segments = colors.len() - 1;
+            let position = i as f32 / (len - 1) as f32;
+            let segment_f = position * total_segments as f32;
+            let segment_index = (segment_f.floor() as usize).min(total_segments - 1);
+
+            let local_t = segment_f - segment_index as f32;
+            let start = colors[segment_index];
+            let end = colors[segment_index + 1];
+
+            // LERP logic
+            color::RGBColor::new(
+                (start.red as f32 + (end.red as f32 - start.red as f32) * local_t) as u8,
+                (start.green as f32 + (end.green as f32 - start.green as f32) * local_t) as u8,
+                (start.blue as f32 + (end.blue as f32 - start.blue as f32) * local_t) as u8,
+            )
+        })
+    }
+
+    /// Applies a rainbow effect to the text
+    pub fn rainbow(self) -> Self {
+        self.apply_color_effect(|i, len| {
+            let hue = (i as f32 / len as f32) * 360.0;
+            let (r, g, b) = hsv_to_rgb(hue, 1.0, 1.0);
+            color::RGBColor::new(r, g, b)
+        })
+    }
+
+    fn apply_color_effect<F>(mut self, color_gen: F) -> Self
+    where
+        F: Fn(usize, usize) -> color::RGBColor,
+    {
+        // TODO
+        let raw_text = self.0.clone().get_text(Locale::EnUs);
+        let chars: Vec<char> = raw_text.chars().collect();
+        let len = chars.len();
+
+        if len == 0 {
+            return self;
+        }
+
+        let mut colored_extra = Vec::new();
+        for (i, c) in chars.into_iter().enumerate() {
+            let rgb = color_gen(i, len);
+
+            let mut char_base = TextComponentBase {
+                content: TextContent::Text {
+                    text: Cow::Owned(c.to_string()),
+                },
+                style: self.0.style.clone(),
+                extra: vec![],
+            };
+            char_base.style.color = Some(Color::Rgb(rgb));
+            colored_extra.push(char_base);
+        }
+
+        self.0.content = TextContent::Text { text: "".into() };
+        self.0.extra = colored_extra;
         self
     }
 

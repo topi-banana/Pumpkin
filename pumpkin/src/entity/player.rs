@@ -381,6 +381,8 @@ pub struct Player {
     pub keep_alive_id: AtomicI64,
     /// The last time we sent a keep alive packet.
     pub last_keep_alive_time: AtomicCell<Instant>,
+    /// The ping in millis.
+    pub ping: AtomicU32,
     /// The amount of ticks since the player's last attack.
     pub last_attacked_ticks: AtomicU32,
     /// The player's last known experience level.
@@ -486,6 +488,7 @@ impl Player {
             wait_for_keep_alive: AtomicBool::new(false),
             keep_alive_id: AtomicI64::new(0),
             last_keep_alive_time: AtomicCell::new(std::time::Instant::now()),
+            ping: AtomicU32::new(0),
             last_attacked_ticks: AtomicU32::new(0),
             client_loaded: AtomicBool::new(false),
             client_loaded_timeout: AtomicU32::new(60),
@@ -1402,15 +1405,8 @@ impl Player {
 
                 self.set_client_loaded(false);
                 let uuid = self.gameprofile.id;
-                current_world.remove_player(self, false).await;
-                new_world.players.write().await.insert(uuid, Arc::new(Self::new(
-                            self.client.clone(),
-                            self.gameprofile.clone(),
-                            self.config.read().await.clone(),
-                            new_world.clone(),
-                            self.gamemode.load(),
-                        )
-                        .await));
+                let player = current_world.remove_player(self, false).await.unwrap();
+                new_world.players.write().await.insert(uuid, player);
                 self.unload_watched_chunks(&current_world).await;
 
                 self.chunk_manager.lock().await.change_world(&current_world.level, &new_world.level);

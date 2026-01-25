@@ -1407,6 +1407,12 @@ impl JavaClient {
         if player.wait_for_keep_alive.load(Ordering::Relaxed)
             && keep_alive.keep_alive_id == player.keep_alive_id.load(Ordering::Relaxed)
         {
+            let ping = player.last_keep_alive_time.load().elapsed();
+            // Vanilla logic
+            player.ping.store(
+                (player.ping.load(Ordering::Relaxed) * 3 + ping.as_millis() as u32) / 4,
+                Ordering::Relaxed,
+            );
             player.wait_for_keep_alive.store(false, Ordering::Relaxed);
         } else {
             self.kick(TextComponent::text(

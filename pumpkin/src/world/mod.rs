@@ -1427,7 +1427,7 @@ impl World {
     pub async fn spawn_java_player(
         &self,
         base_config: &BasicConfiguration,
-        player: Arc<Player>,
+        player: &Arc<Player>,
         server: &Server,
     ) {
         let dimensions: Vec<ResourceLocation> = server
@@ -1478,10 +1478,7 @@ impl World {
             .await;
 
         // Send the current ticking state to the new player so they are in sync.
-        server
-            .tick_rate_manager
-            .update_joining_player(&player)
-            .await;
+        server.tick_rate_manager.update_joining_player(player).await;
 
         // Permissions, i.e. the commands a player may use.
         player.send_permission_lvl_update().await;
@@ -1490,12 +1487,12 @@ impl World {
         player.send_difficulty_update().await;
         {
             let command_dispatcher = server.command_dispatcher.read().await;
-            client_suggestions::send_c_commands_packet(&player, &command_dispatcher).await;
+            client_suggestions::send_c_commands_packet(player, &command_dispatcher).await;
         };
 
         // Spawn in initial chunks
         // This is made before the player teleport so that the player doesn't glitch out when spawning
-        chunker::update_position(&player).await;
+        chunker::update_position(player).await;
 
         // Teleport
         let (position, yaw, pitch) = if player.has_played_before.load(Ordering::Relaxed) {
@@ -1775,7 +1772,7 @@ impl World {
             .await;
 
         player.send_active_effects().await;
-        self.send_player_equipment(&player).await;
+        self.send_player_equipment(player).await;
     }
 
     async fn send_player_equipment(&self, from: &Player) {
@@ -2370,41 +2367,40 @@ impl World {
     ///
     /// - This function assumes `broadcast_packet_expect` and `remove_entity` are defined elsewhere.
     /// - The disconnect message sending is currently optional. Consider making it a configurable option.
-    pub async fn remove_player(&self, player: &Arc<Player>, fire_event: bool) {
-        if self
-            .players
-            .write()
-            .await
-            .remove(&player.gameprofile.id)
-            .is_none()
-        {
-            return;
-        }
-        let uuid = player.gameprofile.id;
-        self.broadcast_packet_all(&CRemovePlayerInfo::new(&[uuid]))
-            .await;
-        self.broadcast_packet_all(&CRemoveEntities::new(&[player.entity_id().into()]))
-            .await;
+    pub async fn remove_player(
+        &self,
+        player: &Arc<Player>,
+        fire_event: bool,
+    ) -> Option<Arc<Player>> {
+        let player = self.players.write().await.remove(&player.gameprofile.id);
+        if let Some(player) = player {
+            let uuid = player.gameprofile.id;
+            self.broadcast_packet_all(&CRemovePlayerInfo::new(&[uuid]))
+                .await;
+            self.broadcast_packet_all(&CRemoveEntities::new(&[player.entity_id().into()]))
+                .await;
 
-        if fire_event {
-            let msg_comp = TextComponent::translate(
-                "multiplayer.player.left",
-                [TextComponent::text(player.gameprofile.name.clone())],
-            )
-            .color_named(NamedColor::Yellow);
-            let event = PlayerLeaveEvent::new(player.clone(), msg_comp);
+            if fire_event {
+                let msg_comp = TextComponent::translate(
+                    "multiplayer.player.left",
+                    [TextComponent::text(player.gameprofile.name.clone())],
+                )
+                .color_named(NamedColor::Yellow);
+                let event = PlayerLeaveEvent::new(player.clone(), msg_comp);
 
-            let event = PLUGIN_MANAGER.fire(event).await;
+                let event = PLUGIN_MANAGER.fire(event).await;
 
-            if !event.cancelled {
-                let players = self.players.read().await;
-                for player in players.values() {
-                    player.send_system_message(&event.leave_message).await;
+                if !event.cancelled {
+                    let players = self.players.read().await;
+                    for player in players.values() {
+                        player.send_system_message(&event.leave_message).await;
+                    }
+                    drop(players);
+                    log::info!("{}", event.leave_message.to_pretty_console());
                 }
-                drop(players);
-                log::info!("{}", event.leave_message.to_pretty_console());
             }
         }
+        None
     }
 
     /// Adds an entity to the world.

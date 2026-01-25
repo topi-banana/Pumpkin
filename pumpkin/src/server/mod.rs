@@ -4,6 +4,7 @@ use crate::command::commands::defaultgamemode::DefaultGamemode;
 use crate::data::player_server::ServerPlayerData;
 use crate::entity::{EntityBase, NBTStorage};
 use crate::item::registry::ItemRegistry;
+use crate::net::authentication::fetch_mojang_public_keys;
 use crate::net::{ClientPlatform, DisconnectReason, EncryptionError, GameProfile, PlayerConfig};
 use crate::plugin::player::player_login::PlayerLoginEvent;
 use crate::plugin::server::server_broadcast::ServerBroadcastEvent;
@@ -39,7 +40,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicI32, AtomicI64, AtomicU32};
 use std::{future::Future, sync::atomic::Ordering, time::Duration};
 use tokio::sync::{Mutex, OnceCell, RwLock};
-use tokio::task::JoinHandle;
+use tokio::task::{JoinHandle, JoinSet};
 use tokio_util::task::TaskTracker;
 
 mod connection_cache;
@@ -172,6 +173,12 @@ impl Server {
 
         let tick_rate_manager = Arc::new(ServerTickRateManager::new(basic_config.tps));
 
+        let mojang_public_keys = if basic_config.allow_chat_reports {
+            fetch_mojang_public_keys(&advanced_config.networking.authentication).unwrap()
+        } else {
+            Vec::new()
+        };
+
         let server = Self {
             basic_config,
             advanced_config,
@@ -198,7 +205,7 @@ impl Server {
             tick_count: AtomicI32::new(0),
             tasks: TaskTracker::new(),
             server_guid: rand::random(),
-            mojang_public_keys: Mutex::new(Vec::new()),
+            mojang_public_keys: Mutex::new(mojang_public_keys),
             world_info_writer: Arc::new(AnvilLevelInfo),
             level_info: level_info.clone(),
             _locker: Arc::new(locker),
@@ -697,21 +704,21 @@ impl Server {
     }
     /// Ticks the game logic for all worlds. This is the part that is affected by `/tick freeze`.
     pub async fn tick_worlds(self: &Arc<Self>) {
-        let worlds = self.worlds.read().await.clone();
-        let mut handles = Vec::with_capacity(worlds.len());
-        for world in &worlds {
+        let worlds = self.worlds.read().await;
+        let mut set = JoinSet::new();
+
+        for world in worlds.iter() {
             let world = world.clone();
             let server = self.clone();
-            handles.push(tokio::spawn(async move {
+
+            set.spawn(async move {
                 world.tick(&server).await;
-            }));
-        }
-        for handle in handles {
-            // Wait for all world ticks to complete
-            let _ = handle.await;
+            });
         }
 
-        // Global periodic tasks
+        set.join_all().await;
+
+        // Global tasks
         if let Err(e) = self.player_data_storage.tick(self).await {
             log::error!("Error ticking player data: {e}");
         }

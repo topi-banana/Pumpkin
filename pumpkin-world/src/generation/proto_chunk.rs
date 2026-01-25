@@ -886,7 +886,6 @@ impl ProtoChunk {
         block_registry: &dyn BlockRegistryExt,
         random_config: &GlobalRandomConfig,
     ) {
-        // 1. Efficiently collect unique biomes from the flat map
         let (center_x, center_z, min_y, height, biomes_in_chunk) = {
             let chunk = cache.get_center_chunk();
             let mut unique_biomes = Vec::with_capacity(4); // Usually few biomes per chunk
@@ -911,13 +910,9 @@ impl ProtoChunk {
         let population_seed =
             Xoroshiro::get_population_seed(random_config.seed, start_block_x, start_block_z);
 
-        // Vanilla has 11 steps (0..10)
         for step in 0..11 {
-            // --- STEP A: STRUCTURE PIECES ---
-            // Structures are handled first because features (like trees) need to avoid clipping into them
             Self::generate_structure_step(cache, step, population_seed, random_config.seed as i64);
 
-            // --- STEP B: PLACED FEATURES ---
             let mut features_to_run = Vec::new();
             for biome_id in &biomes_in_chunk {
                 if let Some(biome) = Biome::from_id(*biome_id)
@@ -930,7 +925,6 @@ impl ProtoChunk {
                 }
             }
 
-            // CRITICAL: Determinism. Sort features so the index 'p' always refers to the same feature.
             features_to_run.sort_unstable();
             features_to_run.dedup();
 

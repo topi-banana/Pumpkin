@@ -86,15 +86,10 @@ impl Default for PlayerConfig {
     }
 }
 
-pub enum PacketHandlerState {
-    PacketReady,
-    Stop,
-}
-
 /// This is just a Wrapper for both Java & Bedrock connections
-#[derive(Clone)]
+#[expect(clippy::large_enum_variant)]
 pub enum ClientPlatform {
-    Java(Arc<JavaClient>),
+    Java(JavaClient),
     Bedrock(Arc<BedrockClient>),
 }
 
@@ -119,7 +114,7 @@ impl ClientPlatform {
     /// This function should only be used where you know that the client is java!
     #[inline]
     #[must_use]
-    pub fn java(&self) -> &Arc<JavaClient> {
+    pub fn java(&self) -> &JavaClient {
         if let Self::Java(client) = self {
             return client;
         }

@@ -88,6 +88,7 @@ use crate::server::Server;
 use crate::world::World;
 use crate::{PERMISSION_MANAGER, block};
 
+use super::breath::BreathManager;
 use super::combat::{self, AttackType, player_attack_sound};
 use super::hunger::HungerManager;
 use super::item::ItemEntity;
@@ -95,7 +96,6 @@ use super::living::LivingEntity;
 use super::{Entity, EntityBase, NBTStorage, NBTStorageInit};
 use pumpkin_data::potion::Effect;
 use pumpkin_world::chunk_system::ChunkLoading;
-
 const MAX_CACHED_SIGNATURES: u8 = 128; // Vanilla: 128
 const MAX_PREVIOUS_MESSAGES: u8 = 20; // Vanilla: 20
 
@@ -347,6 +347,8 @@ pub struct Player {
     pub respawn_point: AtomicCell<Option<RespawnPoint>>,
     /// The player's sleep status
     pub sleeping_since: AtomicCell<Option<u8>>,
+    /// Manages the player's breath level
+    pub breath_manager: BreathManager,
     /// Manages the player's hunger level.
     pub hunger_manager: HungerManager,
     /// The ID of the currently open container (if any).
@@ -454,6 +456,7 @@ impl Player {
             gameprofile,
             client,
             awaiting_teleport: Mutex::new(None),
+            breath_manager: BreathManager::default(),
             // TODO: Load this from previous instance
             hunger_manager: HungerManager::default(),
             current_block_destroy_stage: AtomicI32::new(-1),
@@ -1059,6 +1062,7 @@ impl Player {
         self.last_attacked_ticks.fetch_add(1, Ordering::Relaxed);
 
         self.living_entity.tick(self.clone(), server).await;
+        self.breath_manager.tick(self).await;
         self.hunger_manager.tick(self).await;
 
         // experience handling
@@ -1595,6 +1599,9 @@ impl Player {
                     .await;
             }
         }
+
+        // Reset air supply & drowning ticks on death
+        self.breath_manager.reset(self).await;
 
         self.client
             .send_packet_now(&CCombatDeath::new(self.entity_id().into(), &death_msg))

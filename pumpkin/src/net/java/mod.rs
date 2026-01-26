@@ -13,6 +13,7 @@ use pumpkin_protocol::java::server::play::{
     SPlayerPosition, SPlayerPositionRotation, SPlayerRotation, SPlayerSession, SSetCommandBlock,
     SSetCreativeSlot, SSetHeldItem, SSetPlayerGround, SSwingArm, SUpdateSign, SUseItem, SUseItemOn,
 };
+use pumpkin_protocol::packet::MultiVersionJavaPacket;
 use pumpkin_protocol::{
     ClientPacket, ConnectionState, PacketDecodeError, RawPacket, ServerPacket,
     codec::var_int::VarInt,
@@ -33,7 +34,6 @@ use pumpkin_protocol::{
             status::{SStatusPingRequest, SStatusRequest},
         },
     },
-    packet::Packet,
     ser::{NetworkWriteExt, ReadingError, WritingError},
 };
 use pumpkin_util::text::TextComponent;
@@ -79,7 +79,6 @@ pub struct JavaClient {
     pub address: Mutex<SocketAddr>,
     /// The client's brand or modpack information, Optional.
     pub brand: Mutex<Option<String>>,
-    pub player: Mutex<Option<Arc<Player>>>,
     /// A collection of tasks associated with this client. The tasks await completion when removing the client.
     tasks: TaskTracker,
     /// An notifier that is triggered when this client is closed.
@@ -92,6 +91,12 @@ pub struct JavaClient {
     network_writer: Arc<Mutex<TCPNetworkEncoder<BufWriter<OwnedWriteHalf>>>>,
     /// The packet decoder for incoming packets.
     network_reader: Mutex<TCPNetworkDecoder<BufReader<OwnedReadHalf>>>,
+}
+
+pub enum PacketHandlerResult {
+    Stop,
+    // Signal to spawn the player
+    ReadyToPlay(GameProfile, PlayerConfig),
 }
 
 impl JavaClient {
@@ -114,7 +119,6 @@ impl JavaClient {
             network_writer: Arc::new(Mutex::new(TCPNetworkEncoder::new(BufWriter::new(write)))),
             network_reader: Mutex::new(TCPNetworkDecoder::new(BufReader::new(read))),
             brand: Mutex::new(None),
-            player: Mutex::new(None),
         }
     }
     pub async fn set_encryption(
@@ -158,16 +162,45 @@ impl JavaClient {
     /// # Arguments
     ///
     /// * `server`: A reference to the `Server` instance.
-    pub async fn process_packets(self: &Arc<Self>, server: &Arc<Server>) {
+    pub async fn handle_login_sequence(&self, server: &Arc<Server>) -> PacketHandlerResult {
         while let Some(packet) = self.get_packet().await {
-            if let Err(error) = self.handle_packet(server, &packet).await {
-                let text = format!("Error while reading incoming packet {error}");
-                log::error!(
-                    "Failed to read incoming packet with id {}: {}",
-                    packet.id,
-                    error
-                );
-                self.kick(TextComponent::text(text)).await;
+            match self.handle_packet(server, &packet).await {
+                Ok(result) => {
+                    if let Some(result) = result {
+                        return result;
+                    }
+                }
+                Err(error) => {
+                    let text = format!("Error while reading incoming packet {error}");
+                    log::error!(
+                        "Failed to read incoming packet with id {}: {}",
+                        packet.id,
+                        error
+                    );
+                    self.kick(TextComponent::text(text)).await;
+                }
+            }
+        }
+        PacketHandlerResult::Stop
+    }
+
+    pub async fn progress_player_packets(&self, player: &Arc<Player>, server: &Arc<Server>) {
+        while let Some(packet) = self.get_packet().await {
+            match self.handle_play_packet(player, server, &packet).await {
+                Ok(()) => {}
+                Err(e) => {
+                    if e.is_kick() {
+                        if let Some(kick_reason) = e.client_kick_reason() {
+                            self.kick(TextComponent::text(kick_reason)).await;
+                        } else {
+                            self.kick(TextComponent::text(format!(
+                                "Error while handling incoming packet {e}"
+                            )))
+                            .await;
+                        }
+                    }
+                    e.log();
+                }
             }
         }
     }
@@ -298,8 +331,9 @@ impl JavaClient {
         write: impl Write,
     ) -> Result<(), WritingError> {
         let mut write = write;
-        write.write_var_int(&VarInt(P::PACKET_ID))?;
-        packet.write_packet_data(write, &self.version.load())
+        let version = self.version.load();
+        write.write_var_int(&VarInt(P::PACKET_ID.to_id(version)))?;
+        packet.write_packet_data(write, &version)
     }
 
     /// Handles an incoming packet, routing it to the appropriate handler based on the current connection state.
@@ -327,10 +361,10 @@ impl JavaClient {
     ///
     /// Returns a `DeserializerError` if an error occurs during packet deserialization.
     pub async fn handle_packet(
-        self: &Arc<Self>,
+        &self,
         server: &Arc<Server>,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         match self.connection_state.load() {
             ConnectionState::HandShake => self.handle_handshake_packet(packet).await,
             ConnectionState::Status => self.handle_status_packet(server, packet).await,
@@ -339,37 +373,20 @@ impl JavaClient {
                 self.handle_login_packet(server, packet).await
             }
             ConnectionState::Config => self.handle_config_packet(server, packet).await,
-            ConnectionState::Play => {
-                if let Some(player) = self.player.lock().await.as_ref() {
-                    match self.handle_play_packet(player, server, packet).await {
-                        Ok(()) => {}
-                        Err(e) => {
-                            if e.is_kick() {
-                                if let Some(kick_reason) = e.client_kick_reason() {
-                                    self.kick(TextComponent::text(kick_reason)).await;
-                                } else {
-                                    self.kick(TextComponent::text(format!(
-                                        "Error while handling incoming packet {e}"
-                                    )))
-                                    .await;
-                                }
-                            }
-                            e.log();
-                        }
-                    }
-                }
-                Ok(())
-            }
+            ConnectionState::Play => Ok(None),
         }
     }
 
-    async fn handle_handshake_packet(&self, packet: &RawPacket) -> Result<(), ReadingError> {
+    async fn handle_handshake_packet(
+        &self,
+        packet: &RawPacket,
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         log::debug!("Handling handshake group");
         let payload = &packet.payload[..];
         match packet.id {
             0 => {
                 self.handle_handshake(SHandShake::read(payload)?).await;
-                Ok(())
+                Ok(None)
             }
             _ => Err(ReadingError::Message(format!(
                 "Failed to handle packet id {} in Handshake State",
@@ -382,18 +399,18 @@ impl JavaClient {
         &self,
         server: &Server,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         log::debug!("Handling status group");
         let payload = &packet.payload[..];
         match packet.id {
-            SStatusRequest::PACKET_ID => {
+            id if id == SStatusRequest::PACKET_ID => {
                 self.handle_status_request(server).await;
-                Ok(())
+                Ok(None)
             }
-            SStatusPingRequest::PACKET_ID => {
+            id if id == SStatusPingRequest::PACKET_ID => {
                 self.handle_ping_request(SStatusPingRequest::read(payload)?)
                     .await;
-                Ok(())
+                Ok(None)
             }
             _ => Err(ReadingError::Message(format!(
                 "Failed to handle java client packet id {} in Status State",
@@ -456,26 +473,26 @@ impl JavaClient {
         &self,
         server: &Server,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
         log::debug!("Handling login group for id");
         let payload = &packet.payload[..];
         match packet.id {
-            SLoginStart::PACKET_ID => {
+            id if id == SLoginStart::PACKET_ID => {
                 self.handle_login_start(server, SLoginStart::read(payload)?)
                     .await;
             }
-            SEncryptionResponse::PACKET_ID => {
+            id if id == SEncryptionResponse::PACKET_ID => {
                 self.handle_encryption_response(server, SEncryptionResponse::read(payload)?)
                     .await;
             }
-            SLoginPluginResponse::PACKET_ID => {
+            id if id == SLoginPluginResponse::PACKET_ID => {
                 self.handle_plugin_response(server, SLoginPluginResponse::read(payload)?)
                     .await;
             }
-            SLoginAcknowledged::PACKET_ID => {
+            id if id == SLoginAcknowledged::PACKET_ID => {
                 self.handle_login_acknowledged(server).await;
             }
-            SLoginCookieResponse::PACKET_ID => {
+            id if id == SLoginCookieResponse::PACKET_ID => {
                 self.handle_login_cookie_response(&SLoginCookieResponse::read(payload)?);
             }
             _ => {
@@ -485,35 +502,36 @@ impl JavaClient {
                 );
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     async fn handle_config_packet(
-        self: &Arc<Self>,
+        &self,
         server: &Arc<Server>,
         packet: &RawPacket,
-    ) -> Result<(), ReadingError> {
-        log::debug!("Handling config group");
+    ) -> Result<Option<PacketHandlerResult>, ReadingError> {
+        log::debug!("Handling config group for id {}", packet.id);
         let payload = &packet.payload[..];
+
         match packet.id {
-            SClientInformationConfig::PACKET_ID => {
+            id if id == SClientInformationConfig::PACKET_ID => {
                 self.handle_client_information_config(SClientInformationConfig::read(payload)?)
                     .await;
             }
-            SPluginMessage::PACKET_ID => {
+            id if id == SPluginMessage::PACKET_ID => {
                 self.handle_plugin_message(SPluginMessage::read(payload)?)
                     .await;
             }
-            SAcknowledgeFinishConfig::PACKET_ID => {
-                self.handle_config_acknowledged(server).await;
+            id if id == SAcknowledgeFinishConfig::PACKET_ID => {
+                return Ok(Some(self.handle_config_acknowledged(server).await));
             }
-            SKnownPacks::PACKET_ID => {
+            id if id == SKnownPacks::PACKET_ID => {
                 self.handle_known_packs(SKnownPacks::read(payload)?).await;
             }
-            SConfigCookieResponse::PACKET_ID => {
+            id if id == SConfigCookieResponse::PACKET_ID => {
                 self.handle_config_cookie_response(&SConfigCookieResponse::read(payload)?);
             }
-            SConfigResourcePack::PACKET_ID => {
+            id if id == SConfigResourcePack::PACKET_ID => {
                 self.handle_resource_pack_response(server, SConfigResourcePack::read(payload)?)
                     .await;
             }
@@ -524,7 +542,7 @@ impl JavaClient {
                 );
             }
         }
-        Ok(())
+        Ok(None)
     }
 
     #[expect(clippy::too_many_lines)]
@@ -535,51 +553,52 @@ impl JavaClient {
         packet: &RawPacket,
     ) -> Result<(), Box<dyn PumpkinError>> {
         let payload = &packet.payload[..];
+
         match packet.id {
-            SConfirmTeleport::PACKET_ID => {
+            id if id == SConfirmTeleport::PACKET_ID => {
                 self.handle_confirm_teleport(player, SConfirmTeleport::read(payload)?)
                     .await;
             }
-            SChangeGameMode::PACKET_ID => {
+            id if id == SChangeGameMode::PACKET_ID => {
                 self.handle_change_game_mode(player, SChangeGameMode::read(payload)?)
                     .await;
             }
-            SChatCommand::PACKET_ID => {
+            id if id == SChatCommand::PACKET_ID => {
                 self.handle_chat_command(player, server, &(SChatCommand::read(payload)?))
                     .await;
             }
-            SChatMessage::PACKET_ID => {
+            id if id == SChatMessage::PACKET_ID => {
                 self.handle_chat_message(server, player, SChatMessage::read(payload)?)
                     .await;
             }
-            SClientInformationPlay::PACKET_ID => {
+            id if id == SClientInformationPlay::PACKET_ID => {
                 self.handle_client_information(player, SClientInformationPlay::read(payload)?)
                     .await;
             }
-            SClientCommand::PACKET_ID => {
+            id if id == SClientCommand::PACKET_ID => {
                 self.handle_client_status(player, SClientCommand::read(payload)?)
                     .await;
             }
-            SPlayerInput::PACKET_ID => {
+            id if id == SPlayerInput::PACKET_ID => {
                 self.handle_player_input(player, SPlayerInput::read(payload)?)
                     .await;
             }
-            SInteract::PACKET_ID => {
+            id if id == SInteract::PACKET_ID => {
                 self.handle_interact(player, SInteract::read(payload)?, server)
                     .await;
             }
-            SKeepAlive::PACKET_ID => {
+            id if id == SKeepAlive::PACKET_ID => {
                 self.handle_keep_alive(player, SKeepAlive::read(payload)?)
                     .await;
             }
-            SClientTickEnd::PACKET_ID => {
+            id if id == SClientTickEnd::PACKET_ID => {
                 // TODO
             }
-            SPlayerPosition::PACKET_ID => {
+            id if id == SPlayerPosition::PACKET_ID => {
                 self.handle_position(player, server, SPlayerPosition::read(payload)?)
                     .await;
             }
-            SPlayerPositionRotation::PACKET_ID => {
+            id if id == SPlayerPositionRotation::PACKET_ID => {
                 self.handle_position_rotation(
                     player,
                     server,
@@ -587,85 +606,85 @@ impl JavaClient {
                 )
                 .await;
             }
-            SPlayerRotation::PACKET_ID => {
+            id if id == SPlayerRotation::PACKET_ID => {
                 self.handle_rotation(player, SPlayerRotation::read(payload)?)
                     .await;
             }
-            SSetPlayerGround::PACKET_ID => {
+            id if id == SSetPlayerGround::PACKET_ID => {
                 self.handle_player_ground(player, &SSetPlayerGround::read(payload)?);
             }
-            SPickItemFromBlock::PACKET_ID => {
+            id if id == SPickItemFromBlock::PACKET_ID => {
                 self.handle_pick_item_from_block(player, SPickItemFromBlock::read(payload)?)
                     .await;
             }
-            SPlayerAbilities::PACKET_ID => {
+            id if id == SPlayerAbilities::PACKET_ID => {
                 self.handle_player_abilities(player, SPlayerAbilities::read(payload)?)
                     .await;
             }
-            SPlayerAction::PACKET_ID => {
+            id if id == SPlayerAction::PACKET_ID => {
                 self.handle_player_action(player, SPlayerAction::read(payload)?, server)
                     .await;
             }
-            SSetCommandBlock::PACKET_ID => {
+            id if id == SSetCommandBlock::PACKET_ID => {
                 self.handle_set_command_block(player, SSetCommandBlock::read(payload)?)
                     .await;
             }
-            SPlayerCommand::PACKET_ID => {
+            id if id == SPlayerCommand::PACKET_ID => {
                 self.handle_player_command(player, SPlayerCommand::read(payload)?)
                     .await;
             }
-            SPlayerLoaded::PACKET_ID => Self::handle_player_loaded(player),
-            SPlayPingRequest::PACKET_ID => {
+            id if id == SPlayerLoaded::PACKET_ID => Self::handle_player_loaded(player),
+            id if id == SPlayPingRequest::PACKET_ID => {
                 self.handle_play_ping_request(SPlayPingRequest::read(payload)?)
                     .await;
             }
-            SClickSlot::PACKET_ID => {
+            id if id == SClickSlot::PACKET_ID => {
                 player.on_slot_click(SClickSlot::read(payload)?).await;
             }
-            SSetHeldItem::PACKET_ID => {
+            id if id == SSetHeldItem::PACKET_ID => {
                 self.handle_set_held_item(player, SSetHeldItem::read(payload)?)
                     .await;
             }
-            SSetCreativeSlot::PACKET_ID => {
+            id if id == SSetCreativeSlot::PACKET_ID => {
                 self.handle_set_creative_slot(player, SSetCreativeSlot::read(payload)?)
                     .await?;
             }
-            SSwingArm::PACKET_ID => {
+            id if id == SSwingArm::PACKET_ID => {
                 self.handle_swing_arm(player, SSwingArm::read(payload)?)
                     .await;
             }
-            SUpdateSign::PACKET_ID => {
+            id if id == SUpdateSign::PACKET_ID => {
                 self.handle_sign_update(player, SUpdateSign::read(payload)?)
                     .await;
             }
-            SUseItemOn::PACKET_ID => {
+            id if id == SUseItemOn::PACKET_ID => {
                 self.handle_use_item_on(player, SUseItemOn::read(payload)?, server)
                     .await?;
             }
-            SUseItem::PACKET_ID => {
+            id if id == SUseItem::PACKET_ID => {
                 self.handle_use_item(player, &SUseItem::read(payload)?, server)
                     .await;
             }
-            SCommandSuggestion::PACKET_ID => {
+            id if id == SCommandSuggestion::PACKET_ID => {
                 self.handle_command_suggestion(player, SCommandSuggestion::read(payload)?, server)
                     .await;
             }
-            SPCookieResponse::PACKET_ID => {
+            id if id == SPCookieResponse::PACKET_ID => {
                 self.handle_cookie_response(&SPCookieResponse::read(payload)?);
             }
-            SCloseContainer::PACKET_ID => {
+            id if id == SCloseContainer::PACKET_ID => {
                 self.handle_close_container(player, server, SCloseContainer::read(payload)?)
                     .await;
             }
-            SChunkBatch::PACKET_ID => {
+            id if id == SChunkBatch::PACKET_ID => {
                 self.handle_chunk_batch(player, SChunkBatch::read(payload)?)
                     .await;
             }
-            SPlayerSession::PACKET_ID => {
+            id if id == SPlayerSession::PACKET_ID => {
                 self.handle_chat_session_update(player, server, SPlayerSession::read(payload)?)
                     .await;
             }
-            SCustomPayload::PACKET_ID => {
+            id if id == SCustomPayload::PACKET_ID => {
                 // TODO: this fixes Failed to handle player packet id for now
             }
             _ => {

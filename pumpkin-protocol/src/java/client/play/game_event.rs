@@ -1,11 +1,18 @@
 use pumpkin_data::packet::clientbound::PLAY_GAME_EVENT;
-use pumpkin_macros::packet;
+use pumpkin_macros::java_packet;
 use serde::{Deserialize, Serialize};
 
+/// Updates the game state or triggers specific environmental changes.
+///
+/// This packet is the primary way the server communicates global or
+/// context-specific transitions, such as changing the weather,
+/// altering the player's gamemode, or displaying the credits.
 #[derive(Serialize, Deserialize)]
-#[packet(PLAY_GAME_EVENT)]
+#[java_packet(PLAY_GAME_EVENT)]
 pub struct CGameEvent {
+    /// The ID of the event type.
     pub event: u8,
+    /// A value associated with the event (usage depends on the event ID).
     pub value: f32,
 }
 

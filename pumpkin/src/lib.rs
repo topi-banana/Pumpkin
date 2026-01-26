@@ -3,17 +3,15 @@
 
 use crate::data::VanillaData;
 use crate::logging::{GzipRollingLogger, PumpkinCommandCompleter, ReadlineLogWrapper};
-use crate::net::DisconnectReason;
 use crate::net::bedrock::BedrockClient;
-use crate::net::java::JavaClient;
+use crate::net::java::{JavaClient, PacketHandlerResult};
+use crate::net::{ClientPlatform, DisconnectReason};
 use crate::net::{lan_broadcast::LANBroadcast, query, rcon::RCONServer};
 use crate::server::{Server, ticker::Ticker};
 use log::{Level, LevelFilter};
-use net::authentication::fetch_mojang_public_keys;
 use plugin::server::server_command::ServerCommandEvent;
 use pumpkin_config::{AdvancedConfiguration, BasicConfiguration};
 use pumpkin_macros::send_cancellable;
-use pumpkin_protocol::ConnectionState::Play;
 use pumpkin_util::text::TextComponent;
 use rustyline::Editor;
 use rustyline::history::FileHistory;
@@ -267,13 +265,6 @@ impl PumpkinServer {
             tcp_listener = Some(listener);
         }
 
-        if server.basic_config.allow_chat_reports {
-            let mojang_public_keys =
-                fetch_mojang_public_keys(&server.advanced_config.networking.authentication)
-                    .unwrap();
-            *server.mojang_public_keys.lock().await = mojang_public_keys;
-        }
-
         // Ticker
         {
             let ticker_server = server.clone();
@@ -399,33 +390,41 @@ impl PumpkinServer {
                             format!("{client_addr}")
                         };
                         log::debug!("Accepted connection from Java Edition: {formatted_address} (id {client_id})");
-
-                        let mut java_client = JavaClient::new(connection, client_addr, client_id);
-                        java_client.start_outgoing_packet_task();
-                        let java_client = Arc::new(java_client);
-
                         let server_clone = self.server.clone();
 
                         tasks.spawn(async move {
-                            java_client.process_packets(&server_clone).await;
-                            java_client.close();
-                            java_client.await_tasks().await;
+                            let mut java_client = JavaClient::new(connection, client_addr, client_id);
+                            java_client.start_outgoing_packet_task();
+                            let login_result = java_client.handle_login_sequence(&server_clone).await;
 
-                            let player = java_client.player.lock().await;
-                            if let Some(player) = player.as_ref() {
-                                log::debug!("Cleaning up player for id {client_id}");
-
-                                if let Err(e) = server_clone.player_data_storage
-                                        .handle_player_leave(player)
-                                        .await
+                            match login_result {
+                                PacketHandlerResult::Stop => {
+                                     java_client.close();
+                                     java_client.await_tasks().await;
+                                },
+                                PacketHandlerResult::ReadyToPlay(profile,config) => {
+                                     if let Some((player, world)) = server_clone
+                                     .add_player(ClientPlatform::Java(java_client), profile, Some(config))
+                                          .await
                                 {
-                                    log::error!("Failed to save player data on disconnect: {e}");
-                                }
-
-                                player.remove().await;
-                                server_clone.remove_player(player).await;
-                            } else if java_client.connection_state.load() == Play {
-                                log::error!("No player found for id {client_id}. This should not happen!");
+                                    world
+                                        .spawn_java_player(&server_clone.basic_config, &player, &server_clone)
+                                        .await;
+                                    if let ClientPlatform::Java(client) = &player.client {
+                                        client.progress_player_packets(&player, &server_clone).await;
+                                        // Close when done
+                                        client.close();
+                                        client.await_tasks().await;
+                                    }
+                                    player.remove().await;
+                                    server_clone.remove_player(&player).await;
+                                    if let Err(e) = server_clone.player_data_storage
+                                        .handle_player_leave(&player)
+                                        .await {
+                                            log::error!("Failed to save player data on disconnect: {e}");
+                                        }
+                                    }
+                                },
                             }
                         });
                     }

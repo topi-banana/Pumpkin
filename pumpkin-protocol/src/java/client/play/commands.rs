@@ -1,14 +1,23 @@
 use std::io::Write;
 
 use pumpkin_data::packet::clientbound::PLAY_COMMANDS;
-use pumpkin_macros::packet;
+use pumpkin_macros::java_packet;
 use pumpkin_util::version::MinecraftVersion;
 
 use crate::{ClientPacket, VarInt, WritingError, ser::NetworkWriteExt};
 
-#[packet(PLAY_COMMANDS)]
+/// Sends the entire command tree to the client for client-side parsing and tab-completion.
+///
+/// Minecraft uses the "Brigadier" command system. This packet informs the client
+/// which commands exist, their arguments, and how they branch, allowing the
+/// client to highlight syntax errors in red before the command is even sent.
+#[java_packet(PLAY_COMMANDS)]
 pub struct CCommands<'a> {
+    /// A flat list of all nodes in the command graph.
+    /// Nodes reference each other by their index in this array.
     pub nodes: Box<[ProtoNode<'a>]>,
+    /// The index of the "root" node in the `nodes` array.
+    /// This is the entry point for all commands (the '/' symbol).
     pub root_node_index: VarInt,
 }
 

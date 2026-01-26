@@ -87,6 +87,7 @@ use crate::plugin::player::player_teleport::PlayerTeleportEvent;
 use crate::server::Server;
 use crate::world::World;
 
+use super::breath::BreathManager;
 use super::combat::{self, AttackType, player_attack_sound};
 use super::hunger::HungerManager;
 use super::item::ItemEntity;
@@ -94,7 +95,6 @@ use super::living::LivingEntity;
 use super::{Entity, EntityBase, NBTStorage, NBTStorageInit};
 use pumpkin_data::potion::Effect;
 use pumpkin_world::chunk_system::ChunkLoading;
-
 const MAX_CACHED_SIGNATURES: u8 = 128; // Vanilla: 128
 const MAX_PREVIOUS_MESSAGES: u8 = 20; // Vanilla: 20
 
@@ -346,6 +346,8 @@ pub struct Player {
     pub respawn_point: AtomicCell<Option<RespawnPoint>>,
     /// The player's sleep status
     pub sleeping_since: AtomicCell<Option<u8>>,
+    /// Manages the player's breath level
+    pub breath_manager: BreathManager,
     /// Manages the player's hunger level.
     pub hunger_manager: HungerManager,
     /// The ID of the currently open container (if any).
@@ -378,6 +380,8 @@ pub struct Player {
     pub keep_alive_id: AtomicI64,
     /// The last time we sent a keep alive packet.
     pub last_keep_alive_time: AtomicCell<Instant>,
+    /// The ping in millis.
+    pub ping: AtomicU32,
     /// The amount of ticks since the player's last attack.
     pub last_attacked_ticks: AtomicU32,
     /// The player's last known experience level.
@@ -447,12 +451,17 @@ impl Player {
             PlayerScreenHandler::new(&inventory, None, 0).await,
         ));
 
+        // Initialize abilities based on gamemode (like vanilla's GameMode.setAbilities())
+        let mut abilities = Abilities::default();
+        abilities.set_for_gamemode(gamemode);
+
         Self {
             living_entity,
             config: RwLock::new(config),
             gameprofile,
             client,
             awaiting_teleport: Mutex::new(None),
+            breath_manager: BreathManager::default(),
             // TODO: Load this from previous instance
             hunger_manager: HungerManager::default(),
             current_block_destroy_stage: AtomicI32::new(-1),
@@ -465,7 +474,7 @@ impl Player {
             teleport_id_count: AtomicI32::new(0),
             mining: AtomicBool::new(false),
             mining_pos: Mutex::new(BlockPos::ZERO),
-            abilities: Mutex::new(Abilities::default()),
+            abilities: Mutex::new(abilities),
             gamemode: AtomicCell::new(gamemode),
             previous_gamemode: AtomicCell::new(None),
             // TODO: Send the CPlayerSpawnPosition packet when the client connects with proper values
@@ -482,6 +491,7 @@ impl Player {
             wait_for_keep_alive: AtomicBool::new(false),
             keep_alive_id: AtomicI64::new(0),
             last_keep_alive_time: AtomicCell::new(std::time::Instant::now()),
+            ping: AtomicU32::new(0),
             last_attacked_ticks: AtomicU32::new(0),
             client_loaded: AtomicBool::new(false),
             client_loaded_timeout: AtomicU32::new(60),
@@ -1064,6 +1074,7 @@ impl Player {
         self.last_attacked_ticks.fetch_add(1, Ordering::Relaxed);
 
         self.living_entity.tick(self.clone(), server).await;
+        self.breath_manager.tick(self).await;
         self.hunger_manager.tick(self).await;
 
         // experience handling
@@ -1215,47 +1226,78 @@ impl Player {
                 .await;
             }
             ClientPlatform::Bedrock(bedrock) => {
-                let mut ability_value = 0;
-                let abilities = &self.abilities.lock().await;
+                let abilities = self.abilities.lock().await;
+                let is_op = self.permission_lvl.load() == PermissionLvl::Four;
+                let is_spectator = self.gamemode.load() == GameMode::Spectator;
 
-                if abilities.invulnerable {
-                    ability_value |= 1 << Ability::Invulnerable as u32;
-                }
+                // 1. Permission Mapping
+                let player_perm = if is_op { 2 } else { 1 }; // 1: Member, 2: Operator
+                let command_perm = u8::from(is_op); // 0: Normal, 1: Operator
 
-                if abilities.flying {
-                    ability_value |= 1 << Ability::Flying as u32;
-                }
+                // 2. Build the Ability Bitmask
+                let mut ability_value: u32 = 0;
 
-                if abilities.allow_flying {
-                    ability_value |= 1 << Ability::MayFly as u32;
-                }
+                // Helper closure to set bits using your enum
+                let mut set_ability = |ability: Ability, enabled: bool| {
+                    if enabled {
+                        ability_value |= 1 << (ability as u32);
+                    }
+                };
+                dbg!(abilities.allow_flying);
+                dbg!(abilities.flying);
 
-                if abilities.creative {
-                    ability_value |= 1 << Ability::OperatorCommands as u32;
-                    ability_value |= 1 << Ability::Teleport as u32;
-                    ability_value |= 1 << Ability::Invulnerable as u32;
-                }
+                // Base Permissions
+                set_ability(Ability::MayFly, abilities.allow_flying);
+                set_ability(Ability::Flying, abilities.flying);
+                set_ability(
+                    Ability::Invulnerable,
+                    abilities.invulnerable || abilities.creative,
+                );
 
-                // Todo: Integrate this into the system
-                ability_value |= 1 << Ability::AttackMobs as u32;
-                ability_value |= 1 << Ability::AttackPlayers as u32;
-                ability_value |= 1 << Ability::Build as u32;
-                ability_value |= 1 << Ability::DoorsAndSwitches as u32;
-                ability_value |= 1 << Ability::Instabuild as u32;
-                ability_value |= 1 << Ability::Mine as u32;
+                // Operator Specifics
+                set_ability(Ability::OperatorCommands, is_op);
+                set_ability(Ability::Teleport, is_op);
 
-                let packet = CUpdateAbilities {
-                    target_player_raw_id: self.entity_id().into(),
-                    player_permission: 2,
-                    command_permission: 4,
-                    layers: vec![AbilityLayer {
+                // Interaction Permissions (Disabled for Spectators)
+                let can_interact = !is_spectator;
+                set_ability(Ability::Build, can_interact);
+                set_ability(Ability::Mine, can_interact);
+                set_ability(Ability::DoorsAndSwitches, can_interact);
+                set_ability(Ability::OpenContainers, can_interact);
+                set_ability(Ability::AttackPlayers, can_interact);
+                set_ability(Ability::AttackMobs, can_interact);
+
+                // Creative/Spectator Extras
+                set_ability(Ability::Instabuild, abilities.creative);
+                set_ability(Ability::NoClip, is_spectator);
+
+                // 3. Construct the Layers
+                let mut layers = vec![AbilityLayer {
+                    serialized_layer: 0, // LAYER_BASE
+                    // 0x3FFFF defines the first 18 bits as "provided" by this packet
+                    abilities_set: (1 << Ability::AbilityCount as u32) - 1,
+                    ability_value,
+                    fly_speed: 0.05,
+                    vertical_fly_speed: 1.0,
+                    walk_speed: 0.1,
+                }];
+
+                if is_spectator {
+                    layers.push(AbilityLayer {
                         serialized_layer: 1,
-                        abilities_set: (1 << Ability::AbilityCount as u32) - 1,
-                        ability_value,
+                        abilities_set: 1 << (Ability::Flying as u32),
+                        ability_value: 1 << (Ability::Flying as u32),
                         fly_speed: 0.05,
                         vertical_fly_speed: 1.0,
                         walk_speed: 0.1,
-                    }],
+                    });
+                }
+
+                let packet = CUpdateAbilities {
+                    target_player_raw_id: self.entity_id().into(),
+                    player_permission: player_perm,
+                    command_permission: command_perm,
+                    layers,
                 };
 
                 bedrock.send_game_packet(&packet).await;
@@ -1376,15 +1418,8 @@ impl Player {
 
                 self.set_client_loaded(false);
                 let uuid = self.gameprofile.id;
-                current_world.remove_player(self, false).await;
-                new_world.players.write().await.insert(uuid, Arc::new(Self::new(
-                            self.client.clone(),
-                            self.gameprofile.clone(),
-                            self.config.read().await.clone(),
-                            new_world.clone(),
-                            self.gamemode.load(),
-                        )
-                        .await));
+                let player = current_world.remove_player(self, false).await.unwrap();
+                new_world.players.write().await.insert(uuid, player);
                 self.unload_watched_chunks(&current_world).await;
 
                 self.chunk_manager.lock().await.change_world(&current_world.level, &new_world.level);
@@ -1574,6 +1609,9 @@ impl Player {
                     .await;
             }
         }
+
+        // Reset air supply & drowning ticks on death
+        self.breath_manager.reset(self).await;
 
         self.client
             .send_packet_now(&CCombatDeath::new(self.entity_id().into(), &death_msg))
@@ -1797,18 +1835,7 @@ impl Player {
     }
 
     pub async fn send_system_message(&self, text: &TextComponent) {
-        match &self.client {
-            ClientPlatform::Java(client) => {
-                client
-                    .enqueue_packet(&CSystemChatMessage::new(text, false))
-                    .await;
-            }
-            ClientPlatform::Bedrock(client) => {
-                client
-                    .send_game_packet(&SText::system_message(text.clone().get_text()))
-                    .await;
-            }
-        }
+        self.send_system_message_raw(text, false).await;
     }
 
     pub async fn send_system_message_raw(&self, text: &TextComponent, overlay: bool) {
@@ -2520,13 +2547,6 @@ impl EntityBase for Player {
             if self.abilities.lock().await.invulnerable && damage_type != DamageType::GENERIC_KILL {
                 return false;
             }
-            let dyn_self = self
-                .living_entity
-                .entity
-                .world
-                .get_entity_by_id(self.living_entity.entity.entity_id)
-                .await
-                .expect("Entity not found in world");
             let result = self
                 .living_entity
                 .damage_with_context(caller, amount, damage_type, position, source, cause)
@@ -2535,8 +2555,7 @@ impl EntityBase for Player {
                 let health = self.living_entity.health.load();
                 if health <= 0.0 {
                     let death_message =
-                        LivingEntity::get_death_message(&*dyn_self, damage_type, source, cause)
-                            .await;
+                        LivingEntity::get_death_message(caller, damage_type, source, cause).await;
                     self.handle_killed(death_message).await;
                 }
             }

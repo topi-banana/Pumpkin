@@ -681,17 +681,6 @@ pub(crate) fn build() -> TokenStream {
     let mut existing_item_ids: std::collections::HashSet<u16> = std::collections::HashSet::new();
 
     for block in blocks_assets.blocks {
-        for state in &block.states {
-            if state.has_random_ticks() {
-                let state_id = LitInt::new(&state.id.to_string(), Span::call_site());
-                random_tick_states.push(state_id);
-            }
-            if state.is_air() {
-                let state_id = LitInt::new(&state.id.to_string(), Span::call_site());
-                air_states.push(state_id);
-            }
-        }
-
         let mut property_collection = HashSet::new();
         let mut property_mapping = Vec::new();
 
@@ -731,16 +720,6 @@ pub(crate) fn build() -> TokenStream {
             });
         }
 
-        if !property_collection.is_empty() {
-            let mut property_collection_vec: Vec<i32> = property_collection.into_iter().collect();
-            property_collection_vec.sort_unstable();
-
-            property_collection_map
-                .entry(property_collection_vec)
-                .or_insert_with(|| PropertyCollectionData::from_mappings(property_mapping))
-                .add_block(block.name.clone(), block.id);
-        }
-
         let const_ident = format_ident!("{}", const_block_name_from_block_name(&block.name));
         let name_str = &block.name;
         let id_lit = LitInt::new(&block.id.to_string(), Span::call_site());
@@ -770,20 +749,76 @@ pub(crate) fn build() -> TokenStream {
             name => name,
         };
 
-        let (state_count, id) = *be_blocks.get(be_name).unwrap_or(&(0, 1));
+        let be_state_list = be_blocks.get(be_name);
 
         for (i, state) in block.states.iter().enumerate() {
-            if state_count != 0 {
-                let bedrock_val = if state_count > i as u32 {
-                    id as u16 + i as u16
-                } else {
-                    id as u16
-                };
-                block_state_to_bedrock.push((state.id, bedrock_val));
+            if state.has_random_ticks() {
+                let state_id = LitInt::new(&state.id.to_string(), Span::call_site());
+                random_tick_states.push(state_id);
+            }
+            if state.is_air() {
+                let state_id = LitInt::new(&state.id.to_string(), Span::call_site());
+                air_states.push(state_id);
             }
 
+            let mut matched_be_id = 1;
+
+            if let Some(be_variants) = be_state_list {
+                let mut temp_index = i as u16;
+                let mut java_props_for_this_state = BTreeMap::new();
+
+                for mapping in property_mapping.iter().rev() {
+                    match &mapping.property_type {
+                        PropertyType::Bool => {
+                            let val = temp_index % 2;
+                            temp_index /= 2;
+                            java_props_for_this_state.insert(
+                                mapping.original_name.clone(),
+                                if val == 0 { "true" } else { "false" }.to_string(),
+                            );
+                        }
+                        PropertyType::Enum { name } => {
+                            let enum_info = property_enums.get(name).unwrap();
+                            let count = enum_info.values.len() as u16;
+                            let val_idx = temp_index % count;
+                            temp_index /= count;
+
+                            let raw_val = &enum_info.values[val_idx as usize];
+                            let val_str = if raw_val.starts_with('L') {
+                                raw_val.strip_prefix('L').unwrap().to_string()
+                            } else {
+                                raw_val.clone()
+                            };
+                            java_props_for_this_state
+                                .insert(mapping.original_name.clone(), val_str);
+                        }
+                    }
+                }
+
+                matched_be_id = be_variants
+                    .iter()
+                    .find(|(_, be_props)| {
+                        java_props_for_this_state
+                            .iter()
+                            .all(|(k, v)| be_props.get(k).map(|be_v| be_v == v).unwrap_or(false))
+                    })
+                    .map(|(id, _)| *id)
+                    .unwrap_or_else(|| be_variants.first().map(|(id, _)| *id).unwrap_or(1));
+            }
+
+            block_state_to_bedrock.push((state.id, matched_be_id));
             raw_id_from_state_id_array.push((state.id, id_lit.clone()));
             state_from_state_id_array.push((const_ident.clone(), i, state.id));
+        }
+
+        if !property_collection.is_empty() {
+            let mut property_collection_vec: Vec<i32> = property_collection.into_iter().collect();
+            property_collection_vec.sort_unstable();
+
+            property_collection_map
+                .entry(property_collection_vec)
+                .or_insert_with(|| PropertyCollectionData::from_mappings(property_mapping))
+                .add_block(block.name.clone(), block.id);
         }
 
         if existing_item_ids.insert(item_id) {
@@ -1130,69 +1165,97 @@ pub(crate) fn build() -> TokenStream {
     }
 }
 
-fn get_be_data_from_nbt<R: Read>(reader: &mut R) -> BTreeMap<String, (u32, u32)> {
-    let mut block_data: BTreeMap<String, (u32, u32)> = BTreeMap::new();
+#[expect(clippy::type_complexity)]
+fn get_be_data_from_nbt<R: Read>(
+    reader: &mut R,
+) -> BTreeMap<String, Vec<(u32, BTreeMap<String, String>)>> {
+    let mut block_data: BTreeMap<String, Vec<(u32, BTreeMap<String, String>)>> = BTreeMap::new();
     let mut current_id = 0;
 
-    while read_byte(reader) == 10 {
+    let read_nbt_string = |reader: &mut R| -> String {
         let len = read_varint(reader);
         let mut buf = vec![0; len as usize];
         reader.read_exact(&mut buf).unwrap();
+        String::from_utf8(buf).unwrap()
+    };
 
-        let mut name = String::new();
-        let mut byte = read_byte(reader);
+    let read_byte_safe = |reader: &mut R| -> Option<u8> {
+        let mut buf = [0; 1];
+        if reader.read_exact(&mut buf).is_ok() {
+            Some(buf[0])
+        } else {
+            None
+        }
+    };
 
-        while byte != 0 {
-            let mut name_buf = vec![0; read_varint(reader) as usize];
-            reader.read_exact(&mut name_buf).unwrap();
-            let cp_name = String::from_utf8(name_buf).unwrap();
+    while let Some(tag_id) = read_byte_safe(reader) {
+        if tag_id != 10 {
+            break;
+        } // Tag_Compound (10) required
 
-            match cp_name.as_str() {
+        // Read Root Name (usually empty string in palette)
+        let _root_name = read_nbt_string(reader);
+
+        let mut block_name = String::new();
+        let mut properties = BTreeMap::new();
+
+        loop {
+            let field_type = read_byte(reader);
+            if field_type == 0 {
+                break;
+            } // Tag_End (0)
+
+            let field_name = read_nbt_string(reader);
+
+            match field_name.as_str() {
                 "name" => {
-                    let mut name_buf = vec![0; read_varint(reader) as usize];
-                    reader.read_exact(&mut name_buf).unwrap();
-                    name = String::from_utf8(name_buf)
-                        .unwrap()
+                    let raw_name = read_nbt_string(reader);
+                    block_name = raw_name
                         .strip_prefix("minecraft:")
-                        .unwrap()
+                        .unwrap_or(&raw_name)
                         .to_string();
                 }
-                "states" => {
-                    let mut byte = read_byte(reader);
-                    while byte != 0 {
-                        let b = &mut vec![0; read_varint(reader) as usize];
-                        reader.read_exact(b).unwrap();
-
-                        match byte {
-                            8 => {
-                                let b = &mut vec![0; read_varint(reader) as usize];
-                                reader.read_exact(b).unwrap();
-                            }
-                            3 => {
-                                read_varint(reader);
-                            }
-                            1 => {
-                                read_byte(reader);
-                            }
-                            _ => panic!("{}", byte),
-                        }
-                        byte = read_byte(reader);
+                "states" => loop {
+                    let prop_type = read_byte(reader);
+                    if prop_type == 0 {
+                        break;
                     }
-                }
+
+                    let prop_key = read_nbt_string(reader);
+
+                    let prop_val = match prop_type {
+                        1 => {
+                            let val = read_byte(reader);
+                            if val == 1 {
+                                "true".to_string()
+                            } else {
+                                "false".to_string()
+                            }
+                        }
+                        3 => read_varint(reader).to_string(),
+                        8 => read_nbt_string(reader),
+                        _ => panic!("Unknown property type {} for key {}", prop_type, prop_key),
+                    };
+
+                    properties.insert(prop_key, prop_val);
+                },
                 "version" => {
                     read_varint(reader);
                 }
-                _ => panic!(),
+                _ => panic!("Unexpected root field: {}", field_name),
             }
-            byte = read_byte(reader);
         }
 
-        block_data
-            .entry(name)
-            .and_modify(|(v, _)| *v += 1)
-            .or_insert((1, current_id));
+        if !block_name.is_empty() {
+            block_data
+                .entry(block_name)
+                .or_default()
+                .push((current_id, properties));
+        }
+
         current_id += 1;
     }
+
     block_data
 }
 

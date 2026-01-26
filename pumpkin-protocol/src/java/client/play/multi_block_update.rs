@@ -4,14 +4,23 @@ use pumpkin_util::math::{
     vector3::{self, Vector3},
 };
 
-use pumpkin_macros::packet;
+use pumpkin_macros::java_packet;
 use serde::{Serialize, ser::SerializeTuple};
 
 use crate::codec::{var_int::VarInt, var_long::VarLong};
 
-#[packet(PLAY_SECTION_BLOCKS_UPDATE)]
+/// Updates multiple blocks within a single 16x16x16 chunk section.
+///
+/// This packet is much more efficient than sending multiple individual
+/// `CBlockUpdate` packets when many changes occur in the same area
+/// (e.g., explosions, structure generation, or large-scale terraforming).
+#[java_packet(PLAY_SECTION_BLOCKS_UPDATE)]
 pub struct CMultiBlockUpdate {
+    /// The coordinates of the chunk section being updated.
+    /// Calculated as (block_coord >> 4).
     pub chunk_section: Vector3<i32>,
+    /// A list of relative positions and their new block state IDs.
+    /// The i16 encodes the relative position within the section.
     pub positions_to_state_ids: Vec<(i16, i32)>,
 }
 

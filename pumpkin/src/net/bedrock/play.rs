@@ -6,10 +6,7 @@ use std::{
 use pumpkin_macros::send_cancellable;
 use pumpkin_protocol::{
     bedrock::{
-        client::{
-            chunk_radius_update::CChunkRadiusUpdate, container_open::CContainerOpen,
-            set_actor_motion::CSetActorMotion,
-        },
+        client::{chunk_radius_update::CChunkRadiusUpdate, container_open::CContainerOpen},
         server::{
             command_request::SCommandRequest,
             container_close::SContainerClose,
@@ -19,15 +16,10 @@ use pumpkin_protocol::{
             text::SText,
         },
     },
-    codec::{
-        bedrock_block_pos::NetworkPos, var_int::VarInt, var_long::VarLong, var_ulong::VarULong,
-    },
+    codec::{bedrock_block_pos::NetworkPos, var_int::VarInt, var_long::VarLong},
     java::client::play::CSystemChatMessage,
 };
-use pumpkin_util::{
-    math::{position::BlockPos, vector3::Vector3},
-    text::TextComponent,
-};
+use pumpkin_util::{math::position::BlockPos, text::TextComponent};
 
 use crate::{
     command::CommandSender,
@@ -114,15 +106,6 @@ impl BedrockClient {
             entity.set_sneaking(true).await;
         } else if input_data.get(InputData::StopSneaking) {
             entity.set_sneaking(false).await;
-        }
-
-        if !player.abilities.lock().await.flying {
-            self.send_game_packet(&CSetActorMotion {
-                target_runtime_id: VarULong(entity.entity_id as _),
-                motion: packet.pos_delta + Vector3::new(0.0, -0.08, 0.0),
-                tick: packet.client_tick,
-            })
-            .await;
         }
     }
 

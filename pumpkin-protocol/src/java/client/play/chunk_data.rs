@@ -2,7 +2,7 @@ use crate::WritingError;
 use crate::codec::bit_set::BitSet;
 use crate::{ClientPacket, VarInt, ser::NetworkWriteExt};
 use pumpkin_data::packet::clientbound::PLAY_LEVEL_CHUNK_WITH_LIGHT;
-use pumpkin_macros::packet;
+use pumpkin_macros::java_packet;
 use pumpkin_nbt::END_ID;
 use pumpkin_util::math::position::get_local_cord;
 use pumpkin_util::version::MinecraftVersion;
@@ -10,7 +10,12 @@ use pumpkin_world::chunk::format::LightContainer;
 use pumpkin_world::chunk::{ChunkData, palette::NetworkPalette};
 use std::io::Write;
 
-#[packet(PLAY_LEVEL_CHUNK_WITH_LIGHT)]
+/// Sent by the server to provide the client with the full data for a chunk.
+///
+/// This includes heightmaps, the actual block and biome data (organized into sections),
+/// block entities (like signs or chests), and the light level information for both
+/// sky and block light.
+#[java_packet(PLAY_LEVEL_CHUNK_WITH_LIGHT)]
 pub struct CChunkData<'a>(pub &'a ChunkData);
 
 impl ClientPacket for CChunkData<'_> {

@@ -55,10 +55,14 @@ use pumpkin_data::{
 use pumpkin_data::{BlockDirection, BlockState};
 use pumpkin_inventory::screen_handler::InventoryPlayer;
 use pumpkin_nbt::{compound::NbtCompound, to_bytes_unnamed};
+use pumpkin_protocol::bedrock::client::set_actor_data::{
+    CSetActorData, EntityMetadata, MetadataValue, PropertySyncData, entity_data_flag,
+    entity_data_key,
+};
 use pumpkin_protocol::bedrock::client::start_game::CStartGame;
+use pumpkin_protocol::bedrock::frame_set::FrameSet;
 use pumpkin_protocol::java::client::play::CPlayerSpawnPosition;
 use pumpkin_protocol::java::client::play::{CSetEntityMetadata, Metadata};
-use pumpkin_protocol::ser::serializer::Serializer;
 use pumpkin_protocol::{
     BClientPacket, ClientPacket, IdOr, SoundEvent,
     bedrock::{
@@ -120,7 +124,6 @@ use pumpkin_world::{world::BlockFlags, world_info::LevelData};
 use rand::seq::SliceRandom;
 use rand::{Rng, rng};
 use scoreboard::Scoreboard;
-use serde::Serialize;
 use time::LevelTime;
 use tokio::sync::Mutex;
 use tokio::sync::RwLock;
@@ -1160,7 +1163,7 @@ impl World {
         self.dimension.min_y
     }
 
-    #[expect(clippy::too_many_lines)]
+    #[allow(clippy::too_many_lines)]
     pub async fn spawn_bedrock_player(
         &self,
         base_config: &BasicConfiguration,
@@ -1170,6 +1173,24 @@ impl World {
         let level_info = server.level_info.read().await;
         let weather = self.weather.lock().await;
         let runtime_id = player.entity_id() as u64;
+        let (position, yaw, pitch) = if player.has_played_before.load(Ordering::Relaxed) {
+            let position = player.position();
+            let yaw = player.living_entity.entity.yaw.load(); //info.spawn_angle;
+            let pitch = player.living_entity.entity.pitch.load();
+
+            (position, yaw, pitch)
+        } else {
+            let info = &self.level_info.read().await;
+            let spawn_position = Vector2::new(info.spawn_x, info.spawn_z);
+            let pos_y = self.get_top_block(spawn_position).await + 1; // +1 to spawn on top of the block
+
+            let position = Vector3::new(
+                f64::from(info.spawn_x) + 0.5,
+                f64::from(pos_y),
+                f64::from(info.spawn_z) + 0.5,
+            );
+            (position, info.spawn_yaw, info.spawn_pitch)
+        };
         // Todo make the data less spread
         let level_settings = LevelSettings {
             seed: self.level.seed.0,
@@ -1248,22 +1269,22 @@ impl World {
                 entity_id: VarLong(runtime_id as _),
                 runtime_entity_id: VarULong(runtime_id),
                 player_gamemode: player.gamemode.load(),
-                position: Vector3::new(0.0, 100.0, 0.0),
-                pitch: 0.0,
-                yaw: 0.0,
+                position: Vector3::new(position.x as f32, position.y as f32, position.z as f32),
+                pitch,
+                yaw,
                 level_settings,
                 level_id: String::new(),
-                level_name: "World".to_string(),
+                level_name: "Pumpkin world".to_string(),
                 premium_world_template_id: String::new(),
                 is_trial: false,
                 rewind_history_size: VarInt(0),
-                server_authoritative_block_breaking: false,
+                server_authoritative_block_breaking: true,
                 current_level_time: self.level_time.lock().await.world_age as _,
                 enchantment_seed: VarInt(0),
                 block_properties_size: VarUInt(0),
                 // TODO Make this unique
                 multiplayer_correlation_id: Uuid::default().to_string(),
-                enable_itemstack_net_manager: false,
+                enable_itemstack_net_manager: true,
                 // TODO Make this description better!
                 // This gets send from the client to mojang for telemetry
                 server_version: "Pumpkin Rust Server".to_string(),
@@ -1273,14 +1294,14 @@ impl World {
                 compound_end: 0,
 
                 block_registry_checksum: 0,
-                world_template_id: Uuid::default(),
+                world_template_id: Uuid::nil(),
                 // TODO The client needs extra biome data for this
                 enable_clientside_generation: false,
                 blocknetwork_ids_are_hashed: false,
-                disable_client_sounds: false,
+                server_auth_sounds: false,
             })
             .await;
-        // chunker::update_position(&player).await;
+        chunker::update_position(&player).await;
         client
             .send_game_packet(&CreativeContent {
                 groups: &[Group {
@@ -1292,36 +1313,118 @@ impl World {
             })
             .await;
 
-        client
-            .send_game_packet(&CUpdateAttributes {
-                runtime_id: VarULong(runtime_id),
-                attributes: vec![Attribute {
-                    min_value: 0.0,
-                    max_value: f32::MAX,
-                    current_value: 0.1,
-                    default_min_value: 0.0,
-                    default_max_value: f32::MAX,
-                    default_value: 0.1,
-                    name: "minecraft:movement".to_string(),
-                    modifiers_list_size: VarUInt(0),
-                }],
-                player_tick: VarULong(0),
-            })
-            .await;
-        player.send_abilities_update().await;
         {
             let mut abilities = player.abilities.lock().await;
             abilities.set_for_gamemode(player.gamemode.load());
         };
+        let mut metadata = EntityMetadata::default();
 
-        client.send_game_packet(&CPlayStatus::PlayerSpawn).await;
+        metadata.set(entity_data_key::WIDTH, MetadataValue::Float(0.6));
+        metadata.set(entity_data_key::HEIGHT, MetadataValue::Float(1.8));
+
+        // This is super important, otherwise the client will float by default
+        metadata.set_flag(entity_data_flag::HAS_GRAVITY);
+
+        // Prevents the client from showing air buddles on hud even when not in water
+        metadata.set_flag(entity_data_flag::BREATHING);
+        let actor_data = CSetActorData {
+            actor_runtime_id: VarULong(runtime_id),
+            metadata,
+            synced_properties: PropertySyncData {
+                int_properties: HashMap::new(),
+                float_properties: HashMap::new(),
+            },
+            tick: VarULong(0),
+        };
+        client.send_game_packet(&actor_data).await;
+
+        player.send_abilities_update().await;
+
+        let mut frame_set = FrameSet::default();
+
+        // https://github.com/pmmp/PocketMine-MP/blob/0b6d8f8cb2aaa05ffad0b6386bd88d73ef54b395/src/entity/AttributeFactory.php#L34
+        client
+            .write_game_packet_to_set(
+                &CUpdateAttributes {
+                    runtime_id: VarULong(runtime_id),
+                    attributes: vec![
+                        Attribute {
+                            min_value: 0.0,
+                            max_value: 3.402_823_5E38,
+                            current_value: 0.1,
+                            default_min_value: 0.0,
+                            default_max_value: 3.402_823_5E38,
+                            default_value: 0.1,
+                            name: "minecraft:movement".to_string(),
+                            modifiers_list_size: VarUInt(0),
+                        },
+                        Attribute {
+                            min_value: 0.0,
+                            max_value: 3.402_823_5E38,
+                            current_value: 0.02,
+                            default_min_value: 0.0,
+                            default_max_value: 3.402_823_5E38,
+                            default_value: 0.02,
+                            name: "minecraft:underwater_movement".to_string(),
+                            modifiers_list_size: VarUInt(0),
+                        },
+                        Attribute {
+                            min_value: 0.0,
+                            max_value: 1.0,
+                            current_value: 0.08,
+                            default_min_value: 0.0,
+                            default_max_value: 1.0,
+                            default_value: 0.08,
+                            name: "minecraft:gravity".to_string(),
+                            modifiers_list_size: VarUInt(0),
+                        },
+                        Attribute {
+                            min_value: 0.0,
+                            max_value: 400.0,
+                            current_value: 400.0,
+                            default_min_value: 0.0,
+                            default_max_value: 400.0,
+                            default_value: 400.0,
+                            name: "minecraft:air".to_string(),
+                            modifiers_list_size: VarUInt(0),
+                        },
+                        Attribute {
+                            min_value: 0.0,
+                            max_value: 20.0,
+                            current_value: 20.0,
+                            default_min_value: 0.0,
+                            default_max_value: 20.0,
+                            default_value: 20.0,
+                            name: "minecraft:health".to_string(),
+                            modifiers_list_size: VarUInt(0),
+                        },
+                        Attribute {
+                            min_value: 0.0,
+                            max_value: 20.0,
+                            current_value: 20.0,
+                            default_min_value: 0.0,
+                            default_max_value: 20.0,
+                            default_value: 20.0,
+                            name: "minecraft:player.hunger".to_string(),
+                            modifiers_list_size: VarUInt(0),
+                        },
+                    ],
+                    player_tick: VarULong(0),
+                },
+                &mut frame_set,
+            )
+            .await;
+        client
+            .write_game_packet_to_set(&CPlayStatus::PlayerSpawn, &mut frame_set)
+            .await;
+        client.send_frame_set(frame_set, 0x84).await;
     }
 
     #[expect(clippy::too_many_lines)]
     pub async fn spawn_java_player(
         &self,
         base_config: &BasicConfiguration,
-        player: Arc<Player>,
+        player: &Arc<Player>,
         server: &Server,
     ) {
         let dimensions: Vec<ResourceLocation> = server
@@ -1372,10 +1475,7 @@ impl World {
             .await;
 
         // Send the current ticking state to the new player so they are in sync.
-        server
-            .tick_rate_manager
-            .update_joining_player(&player)
-            .await;
+        server.tick_rate_manager.update_joining_player(player).await;
 
         // Permissions, i.e. the commands a player may use.
         player.send_permission_lvl_update().await;
@@ -1384,12 +1484,13 @@ impl World {
         player.send_difficulty_update().await;
         {
             let command_dispatcher = server.command_dispatcher.read().await;
-            client_suggestions::send_c_commands_packet(&player, server, &command_dispatcher).await;
+
+            client_suggestions::send_c_commands_packet(player, server, &command_dispatcher).await;
         };
 
         // Spawn in initial chunks
         // This is made before the player teleport so that the player doesn't glitch out when spawning
-        chunker::update_position(&player).await;
+        chunker::update_position(player).await;
 
         // Teleport
         let (position, yaw, pitch) = if player.has_played_before.load(Ordering::Relaxed) {
@@ -1541,11 +1642,7 @@ impl World {
                         MetaDataType::Byte,
                         config.skin_parts,
                     );
-                    let mut serializer_buf = Vec::new();
-
-                    let mut serializer = Serializer::new(&mut serializer_buf);
-                    meta.serialize(&mut serializer).unwrap();
-                    buf.extend(serializer_buf);
+                    meta.write(&mut buf, &client.version.load()).unwrap();
                 };
                 drop(config);
                 // END
@@ -1669,7 +1766,7 @@ impl World {
             .await;
 
         player.send_active_effects().await;
-        self.send_player_equipment(&player).await;
+        self.send_player_equipment(player).await;
     }
 
     async fn send_player_equipment(&self, from: &Player) {
@@ -2265,47 +2362,46 @@ impl World {
     ///
     /// - This function assumes `broadcast_packet_expect` and `remove_entity` are defined elsewhere.
     /// - The disconnect message sending is currently optional. Consider making it a configurable option.
-    pub async fn remove_player(&self, player: &Arc<Player>, fire_event: bool) {
-        if self
-            .players
-            .write()
-            .await
-            .remove(&player.gameprofile.id)
-            .is_none()
-        {
-            return;
-        }
-        let uuid = player.gameprofile.id;
-        self.broadcast_packet_all(&CRemovePlayerInfo::new(&[uuid]))
-            .await;
-        self.broadcast_packet_all(&CRemoveEntities::new(&[player.entity_id().into()]))
-            .await;
-
-        if fire_event {
-            let msg_comp = TextComponent::translate(
-                "multiplayer.player.left",
-                [TextComponent::text(player.gameprofile.name.clone())],
-            )
-            .color_named(NamedColor::Yellow);
-            let event = PlayerLeaveEvent::new(player.clone(), msg_comp);
-
-            let event = self
-                .server
-                .upgrade()
-                .unwrap()
-                .plugin_manager
-                .fire(event)
+    pub async fn remove_player(
+        &self,
+        player: &Arc<Player>,
+        fire_event: bool,
+    ) -> Option<Arc<Player>> {
+        let player = self.players.write().await.remove(&player.gameprofile.id);
+        if let Some(player) = player {
+            let uuid = player.gameprofile.id;
+            self.broadcast_packet_all(&CRemovePlayerInfo::new(&[uuid]))
+                .await;
+            self.broadcast_packet_all(&CRemoveEntities::new(&[player.entity_id().into()]))
                 .await;
 
-            if !event.cancelled {
-                let players = self.players.read().await;
-                for player in players.values() {
-                    player.send_system_message(&event.leave_message).await;
+            if fire_event {
+                let msg_comp = TextComponent::translate(
+                    "multiplayer.player.left",
+                    [TextComponent::text(player.gameprofile.name.clone())],
+                )
+                .color_named(NamedColor::Yellow);
+                let event = PlayerLeaveEvent::new(player.clone(), msg_comp);
+
+                let event = self
+                    .server
+                    .upgrade()
+                    .unwrap()
+                    .plugin_manager
+                    .fire(event)
+                    .await;
+
+                if !event.cancelled {
+                    let players = self.players.read().await;
+                    for player in players.values() {
+                        player.send_system_message(&event.leave_message).await;
+                    }
+                    drop(players);
+                    log::info!("{}", event.leave_message.to_pretty_console());
                 }
-                drop(players);
-                log::info!("{}", event.leave_message.to_pretty_console());
             }
         }
+        None
     }
 
     /// Adds an entity to the world.

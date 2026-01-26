@@ -3,19 +3,35 @@ use pumpkin_util::math::vector3::Vector3;
 use crate::block_properties::{COLLISION_SHAPES, Instrument};
 use crate::{Block, BlockDirection, CollisionShape};
 
+/// Represents a specific state of a block, including its properties and physical behaviors.
+///
+/// A single `Block` (like a Hopper) can have multiple `BlockState`s (e.g., pointing North,
+/// South, or being powered). This struct is optimized for high-speed lookups during
+/// physics and lighting calculations.
 #[derive(Debug)]
 pub struct BlockState {
+    /// The global palette ID used for network serialization and chunk storage.
     pub id: u16,
+    /// Bit-flags representing boolean or enum properties (e.g., `waterlogged`, `lit`, `facing`).
     pub state_flags: u16,
+    /// Cached flags for each of the 6 sides to speed up ambient occlusion and face culling.
     pub side_flags: u8,
+    /// The note block instrument produced when this block is placed underneath one.
     pub instrument: Instrument,
+    /// The light level emitted by this block, ranging from 0 to 15.
     pub luminance: u8,
+    /// Defines how the block reacts to being pushed or pulled by a piston.
     pub piston_behavior: PistonBehavior,
+    /// Overrides the base block hardness for this specific state if necessary.
     pub hardness: f32,
+    /// Indices into a global voxel-shape registry for physical entity collisions.
     pub collision_shapes: &'static [u16],
+    /// Indices into a global voxel-shape registry for the selection highlight box.
     pub outline_shapes: &'static [u16],
+    /// How much light is subtracted as it passes through this block (0 for transparent, 15 for opaque).
     pub opacity: u8,
-    /// u16::MAX is used as None
+    /// The ID of the block entity associated with this state.
+    /// Set to `u16::MAX` if the block does not hold NBT data.
     pub block_entity_type: u16,
 }
 

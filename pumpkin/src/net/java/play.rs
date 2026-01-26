@@ -261,7 +261,12 @@ impl JavaClient {
         true
     }
 
-    pub async fn handle_position(&self, player: &Arc<Player>, packet: SPlayerPosition) {
+    pub async fn handle_position(
+        &self,
+        player: &Arc<Player>,
+        server: &Arc<Server>,
+        packet: SPlayerPosition,
+    ) {
         if !player.has_client_loaded() {
             return;
         }
@@ -282,6 +287,7 @@ impl JavaClient {
         );
 
         send_cancellable! {{
+            server;
             PlayerMoveEvent {
                 player: player.clone(),
                 from: player.living_entity.entity.pos.load(),
@@ -357,6 +363,7 @@ impl JavaClient {
     pub async fn handle_position_rotation(
         &self,
         player: &Arc<Player>,
+        server: &Arc<Server>,
         packet: SPlayerPositionRotation,
     ) {
         if !player.has_client_loaded() {
@@ -385,6 +392,7 @@ impl JavaClient {
         );
 
         send_cancellable! {{
+            server;
             PlayerMoveEvent::new(
                 player.clone(),
                 player.living_entity.entity.pos.load(),
@@ -531,6 +539,7 @@ impl JavaClient {
         let player_clone = player.clone();
         let server_clone = server.clone();
         send_cancellable! {{
+            server;
             PlayerCommandSendEvent {
                 player: player.clone(),
                 command: command.command.clone(),
@@ -807,7 +816,10 @@ impl JavaClient {
             )
         };
 
+        let server = player.world().server.upgrade().unwrap();
+
         send_cancellable! {{
+            server;
             event;
             'after: {
                 player.swing_hand(hand, false).await;
@@ -843,6 +855,7 @@ impl JavaClient {
         }
 
         send_cancellable! {{
+            server;
             PlayerChatEvent::new(player.clone(), chat_message.message.clone(), vec![]);
 
             'after: {
@@ -1749,6 +1762,7 @@ impl JavaClient {
         drop(held);
 
         send_cancellable! {{
+            server;
             event;
             'after: {
                 let held = item_in_hand.lock().await;

@@ -15,8 +15,8 @@ pub mod time;
 
 use crate::block::RandomTickArgs;
 use crate::world::loot::LootContextParameters;
+use crate::{block::BlockEvent, entity::item::ItemEntity};
 use crate::{
-    PLUGIN_MANAGER,
     block::{
         self,
         registry::BlockRegistry,
@@ -32,7 +32,6 @@ use crate::{
     },
     server::Server,
 };
-use crate::{block::BlockEvent, entity::item::ItemEntity};
 use border::Worldborder;
 use bytes::BufMut;
 use crossbeam::queue::SegQueue;
@@ -1485,7 +1484,8 @@ impl World {
         player.send_difficulty_update().await;
         {
             let command_dispatcher = server.command_dispatcher.read().await;
-            client_suggestions::send_c_commands_packet(player, &command_dispatcher).await;
+
+            client_suggestions::send_c_commands_packet(player, server, &command_dispatcher).await;
         };
 
         // Spawn in initial chunks
@@ -2321,6 +2321,7 @@ impl World {
     pub async fn add_player(&self, uuid: uuid::Uuid, player: Arc<Player>) -> Result<(), String> {
         self.players.write().await.insert(uuid, player.clone());
 
+        let server = self.server.upgrade().unwrap();
         let current_players = self.players.clone();
         player.clone().spawn_task(async move {
             let msg_comp = TextComponent::translate(
@@ -2330,7 +2331,7 @@ impl World {
             .color_named(NamedColor::Yellow);
             let event = PlayerJoinEvent::new(player.clone(), msg_comp);
 
-            let event = PLUGIN_MANAGER.fire(event).await;
+            let event = server.plugin_manager.fire(event).await;
 
             if !event.cancelled {
                 for player in current_players.read().await.values() {
@@ -2382,7 +2383,13 @@ impl World {
                 .color_named(NamedColor::Yellow);
                 let event = PlayerLeaveEvent::new(player.clone(), msg_comp);
 
-                let event = PLUGIN_MANAGER.fire(event).await;
+                let event = self
+                    .server
+                    .upgrade()
+                    .unwrap()
+                    .plugin_manager
+                    .fire(event)
+                    .await;
 
                 if !event.cancelled {
                     let players = self.players.read().await;
@@ -2795,7 +2802,13 @@ impl World {
         let (broken_block, broken_block_state) = self.get_block_and_state_id(position).await;
         let event = BlockBreakEvent::new(cause.clone(), broken_block, *position, 0, false);
 
-        let event = PLUGIN_MANAGER.fire::<BlockBreakEvent>(event).await;
+        let event = self
+            .server
+            .upgrade()
+            .unwrap()
+            .plugin_manager
+            .fire::<BlockBreakEvent>(event)
+            .await;
 
         if !event.cancelled {
             let new_state_id = if broken_block

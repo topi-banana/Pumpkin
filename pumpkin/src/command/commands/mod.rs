@@ -3,8 +3,7 @@ use pumpkin_util::{
     PermissionLvl,
     permission::{Permission, PermissionDefault, PermissionRegistry},
 };
-
-use crate::PERMISSION_REGISTRY;
+use tokio::sync::RwLock;
 
 use super::dispatcher::CommandDispatcher;
 
@@ -57,10 +56,13 @@ mod whitelist;
 mod worldborder;
 
 #[must_use]
-pub async fn default_dispatcher(basic_config: &BasicConfiguration) -> CommandDispatcher {
+pub async fn default_dispatcher(
+    registry: &RwLock<PermissionRegistry>,
+    basic_config: &BasicConfiguration,
+) -> CommandDispatcher {
     let mut dispatcher = CommandDispatcher::default();
 
-    register_permissions().await;
+    register_permissions(registry).await;
 
     // Zero
     dispatcher.register(pumpkin::init_command_tree(), "pumpkin:command.pumpkin");
@@ -144,8 +146,8 @@ pub async fn default_dispatcher(basic_config: &BasicConfiguration) -> CommandDis
     dispatcher
 }
 
-async fn register_permissions() {
-    let mut registry = PERMISSION_REGISTRY.write().await;
+async fn register_permissions(permission_registry: &RwLock<PermissionRegistry>) {
+    let mut registry = permission_registry.write().await;
 
     // Register level 0 permissions (allowed by default)
     register_level_0_permissions(&mut registry);

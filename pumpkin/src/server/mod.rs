@@ -600,9 +600,7 @@ impl Server {
         let mut players = Vec::<Arc<Player>>::new();
 
         for world in self.worlds.read().await.iter() {
-            for player in world.players.read().await.values() {
-                players.push(player.clone());
-            }
+            players.extend(world.players.read().await.values().cloned());
         }
 
         players
@@ -926,8 +924,8 @@ impl Server {
                 };
                 let mut entities = iter.collect::<Vec<_>>();
                 entities.sort_by(|a, b| {
-                    let a_distance = a.get_entity().pos.load().squared_distance_to_vec(center);
-                    let b_distance = b.get_entity().pos.load().squared_distance_to_vec(center);
+                    let a_distance = a.get_entity().pos.load().squared_distance_to_vec(&center);
+                    let b_distance = b.get_entity().pos.load().squared_distance_to_vec(&center);
                     if target_selector.get_sort() == Some(EntityFilterSort::Nearest) {
                         a_distance
                             .partial_cmp(&b_distance)

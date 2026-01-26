@@ -43,7 +43,7 @@ impl CommandExecutor for ListExecutor {
             };
             let mut message = TextComponent::text(message_text);
 
-            for (i, metadata) in plugins.clone().into_iter().enumerate() {
+            for (i, metadata) in plugins.iter().enumerate() {
                 let fmt = if i == plugins.len() - 1 {
                     metadata.name.to_string()
                 } else {

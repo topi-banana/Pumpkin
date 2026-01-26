@@ -799,7 +799,7 @@ impl World {
         }
     }
 
-    pub async fn get_fluid_collisions(self: &Arc<Self>, bounding_box: BoundingBox) -> Vec<Fluid> {
+    pub async fn get_fluid_collisions(self: &Arc<Self>, bounding_box: BoundingBox) -> Vec<&Fluid> {
         let mut collisions = Vec::new();
 
         let min = bounding_box.min_block_pos();
@@ -854,14 +854,10 @@ impl World {
     }
 
     // FlowableFluid.getVelocity()
-
     pub async fn get_fluid_velocity(
         &self,
-
         pos0: BlockPos,
-
         fluid0: &Fluid,
-
         state0: &FluidState,
     ) -> Vector3<f64> {
         let mut velo = Vector3::default();
@@ -900,9 +896,7 @@ impl World {
                 }
 
                 //let state = fluid.get_state(block_state_id);
-                let state = fluid.states[0].clone();
-
-                amplitude = f64::from(state0.height - state.height);
+                amplitude = f64::from(state0.height - fluid.states[0].height);
             }
 
             if amplitude == 0.0 {
@@ -990,7 +984,7 @@ impl World {
         }
 
         let mut inside = false;
-        'shapes: for shape in state.get_block_outline_shapes().unwrap() {
+        'shapes: for shape in state.get_block_outline_shapes() {
             let outline_shape = shape.at_pos(pos);
 
             if outline_shape.intersects(bounding_box) {
@@ -1012,30 +1006,32 @@ impl World {
         pos: BlockPos,
         state: &BlockState,
         use_collision_shape: bool,
-        mut using_collision_shape: F,
+        mut on_collision: F,
     ) -> bool
     where
         F: FnMut(&BoundingBox),
     {
-        let mut collided = false;
-
-        if !state.is_air() && state.is_solid() && !state.collision_shapes.is_empty() {
-            for shape in state.get_block_collision_shapes() {
-                let collision_shape = shape.at_pos(pos);
-
-                if collision_shape.intersects(bounding_box) {
-                    collided = true;
-
-                    if !use_collision_shape {
-                        break;
-                    }
-
-                    using_collision_shape(&collision_shape.to_bounding_box());
-                }
-            }
+        if state.is_air() || !state.is_solid() {
+            return false;
         }
 
-        collided
+        let mut shapes = state
+            .get_block_collision_shapes()
+            .map(|shape| shape.at_pos(pos));
+
+        if use_collision_shape {
+            let mut collided = false;
+            for collision_shape in shapes {
+                if collision_shape.intersects(bounding_box) {
+                    collided = true;
+                    // Convert to BB and trigger the callback
+                    on_collision(&collision_shape.to_bounding_box());
+                }
+            }
+            collided
+        } else {
+            shapes.any(|s| s.intersects(bounding_box))
+        }
     }
 
     // For adjusting movement
@@ -1847,7 +1843,7 @@ impl World {
         };
         let sound = IdOr::<SoundEvent>::Id(Sound::EntityGenericExplode as u16);
         for player in self.players.read().await.values() {
-            if player.position().squared_distance_to_vec(position) > 4096.0 {
+            if player.position().squared_distance_to_vec(&position) > 4096.0 {
                 continue;
             }
             player
@@ -2214,7 +2210,7 @@ impl World {
             .iter()
             .filter_map(|(id, player)| {
                 let player_pos = player.living_entity.entity.pos.load();
-                (player_pos.squared_distance_to_vec(pos) <= radius_squared)
+                (player_pos.squared_distance_to_vec(&pos) <= radius_squared)
                     .then(|| (*id, player.clone()))
             })
             .collect()
@@ -2233,7 +2229,7 @@ impl World {
             .iter()
             .filter_map(|(id, entity)| {
                 let entity_pos = entity.get_entity().pos.load();
-                (entity_pos.squared_distance_to_vec(pos) <= radius_squared)
+                (entity_pos.squared_distance_to_vec(&pos) <= radius_squared)
                     .then(|| (*id, entity.clone()))
             })
             .collect()
@@ -2248,13 +2244,13 @@ impl World {
                     .entity
                     .pos
                     .load()
-                    .squared_distance_to_vec(pos)
+                    .squared_distance_to_vec(&pos)
                     .partial_cmp(
                         &b.1.living_entity
                             .entity
                             .pos
                             .load()
-                            .squared_distance_to_vec(pos),
+                            .squared_distance_to_vec(&pos),
                     )
                     .unwrap()
             })
@@ -2301,8 +2297,8 @@ impl World {
                 a.1.get_entity()
                     .pos
                     .load()
-                    .squared_distance_to_vec(pos)
-                    .partial_cmp(&b.1.get_entity().pos.load().squared_distance_to_vec(pos))
+                    .squared_distance_to_vec(&pos)
+                    .partial_cmp(&b.1.get_entity().pos.load().squared_distance_to_vec(&pos))
                     .unwrap()
             })
             .map(|p| p.1.clone())
@@ -3000,7 +2996,10 @@ impl World {
         (block, fluid)
     }
 
-    pub async fn get_fluid_and_fluid_state(&self, position: &BlockPos) -> (Fluid, FluidState) {
+    pub async fn get_fluid_and_fluid_state(
+        &self,
+        position: &BlockPos,
+    ) -> (&'static Fluid, &'static FluidState) {
         let id = self.get_block_state_id(position).await;
 
         let Some(fluid) = Fluid::from_state_id(id) else {
@@ -3009,9 +3008,8 @@ impl World {
                 for (name, value) in properties.to_props() {
                     if name == "waterlogged" {
                         if value == "true" {
-                            let fluid = Fluid::FLOWING_WATER;
-                            let state = fluid.states[0].clone();
-                            return (fluid, state);
+                            let state = &Fluid::FLOWING_WATER.states[0];
+                            return (&Fluid::FLOWING_WATER, state);
                         }
 
                         break;
@@ -3019,16 +3017,14 @@ impl World {
                 }
             }
 
-            let fluid = Fluid::EMPTY;
-            let state = fluid.states[0].clone();
-
-            return (fluid, state);
+            let state = &Fluid::EMPTY.states[0];
+            return (&Fluid::EMPTY, state);
         };
 
         //let state = fluid.get_state(id);
-        let state = fluid.states[0].clone();
+        let state = &fluid.states[0];
 
-        (fluid.clone(), state)
+        (fluid, state)
     }
 
     pub async fn get_block_state_id(&self, position: &BlockPos) -> BlockStateId {
@@ -3277,15 +3273,13 @@ impl World {
     ) -> (bool, Option<BlockDirection>) {
         let state = self.get_block_state(block_pos).await;
 
-        let Some(bounding_boxes) = state.get_block_outline_shapes() else {
-            return (false, None);
-        };
+        let bounding_boxes = state.get_block_outline_shapes();
 
-        if bounding_boxes.is_empty() {
+        if state.outline_shapes.is_empty() {
             return (true, None);
         }
 
-        for shape in &bounding_boxes {
+        for shape in bounding_boxes {
             let world_min = shape.min.add(&block_pos.0.to_f64());
             let world_max = shape.max.add(&block_pos.0.to_f64());
 

@@ -1019,15 +1019,6 @@ impl JavaClient {
             return Err(ChatError::InvalidPublicKey);
         }
 
-        // Verify signature with RSA-SHA1
-        let mojang_verifying_keys = server
-            .mojang_public_keys
-            .lock()
-            .await
-            .iter()
-            .map(|key| VerifyingKey::<Sha1>::new(key.clone()))
-            .collect::<Vec<_>>();
-
         let key_signature = RsaPkcs1v15Signature::try_from(session.key_signature.as_ref())
             .map_err(|_| ChatError::InvalidPublicKey)?;
 
@@ -1036,11 +1027,16 @@ impl JavaClient {
         signable.extend_from_slice(&session.expires_at.to_be_bytes());
         signable.extend_from_slice(&session.public_key);
 
+        let public_keys_guard = server.mojang_public_keys.lock().await;
+
+        // Verify signature with RSA-SHA1
+        let is_valid = public_keys_guard.iter().any(|key| {
+            let verifying_key = VerifyingKey::<Sha1>::new(key.clone());
+            verifying_key.verify(&signable, &key_signature).is_ok()
+        });
+
         // Verify that the signable is valid for any one of Mojang's public keys
-        if !mojang_verifying_keys
-            .iter()
-            .any(|key| key.verify(&signable, &key_signature).is_ok())
-        {
+        if !is_valid {
             return Err(ChatError::InvalidPublicKey);
         }
 
@@ -2063,10 +2059,10 @@ impl JavaClient {
             .await;
 
         // Check if there is a player in the way of the block being placed
-        let shapes = BlockState::from_id(new_state).get_block_collision_shapes();
+        let state = BlockState::from_id(new_state);
         for player in world.get_nearby_players(location.0.to_f64(), 3.0).await {
             let player_box = player.1.living_entity.entity.bounding_box.load();
-            for shape in &shapes {
+            for shape in state.get_block_collision_shapes() {
                 if shape.at_pos(final_block_pos).intersects(&player_box) {
                     return Ok(false);
                 }

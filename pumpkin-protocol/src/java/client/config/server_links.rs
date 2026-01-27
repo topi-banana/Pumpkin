@@ -10,6 +10,7 @@ pub struct CConfigServerLinks<'a> {
 }
 
 impl<'a> CConfigServerLinks<'a> {
+    #[must_use]
     pub fn new(links: &'a [Link<'a>]) -> Self {
         Self { links }
     }

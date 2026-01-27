@@ -23,6 +23,7 @@ pub struct CRespawn {
 
 impl CRespawn {
     #[expect(clippy::too_many_arguments)]
+    #[must_use]
     pub fn new(
         dimension_type: VarInt,
         dimension_name: ResourceLocation,

@@ -149,10 +149,10 @@ impl BedrockClient {
                     None => event.message.clone(),
                 };
 
-                let decorated_message = &TextComponent::chat_decorated(
-                    config.chat.format.clone(),
-                    gameprofile.name.clone(),
-                    message.clone(),
+                let decorated_message = TextComponent::chat_decorated(
+                    &config.chat.format,
+                    &gameprofile.name,
+                    &message,
                 );
 
                 let entity = &player.living_entity.entity;
@@ -161,7 +161,7 @@ impl BedrockClient {
                     //world.broadcast_secure_player_chat(player, &message, decorated_message).await;
                 } else {
                     let je_packet = CSystemChatMessage::new(
-                        decorated_message,
+                        &decorated_message,
                         false,
                     );
 

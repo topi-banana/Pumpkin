@@ -13,6 +13,7 @@ pub struct CSetHealth {
 }
 
 impl CSetHealth {
+    #[must_use]
     pub fn new(health: f32, food: VarInt, food_saturation: f32) -> Self {
         Self {
             health,

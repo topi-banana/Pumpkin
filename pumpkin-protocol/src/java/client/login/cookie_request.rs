@@ -15,6 +15,7 @@ pub struct CLoginCookieRequest<'a> {
 }
 
 impl<'a> CLoginCookieRequest<'a> {
+    #[must_use]
     pub fn new(key: &'a ResourceLocation) -> Self {
         Self { key }
     }

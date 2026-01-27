@@ -17,10 +17,11 @@ pub enum EncryptionWriter<W: AsyncWrite + Unpin> {
 }
 
 impl<W: AsyncWrite + Unpin> EncryptionWriter<W> {
+    #[must_use]
     pub fn upgrade(self, cipher: Aes128Cfb8Enc) -> Self {
         match self {
             Self::None(stream) => Self::Encrypt(Box::new(StreamEncryptor::new(cipher, stream))),
-            _ => panic!("Cannot upgrade a stream that already has a cipher!"),
+            Self::Encrypt(_) => panic!("Cannot upgrade a stream that already has a cipher!"),
         }
     }
 }
@@ -77,7 +78,7 @@ impl<W: AsyncWrite + Unpin> AsyncWrite for EncryptionWriter<W> {
 }
 
 /// Encoder: Server -> Client
-/// Supports ZLib endecoding/compression
+/// Supports `ZLib` endecoding/compression
 /// Supports Aes128 Encryption
 pub struct TCPNetworkEncoder<W: AsyncWrite + Unpin> {
     writer: EncryptionWriter<W>,
@@ -114,20 +115,20 @@ impl<W: AsyncWrite + Unpin> TCPNetworkEncoder<W> {
     ///
     /// **Uncompressed:**
     /// |-----------------------|
-    /// | Packet Length (VarInt)|
+    /// | Packet Length (`VarInt`)|
     /// |-----------------------|
-    /// | Packet ID (VarInt)    |
+    /// | Packet ID (`VarInt`)    |
     /// |-----------------------|
     /// | Data (Byte Array)     |
     /// |-----------------------|
     ///
     /// **Compressed:**
     /// |------------------------|
-    /// | Packet Length (VarInt) |
+    /// | Packet Length (`VarInt`) |
     /// |------------------------|
-    /// | Data Length (VarInt)   |
+    /// | Data Length (`VarInt`)   |
     /// |------------------------|
-    /// | Packet ID (VarInt)     |
+    /// | Packet ID (`VarInt`)     |
     /// |------------------------|
     /// | Data (Byte Array)      |
     /// |------------------------|
@@ -533,7 +534,7 @@ mod tests {
     #[tokio::test]
     async fn test_encode_with_zero_length_payload() {
         // Create a CStatusResponse packet with empty payload
-        let packet = CStatusResponse::new(String::from(""));
+        let packet = CStatusResponse::new(String::new());
 
         // Build the packet without compression and encryption
         let packet_bytes = build_packet_with_encoder(&packet, None, None).await;
@@ -609,7 +610,7 @@ mod tests {
         assert_eq!(buffer, expected_payload);
     }
 
-    /// Test encoding a packet that exceeds MAX_PACKET_SIZE as usize
+    /// Test encoding a packet that exceeds `MAX_PACKET_SIZE` as usize
     #[tokio::test]
     #[should_panic(expected = "TooLong")]
     async fn test_encode_packet_exceeding_maximum_size() {

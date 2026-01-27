@@ -17,6 +17,7 @@ pub struct CActionBar<'a> {
 }
 
 impl<'a> CActionBar<'a> {
+    #[must_use]
     pub fn new(action_bar: &'a TextComponent) -> Self {
         Self { action_bar }
     }

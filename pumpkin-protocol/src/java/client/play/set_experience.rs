@@ -13,11 +13,12 @@ pub struct CSetExperience {
 }
 
 impl CSetExperience {
+    #[must_use]
     pub fn new(progress: f32, level: VarInt, total_experience: VarInt) -> Self {
         Self {
             progress,
-            level,
             total_experience,
+            level,
         }
     }
 }

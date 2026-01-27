@@ -12,7 +12,7 @@ use crate::{
 
 /// Updates the "Data Tracker" values for an entity.
 ///
-/// Entity Metadata (or DataWatchers) controls persistent visual states that
+/// Entity Metadata (or `DataWatchers`) controls persistent visual states that
 /// don't require a full packet to update, such as whether an entity is on fire,
 /// crouching, glowing, or the custom name displayed above its head.
 #[derive(Serialize)]
@@ -27,6 +27,7 @@ pub struct CSetEntityMetadata {
 }
 
 impl CSetEntityMetadata {
+    #[must_use]
     pub fn new(entity_id: VarInt, metadata: Box<[u8]>) -> Self {
         Self {
             entity_id,

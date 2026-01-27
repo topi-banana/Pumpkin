@@ -16,6 +16,7 @@ pub struct CStatusResponse {
     pub json_response: String,
 }
 impl CStatusResponse {
+    #[must_use]
     pub fn new(json_response: String) -> Self {
         Self { json_response }
     }

@@ -21,6 +21,7 @@ pub struct CSetEquipment {
 }
 
 impl CSetEquipment {
+    #[must_use]
     pub fn new(entity_id: VarInt, equipment: Vec<(i8, ItemStackSerializer<'static>)>) -> Self {
         Self {
             entity_id,
@@ -41,10 +42,10 @@ impl ClientPacket for CSetEquipment {
         for i in 0..self.equipment.len() {
             let equipment = &self.equipment[i];
             let slot = &equipment.0;
-            if i != self.equipment.len() - 1 {
-                write.write_i8(*slot | -128)?;
-            } else {
+            if i == self.equipment.len() - 1 {
                 write.write_i8(*slot)?;
+            } else {
+                write.write_i8(*slot | -128)?;
             }
             let mut serializer = Serializer::new(&mut write);
             equipment

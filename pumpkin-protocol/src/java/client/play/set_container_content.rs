@@ -15,6 +15,7 @@ pub struct CSetContainerContent<'a> {
 }
 
 impl<'a> CSetContainerContent<'a> {
+    #[must_use]
     pub fn new(
         window_id: VarInt,
         state_id: VarInt,

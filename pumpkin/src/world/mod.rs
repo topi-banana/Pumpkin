@@ -659,7 +659,7 @@ impl World {
                 ))
                 .await;
             } else {
-                self.broadcast_packet_all(&CMultiBlockUpdate::new(chunk_section.clone()))
+                self.broadcast_packet_all(&CMultiBlockUpdate::new(chunk_section))
                     .await;
             }
         }
@@ -2907,12 +2907,13 @@ impl World {
         self.level.is_fluid_tick_scheduled(block_pos, fluid).await
     }
 
+    // Return new state
     pub async fn break_block(
         self: &Arc<Self>,
         position: &BlockPos,
         cause: Option<Arc<Player>>,
         flags: BlockFlags,
-    ) {
+    ) -> Option<u16> {
         let (broken_block, broken_block_state) = self.get_block_and_state_id(position).await;
         let event = BlockBreakEvent::new(cause.clone(), broken_block, *position, 0, false);
 
@@ -2969,7 +2970,9 @@ impl World {
                 };
                 block::drop_loot(self, broken_block, position, true, params).await;
             }
+            return Some(new_state_id);
         }
+        None
     }
 
     pub async fn drop_stack(self: &Arc<Self>, pos: &BlockPos, stack: ItemStack) {

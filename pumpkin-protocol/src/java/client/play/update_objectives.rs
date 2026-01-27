@@ -16,6 +16,7 @@ pub struct CUpdateObjectives {
 }
 
 impl CUpdateObjectives {
+    #[must_use]
     pub fn new(
         objective_name: String,
         mode: Mode,

@@ -12,6 +12,7 @@ pub struct CPingResponse {
 }
 
 impl CPingResponse {
+    #[must_use]
     pub fn new(payload: i64) -> Self {
         Self { payload }
     }

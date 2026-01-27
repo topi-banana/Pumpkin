@@ -20,6 +20,7 @@ pub struct CHeadRot {
 }
 
 impl CHeadRot {
+    #[must_use]
     pub fn new(entity_id: VarInt, head_yaw: u8) -> Self {
         Self {
             entity_id,

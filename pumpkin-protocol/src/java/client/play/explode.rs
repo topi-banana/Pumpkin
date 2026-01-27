@@ -34,6 +34,7 @@ pub struct CExplosion {
 }
 
 impl CExplosion {
+    #[must_use]
     pub fn new(
         center: Vector3<f64>,
         radius: f32,

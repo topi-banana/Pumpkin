@@ -17,6 +17,7 @@ pub struct CKeepAlive {
 }
 
 impl CKeepAlive {
+    #[must_use]
     pub fn new(keep_alive_id: i64) -> Self {
         Self { keep_alive_id }
     }

@@ -54,6 +54,8 @@ pub struct CLogin<'a> {
 
 impl<'a> CLogin<'a> {
     #[expect(clippy::too_many_arguments)]
+    #[expect(clippy::fn_params_excessive_bools)]
+    #[must_use]
     pub fn new(
         entity_id: i32,
         is_hardcore: bool,

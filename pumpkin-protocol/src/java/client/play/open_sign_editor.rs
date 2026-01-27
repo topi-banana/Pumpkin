@@ -19,6 +19,7 @@ pub struct COpenSignEditor {
 }
 
 impl COpenSignEditor {
+    #[must_use]
     pub fn new(location: BlockPos, is_front_text: bool) -> Self {
         Self {
             location,

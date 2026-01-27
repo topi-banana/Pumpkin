@@ -34,6 +34,7 @@ pub struct CInitializeWorldBorder {
 
 impl CInitializeWorldBorder {
     #[expect(clippy::too_many_arguments)]
+    #[must_use]
     pub fn new(
         x: f64,
         z: f64,

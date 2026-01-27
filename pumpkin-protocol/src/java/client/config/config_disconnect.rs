@@ -9,6 +9,7 @@ pub struct CConfigDisconnect<'a> {
 }
 
 impl<'a> CConfigDisconnect<'a> {
+    #[must_use]
     pub fn new(reason: &'a str) -> Self {
         Self { reason }
     }

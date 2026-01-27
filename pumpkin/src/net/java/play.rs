@@ -881,19 +881,19 @@ impl JavaClient {
                     None => event.message.clone(),
                 };
 
-                let decorated_message = &TextComponent::chat_decorated(
-                    config.chat.format.clone(),
-                    gameprofile.name.clone(),
-                    message.clone(),
+                let decorated_message = TextComponent::chat_decorated(
+                    &config.chat.format,
+                    &gameprofile.name,
+                    &message,
                 );
 
                 let entity = &player.living_entity.entity;
                 let world = entity.world.load_full();
                 if server.basic_config.allow_chat_reports {
-                    world.broadcast_secure_player_chat(player, &chat_message, decorated_message).await;
+                    world.broadcast_secure_player_chat(player, &chat_message, &decorated_message).await;
                 } else {
                     let je_packet = CSystemChatMessage::new(
-                        decorated_message,
+                        &decorated_message,
                         false,
                     );
                     let be_packet = SText::new(
@@ -1392,7 +1392,7 @@ impl JavaClient {
                     let block_drop = player.gamemode.load() != GameMode::Creative
                         && player.can_harvest(state, block).await;
 
-                    world
+                    let new_state = world
                         .break_block(
                             &location,
                             Some(player.clone()),
@@ -1403,12 +1403,13 @@ impl JavaClient {
                             },
                         )
                         .await;
-
-                    server
-                        .block_registry
-                        .broken(&world, block, player, &location, server, state)
-                        .await;
-                    player.apply_tool_damage_for_block_break(state).await;
+                    if new_state.is_some() {
+                        server
+                            .block_registry
+                            .broken(&world, block, player, &location, server, state)
+                            .await;
+                        player.apply_tool_damage_for_block_break(state).await;
+                    }
 
                     self.update_sequence(player, player_action.sequence.0);
                 }
@@ -1823,7 +1824,6 @@ impl JavaClient {
 
             let is_armor_equipped = player_screen_handler
                 .get_slot(packet.slot as usize)
-                .await
                 .get_stack()
                 .await
                 .lock()
@@ -1854,7 +1854,6 @@ impl JavaClient {
 
             player_screen_handler
                 .get_slot(packet.slot as usize)
-                .await
                 .set_stack(item_stack.clone())
                 .await;
             player_screen_handler.set_received_stack(packet.slot as usize, item_stack);

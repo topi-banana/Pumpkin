@@ -22,6 +22,7 @@ pub struct CDisplayObjective {
 }
 
 impl CDisplayObjective {
+    #[must_use]
     pub fn new(position: ScoreboardDisplaySlot, score_name: String) -> Self {
         Self {
             position: VarInt(position as i32),

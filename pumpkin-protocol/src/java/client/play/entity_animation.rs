@@ -19,6 +19,7 @@ pub struct CEntityAnimation {
 }
 
 impl CEntityAnimation {
+    #[must_use]
     pub fn new(entity_id: VarInt, animation: Animation) -> Self {
         Self {
             entity_id,

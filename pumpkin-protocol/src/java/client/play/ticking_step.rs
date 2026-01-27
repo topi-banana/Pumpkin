@@ -11,6 +11,7 @@ pub struct CTickingStep {
 }
 
 impl CTickingStep {
+    #[must_use]
     pub fn new(tick_steps: VarInt) -> Self {
         Self { tick_steps }
     }

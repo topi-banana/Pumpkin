@@ -22,6 +22,7 @@ pub struct CBlockEntityData {
 }
 
 impl CBlockEntityData {
+    #[must_use]
     pub fn new(location: BlockPos, r#type: VarInt, nbt_data: Box<[u8]>) -> Self {
         Self {
             location,

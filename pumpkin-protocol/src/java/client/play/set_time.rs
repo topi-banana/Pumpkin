@@ -11,6 +11,7 @@ pub struct CUpdateTime {
 }
 
 impl CUpdateTime {
+    #[must_use]
     pub fn new(world_age: i64, time_of_day: i64, time_of_day_increasing: bool) -> Self {
         Self {
             world_age,

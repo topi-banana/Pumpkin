@@ -26,6 +26,7 @@ pub struct CLevelEvent {
 }
 
 impl CLevelEvent {
+    #[must_use]
     pub fn new(event: i32, location: BlockPos, data: i32, disable_relative_volume: bool) -> Self {
         Self {
             event,

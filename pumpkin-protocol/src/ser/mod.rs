@@ -173,7 +173,7 @@ impl<R: Read> NetworkReadExt for R {
 
     fn get_resource_location(&mut self) -> Result<ResourceLocation, ReadingError> {
         let resource_location = self.get_string_bounded(ResourceLocation::MAX_SIZE.get())?;
-        match resource_location.split_once(":") {
+        match resource_location.split_once(':') {
             Some((namespace, path)) => Ok(ResourceLocation {
                 namespace: namespace.to_string(),
                 path: path.to_string(),
@@ -560,7 +560,12 @@ mod test {
     fn test_unit_reserialize() {
         #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
         struct UnitStruct;
-
+        #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
+        struct StructWithUnit {
+            a: i32,
+            b: UnitStruct,
+            c: i32,
+        }
         let original = UnitStruct;
         let mut bytes = Vec::new();
         let mut ser = serializer::Serializer::new(&mut bytes);
@@ -571,13 +576,6 @@ mod test {
         let deserialized: UnitStruct =
             UnitStruct::deserialize(&mut deserializer::Deserializer::new(de_cursor)).unwrap();
         assert_eq!(original, deserialized);
-
-        #[derive(Serialize, Deserialize, PartialEq, Eq, Debug)]
-        struct StructWithUnit {
-            a: i32,
-            b: UnitStruct,
-            c: i32,
-        }
 
         let original_with_unit = StructWithUnit {
             a: 1,

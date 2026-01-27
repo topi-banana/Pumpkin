@@ -900,7 +900,7 @@ impl Player {
             // Try positions around the bed based on facing direction
             // Vanilla tries multiple offset patterns; we use a simplified version
             if let Some(spawn_pos) =
-                Self::find_bed_spawn_position(world, pos, facing, respawn_point.yaw).await
+                Self::find_bed_spawn_position(&world, pos, facing, respawn_point.yaw).await
             {
                 return Some(CalculatedRespawnPoint {
                     position: spawn_pos,
@@ -925,7 +925,7 @@ impl Player {
             }
 
             // Try positions around the anchor
-            if let Some(spawn_pos) = Self::find_anchor_spawn_position(world, pos).await {
+            if let Some(spawn_pos) = Self::find_anchor_spawn_position(&world, pos).await {
                 // Decrement charges after successful respawn position found
                 let new_charges = charges - 1;
                 let mut new_props = anchor_props;

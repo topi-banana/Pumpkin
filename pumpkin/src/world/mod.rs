@@ -1980,7 +1980,7 @@ impl World {
                 .chunk_manager
                 .lock()
                 .await
-                .change_world(&self.level, &new_world.level);
+                .change_world(&self.level, new_world.clone());
 
             // Unload watched chunks from current world
             player.unload_watched_chunks(self).await;

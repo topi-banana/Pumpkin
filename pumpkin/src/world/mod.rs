@@ -196,6 +196,8 @@ pub struct World {
     synced_block_event_queue: Mutex<Vec<BlockEvent>>,
     /// A map of unsent block changes, keyed by block position.
     unsent_block_changes: Mutex<HashMap<BlockPos, u16>>,
+    /// POI storage for fast portal lookups
+    pub portal_poi: Mutex<portal::PortalPoiStorage>,
 }
 
 impl World {
@@ -209,6 +211,10 @@ impl World {
     ) -> Self {
         // TODO
         let generation_settings = gen_settings_from_dimension(&dimension);
+
+        // Load portal POI from disk (PoiStorage::new automatically loads from disk if files exist)
+        let portal_poi = portal::PortalPoiStorage::new(&level.level_folder.root_folder);
+
         Self {
             level,
             level_info,
@@ -224,6 +230,7 @@ impl World {
             min_y: i32::from(generation_settings.shape.min_y),
             synced_block_event_queue: Mutex::new(Vec::new()),
             unsent_block_changes: Mutex::new(HashMap::new()),
+            portal_poi: Mutex::new(portal_poi),
             decrease_block_light_queue: SegQueue::new(),
             increase_block_light_queue: SegQueue::new(),
             server,
@@ -234,6 +241,13 @@ impl World {
         for (uuid, entity) in self.entities.read().await.iter() {
             self.save_entity(uuid, entity).await;
         }
+
+        // Save portal POI to disk
+        let save_result = self.portal_poi.lock().await.save_all();
+        if let Err(e) = save_result {
+            log::error!("Failed to save portal POI: {e}");
+        }
+
         self.level.shutdown().await;
     }
 
@@ -1159,6 +1173,17 @@ impl World {
         self.dimension.min_y
     }
 
+    /// Gets the `MOTION_BLOCKING` heightmap value for a given XZ position.
+    pub async fn get_motion_blocking_height(&self, x: i32, z: i32) -> i32 {
+        let chunk_pos = Vector2::new(x >> 4, z >> 4);
+        let chunk = self.level.get_chunk(chunk_pos).await;
+        chunk
+            .read()
+            .await
+            .heightmap
+            .get(MotionBlocking, x, z, self.min_y)
+    }
+
     #[allow(clippy::too_many_lines)]
     pub async fn spawn_bedrock_player(
         &self,
@@ -1825,6 +1850,7 @@ impl World {
             ),
         )
         .await;
+
         player.send_client_information().await;
 
         chunker::update_position(player).await;
@@ -2363,8 +2389,8 @@ impl World {
         player: &Arc<Player>,
         fire_event: bool,
     ) -> Option<Arc<Player>> {
-        let player = self.players.write().await.remove(&player.gameprofile.id);
-        if let Some(player) = player {
+        let removed_player = self.players.write().await.remove(&player.gameprofile.id);
+        if let Some(ref player) = removed_player {
             let uuid = player.gameprofile.id;
             self.broadcast_packet_all(&CRemovePlayerInfo::new(&[uuid]))
                 .await;
@@ -2397,7 +2423,7 @@ impl World {
                 }
             }
         }
-        None
+        removed_player
     }
 
     /// Adds an entity to the world.

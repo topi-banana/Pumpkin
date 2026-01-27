@@ -339,12 +339,16 @@ impl JavaClient {
                         .await;
                 }
                 chunker::update_position(player).await;
-                player.progress_motion(Vector3::new(
+                let delta = Vector3::new(
                     pos.x - last_pos.x,
                     pos.y - last_pos.y,
                     pos.z - last_pos.z,
-                ))
-                .await;
+                );
+                // Only update idle timeout if there's actual movement (vanilla threshold)
+                if delta.length_squared() > 1.0E-5 {
+                    player.update_last_action_time();
+                }
+                player.progress_motion(delta).await;
             }
 
             'cancelled: {
@@ -360,6 +364,7 @@ impl JavaClient {
         }}
     }
 
+    #[expect(clippy::too_many_lines)]
     pub async fn handle_position_rotation(
         &self,
         player: &Arc<Player>,
@@ -466,12 +471,16 @@ impl JavaClient {
                         .await;
                 }
                 chunker::update_position(player).await;
-                player.progress_motion(Vector3::new(
+                let delta = Vector3::new(
                     pos.x - last_pos.x,
                     pos.y - last_pos.y,
                     pos.z - last_pos.z,
-                ))
-                .await;
+                );
+                // Only update idle timeout if there's actual movement (vanilla threshold)
+                if delta.length_squared() > 1.0E-5 {
+                    player.update_last_action_time();
+                }
+                player.progress_motion(delta).await;
             }
 
             'cancelled: {
@@ -536,6 +545,7 @@ impl JavaClient {
         server: &Arc<Server>,
         command: &SChatCommand,
     ) {
+        player.update_last_action_time();
         let player_clone = player.clone();
         let server_clone = server.clone();
         send_cancellable! {{
@@ -735,6 +745,7 @@ impl JavaClient {
         if !player.has_client_loaded() {
             return;
         }
+        player.update_last_action_time();
 
         if let Ok(action) = Action::try_from(command.action.0) {
             let entity = &player.living_entity.entity;
@@ -775,6 +786,7 @@ impl JavaClient {
     }
 
     pub async fn handle_swing_arm(&self, player: &Arc<Player>, swing_arm: SSwingArm) {
+        player.update_last_action_time();
         let Ok(hand) = Hand::try_from(swing_arm.hand.0) else {
             self.kick(TextComponent::text("Invalid hand")).await;
             return;
@@ -833,6 +845,7 @@ impl JavaClient {
         player: &Arc<Player>,
         chat_message: SChatMessage,
     ) {
+        player.update_last_action_time();
         let gameprofile = &player.gameprofile;
 
         if let Err(err) = self
@@ -1122,6 +1135,7 @@ impl JavaClient {
     }
 
     pub async fn handle_client_status(&self, player: &Arc<Player>, client_status: SClientCommand) {
+        player.update_last_action_time();
         match client_status.action_id.0 {
             0 => {
                 // Perform respawn
@@ -1161,6 +1175,7 @@ impl JavaClient {
         if !player.has_client_loaded() {
             return;
         }
+        player.update_last_action_time();
         let entity_id = interact.entity_id;
 
         let sneaking = interact.sneaking;
@@ -1253,6 +1268,7 @@ impl JavaClient {
         if !player.has_client_loaded() {
             return;
         }
+        player.update_last_action_time();
         match Status::try_from(player_action.status.0) {
             Ok(status) => match status {
                 Status::StartedDigging => {
@@ -1474,6 +1490,7 @@ impl JavaClient {
         if !player.has_client_loaded() {
             return Ok(());
         }
+        player.update_last_action_time();
         self.update_sequence(player, use_item_on.sequence.0);
 
         let position = use_item_on.position;
@@ -1674,6 +1691,7 @@ impl JavaClient {
         if !player.has_client_loaded() {
             return;
         }
+        player.update_last_action_time();
 
         let inventory = player.inventory();
         let Ok(hand) = Hand::try_from(use_item.hand.0) else {
@@ -1770,6 +1788,7 @@ impl JavaClient {
     }
 
     pub async fn handle_set_held_item(&self, player: &Player, held: SSetHeldItem) {
+        player.update_last_action_time();
         let slot = held.slot;
         if !(0..=8).contains(&slot) {
             self.kick(TextComponent::text("Invalid held slot")).await;

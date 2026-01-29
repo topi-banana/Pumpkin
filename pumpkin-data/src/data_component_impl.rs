@@ -3,9 +3,9 @@
 use crate::attributes::Attributes;
 use crate::data_component::DataComponent;
 use crate::data_component::DataComponent::{
-    AttributeModifiers, BlocksAttacks, Consumable, PotionContents, CustomData, CustomName, Damage, DeathProtection,
-    Enchantments, Equippable, Food, ItemName, JukeboxPlayable, MaxDamage, MaxStackSize, Tool,
-    Unbreakable,
+    AttributeModifiers, BlocksAttacks, Consumable, CustomData, CustomName, Damage, DeathProtection,
+    Enchantments, Equippable, Food, ItemName, JukeboxPlayable, MaxDamage, MaxStackSize,
+    PotionContents, Tool, Unbreakable,
 };
 use crate::entity_type::EntityType;
 use crate::tag::{Tag, Taggable};

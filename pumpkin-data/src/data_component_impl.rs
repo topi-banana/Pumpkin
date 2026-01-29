@@ -3,7 +3,7 @@
 use crate::attributes::Attributes;
 use crate::data_component::DataComponent;
 use crate::data_component::DataComponent::{
-    AttributeModifiers, BlocksAttacks, Consumable, CustomData, CustomName, Damage, DeathProtection,
+    AttributeModifiers, BlocksAttacks, Consumable, PotionContents, CustomData, CustomName, Damage, DeathProtection,
     Enchantments, Equippable, Food, ItemName, JukeboxPlayable, MaxDamage, MaxStackSize, Tool,
     Unbreakable,
 };

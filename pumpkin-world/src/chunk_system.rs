@@ -983,7 +983,7 @@ impl GenerationCache for Cache {
         // debug_assert!(dx >= 0 && dz >= 0);
         if !(dx < self.size && dz < self.size && dx >= 0 && dz >= 0) {
             // breakpoint here
-            log::error!(
+            log::debug!(
                 "illegal get_block_state {pos:?} cache pos ({}, {}) size {}",
                 self.x,
                 self.z,
@@ -1011,7 +1011,7 @@ impl GenerationCache for Cache {
         // debug_assert!(dx >= 0 && dz >= 0);
         if !(dx < self.size && dz < self.size && dx >= 0 && dz >= 0) {
             // breakpoint here
-            log::error!(
+            log::debug!(
                 "illegal set_block_state {pos:?} cache pos ({}, {}) size {}",
                 self.x,
                 self.z,

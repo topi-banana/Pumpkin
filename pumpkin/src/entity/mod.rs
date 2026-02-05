@@ -978,7 +978,6 @@ impl Entity {
 
     async fn update_fluid_state(&self, caller: &Arc<dyn EntityBase>) {
         let is_pushed = caller.is_pushed_by_fluids();
-
         let mut fluids = BTreeMap::new();
 
         let water_push = Vector3::default();

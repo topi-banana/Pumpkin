@@ -76,7 +76,7 @@ impl CommandSender {
                     block_entity.as_any().downcast_ref().unwrap();
                 let mut last_output = command_entity.last_output.lock().await;
 
-                let now = time::OffsetDateTime::now_local().unwrap();
+                let now = time::OffsetDateTime::now_utc();
                 let format = time::macros::format_description!("[hour]:[minute]:[second]");
                 let timestamp = now.format(&format).unwrap();
 

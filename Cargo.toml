@@ -160,7 +160,6 @@ sha2 = "=0.11.0-rc.4"
 signature = "2.2.0"
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "time"] }
-tracing-log = "0.2.0"
 slotmap = "1.1"
 take_mut = "0.2.2"
 temp-dir = "0.1.16"

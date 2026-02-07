@@ -76,7 +76,6 @@ base64.workspace = true
 # logging
 tracing.workspace = true
 tracing-subscriber.workspace = true
-tracing-log.workspace = true
 
 # Remove time in favor of chrono?
 time = { workspace = true, features = ["parsing", "macros"] }

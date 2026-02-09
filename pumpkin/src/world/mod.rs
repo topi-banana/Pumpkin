@@ -999,7 +999,7 @@ impl World {
                     break 'shapes;
                 }
 
-                using_outline_shape(&outline_shape.to_bounding_box());
+                using_outline_shape(&outline_shape);
             }
         }
 
@@ -1030,7 +1030,7 @@ impl World {
                 if collision_shape.intersects(bounding_box) {
                     collided = true;
                     // Convert to BB and trigger the callback
-                    on_collision(&collision_shape.to_bounding_box());
+                    on_collision(&collision_shape);
                 }
             }
             collided

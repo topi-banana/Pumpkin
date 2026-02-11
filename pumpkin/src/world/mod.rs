@@ -2115,9 +2115,11 @@ impl World {
             .level_info
             .load()
             .game_rules
-            .players_sleeping_percentage;
+            .players_sleeping_percentage
+            .clamp(0, 100);
         let required_sleeping =
             ((player_count as f64 * sleep_percentage as f64) / 100.0).ceil() as usize;
+        let required_sleeping = required_sleeping.max(1);
 
         sleeping_player_count >= required_sleeping
     }

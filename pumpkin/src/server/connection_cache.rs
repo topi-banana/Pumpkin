@@ -90,54 +90,54 @@ impl CachedStatus {
         CStatusResponse::new(self.status_response_json.clone())
     }
 
+    fn build_sample_list(&self) -> Vec<Sample> {
+        self.player_samples
+            .iter()
+            .take(MAX_SAMPLE_PLAYERS)
+            .map(|(id, name)| Sample {
+                name: name.clone(),
+                id: id.to_string(),
+            })
+            .collect()
+    }
+
     pub fn add_player(&mut self, player: &Player) {
-        let status_response = &mut self.status_response;
-        if let Some(players) = &mut status_response.players {
-            players.online = players.online.saturating_add(1);
+        let player_id = player.gameprofile.id;
+        let player_name = player.gameprofile.name.clone();
 
-            let player_id = player.gameprofile.id;
-            let player_name = player.gameprofile.name.clone();
+        // Only add if player is not already in the list
+        if !self.player_samples.iter().any(|(id, _)| *id == player_id) {
+            self.player_samples.push((player_id, player_name));
+            let sample = self.build_sample_list();
 
-            if !self.player_samples.iter().any(|(id, _)| *id == player_id) {
-                self.player_samples.push((player_id, player_name));
-
-                players.sample = self
-                    .player_samples
-                    .iter()
-                    .take(MAX_SAMPLE_PLAYERS)
-                    .map(|(id, name)| Sample {
-                        name: name.clone(),
-                        id: id.to_string(),
-                    })
-                    .collect();
+            let status_response = &mut self.status_response;
+            if let Some(players) = &mut status_response.players {
+                players.online = players.online.saturating_add(1);
+                players.sample = sample;
             }
-        }
 
-        self.status_response_json = serde_json::to_string(&status_response)
-            .expect("Failed to parse status response into JSON");
+            self.status_response_json = serde_json::to_string(&status_response)
+                .expect("Failed to parse status response into JSON");
+        }
     }
 
     pub fn remove_player(&mut self, player: &Player) {
-        let status_response = &mut self.status_response;
-        if let Some(players) = &mut status_response.players {
-            players.online = players.online.saturating_sub(1);
+        let player_id = player.gameprofile.id;
 
-            let player_id = player.gameprofile.id;
+        // Only decrement if player was actually in the list
+        if self.player_samples.iter().any(|(id, _)| *id == player_id) {
             self.player_samples.retain(|(id, _)| *id != player_id);
+            let sample = self.build_sample_list();
 
-            players.sample = self
-                .player_samples
-                .iter()
-                .take(MAX_SAMPLE_PLAYERS)
-                .map(|(id, name)| Sample {
-                    name: name.clone(),
-                    id: id.to_string(),
-                })
-                .collect();
+            let status_response = &mut self.status_response;
+            if let Some(players) = &mut status_response.players {
+                players.online = players.online.saturating_sub(1);
+                players.sample = sample;
+            }
+
+            self.status_response_json = serde_json::to_string(&status_response)
+                .expect("Failed to parse status response into JSON");
         }
-
-        self.status_response_json = serde_json::to_string(&status_response)
-            .expect("Failed to parse status response into JSON");
     }
 
     pub fn build_response(config: &BasicConfiguration) -> StatusResponse {

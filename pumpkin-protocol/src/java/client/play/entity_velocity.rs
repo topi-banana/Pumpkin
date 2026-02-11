@@ -28,11 +28,6 @@ impl CEntityVelocity {
     }
 }
 
-fn encode_legacy_velocity_component(component: f64) -> i16 {
-    // Legacy clients (<= 1.21.8 / protocol 772) encode velocity as clamped component * 8000.
-    (component.clamp(-3.9, 3.9) * 8000.0) as i16
-}
-
 impl ClientPacket for CEntityVelocity {
     fn write_packet_data(
         &self,
@@ -47,11 +42,62 @@ impl ClientPacket for CEntityVelocity {
         if version >= &MinecraftVersion::V_1_21_9 {
             self.velocity.write(&mut write)?;
         } else {
-            write.write_i16_be(encode_legacy_velocity_component(self.velocity.0.x))?;
-            write.write_i16_be(encode_legacy_velocity_component(self.velocity.0.y))?;
-            write.write_i16_be(encode_legacy_velocity_component(self.velocity.0.z))?;
+            self.velocity.write_legacy(&mut write)?;
         }
 
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use pumpkin_util::version::MinecraftVersion;
+
+    use super::CEntityVelocity;
+    use crate::{
+        ClientPacket, VarInt,
+        codec::velocity::{Velocity, encode_legacy_velocity_component},
+    };
+
+    fn encode_packet(version: MinecraftVersion) -> Vec<u8> {
+        let packet = CEntityVelocity::new(
+            VarInt(1),
+            pumpkin_util::math::vector3::Vector3::new(0.5, -0.5, 0.25),
+        );
+        let mut out = Vec::new();
+        packet.write_packet_data(&mut out, &version).unwrap();
+        out
+    }
+
+    fn legacy_bytes(x: f64, y: f64, z: f64) -> Vec<u8> {
+        let mut out = Vec::with_capacity(6);
+        out.extend_from_slice(&encode_legacy_velocity_component(x).to_be_bytes());
+        out.extend_from_slice(&encode_legacy_velocity_component(y).to_be_bytes());
+        out.extend_from_slice(&encode_legacy_velocity_component(z).to_be_bytes());
+        out
+    }
+
+    #[test]
+    fn entity_velocity_uses_legacy_format_for_1_21_8() {
+        // V_1_21_7 enum variant represents protocol 772 (used by 1.21.7 and 1.21.8).
+        let encoded = encode_packet(MinecraftVersion::V_1_21_7);
+        let expected_legacy_tail = legacy_bytes(0.5, -0.5, 0.25);
+
+        assert_eq!(encoded, [&[1], expected_legacy_tail.as_slice()].concat());
+    }
+
+    #[test]
+    fn entity_velocity_uses_packed_format_for_1_21_9() {
+        let encoded = encode_packet(MinecraftVersion::V_1_21_9);
+        let legacy_like = legacy_bytes(0.5, -0.5, 0.25);
+
+        assert_ne!(&encoded[1..], legacy_like.as_slice());
+
+        // Ensure the packed bytes can still be decoded back to a velocity.
+        let mut cursor = std::io::Cursor::new(&encoded[1..]);
+        let decoded = Velocity::read(&mut cursor).unwrap();
+        assert!(decoded.0.x.is_finite());
+        assert!(decoded.0.y.is_finite());
+        assert!(decoded.0.z.is_finite());
     }
 }

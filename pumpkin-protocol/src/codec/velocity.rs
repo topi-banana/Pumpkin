@@ -125,6 +125,7 @@ const LEGACY_COMPONENT_SCALE: f64 = 8000.0;
 const MIN_VELOCITY_MAGNITUDE: f64 = 3.051_944_088_384_301E-5;
 const MAX_15_BIT_VALUE: f64 = 32766.0;
 
+#[must_use]
 pub fn encode_legacy_velocity_component(component: f64) -> i16 {
     // Legacy clients (<= 1.21.8 / protocol 772) encode velocity as clamped component * 8000.
     (component.clamp(-LEGACY_COMPONENT_CLAMP, LEGACY_COMPONENT_CLAMP) * LEGACY_COMPONENT_SCALE)

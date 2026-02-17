@@ -33,6 +33,7 @@ use crate::block::blocks::hay::HayBlock;
 use crate::block::blocks::infested::InfestedBlock;
 use crate::block::blocks::iron_bars::IronBarsBlock;
 use crate::block::blocks::logs::LogBlock;
+use crate::block::blocks::magma::MagmaBlock;
 use crate::block::blocks::mangrove_roots::MangroveRootsBlock;
 use crate::block::blocks::nether_portal::NetherPortalBlock;
 use crate::block::blocks::note::NoteBlock;
@@ -134,6 +135,7 @@ use super::{
     OnPlaceArgs, OnStateReplacedArgs, OnSyncedBlockEventArgs, PlacedArgs, PlayerPlacedArgs,
     PrepareArgs, UseWithItemArgs,
 };
+use crate::block::OnEntityStepArgs;
 use crate::block::blocks::blast_furnace::BlastFurnaceBlock;
 use crate::block::blocks::chain::ChainBlock;
 use crate::block::blocks::cobweb::CobwebBlock;
@@ -254,6 +256,7 @@ pub fn default_registry() -> Arc<BlockRegistry> {
     // Fire
     manager.register(SoulFireBlock);
     manager.register(FireBlock);
+    manager.register(MagmaBlock);
 
     // Redstone
     manager.register(ButtonBlock);
@@ -410,6 +413,29 @@ impl BlockRegistry {
                     state,
                     position,
                     entity,
+                })
+                .await;
+        }
+    }
+
+    pub async fn on_entity_step(
+        &self,
+        block: &Block,
+        world: &Arc<World>,
+        entity: &dyn EntityBase,
+        position: &BlockPos,
+        state: &BlockState,
+        below_supporting_block: bool,
+    ) {
+        if let Some(pumpkin_block) = self.get_pumpkin_block(block.id) {
+            pumpkin_block
+                .on_entity_step(OnEntityStepArgs {
+                    world,
+                    block,
+                    state,
+                    position,
+                    entity,
+                    below_supporting_block,
                 })
                 .await;
         }

@@ -161,7 +161,7 @@ impl MobEntity {
             return;
         }
 
-        target
+        let damaged = target
             .damage_with_context(
                 target,
                 ZOMBIE_ATTACK_DAMAGE,
@@ -171,6 +171,15 @@ impl MobEntity {
                 Some(caller),
             )
             .await;
+
+        if damaged {
+            self.living_entity
+                .last_attacking_id
+                .store(target.get_entity().entity_id, Relaxed);
+            self.living_entity
+                .last_attack_time
+                .store(self.living_entity.entity.age.load(Relaxed), Relaxed);
+        }
     }
 
     async fn get_attack_box(&self, attack_range: f64) -> BoundingBox {
@@ -239,6 +248,10 @@ pub trait Mob: EntityBase + Send + Sync {
 
     fn on_eating_grass(&self) -> EntityBaseFuture<'_, ()> {
         Box::pin(async {})
+    }
+
+    fn can_attack_with_owner(&self, _target: &dyn EntityBase, _owner: &dyn EntityBase) -> bool {
+        true
     }
 
     fn get_mob_gravity(&self) -> f64 {

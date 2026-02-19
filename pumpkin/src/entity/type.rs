@@ -25,7 +25,7 @@ use crate::{
             zombie_villager::ZombieVillagerEntity,
         },
         passive::{
-            cat::CatEntity, iron_golem::IronGolemEntity, sheep::SheepEntity,
+            cat::CatEntity, cow::CowEntity, iron_golem::IronGolemEntity, sheep::SheepEntity,
             snow_golem::SnowGolemEntity, wolf::WolfEntity,
         },
     },
@@ -59,6 +59,7 @@ pub async fn from_type(
         id if id == EntityType::ENDERMAN.id => EndermanEntity::new(entity).await,
 
         id if id == EntityType::CAT.id => CatEntity::new(entity).await,
+        id if id == EntityType::COW.id => CowEntity::new(entity).await,
         id if id == EntityType::SNOW_GOLEM.id => SnowGolemEntity::new(entity).await,
         id if id == EntityType::IRON_GOLEM.id => IronGolemEntity::new(entity).await,
         id if id == EntityType::SHEEP.id => SheepEntity::new(entity).await,

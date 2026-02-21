@@ -117,7 +117,7 @@ jobs:
         shell: bash
         run: |
           if [[ "${{ runner.arch }}" == "X64" ]]; then
-            export RUSTFLAGS="$RUSTFLAGS -C target-cpu=x86-64-v3"
+            export RUSTFLAGS="$RUSTFLAGS -C target-cpu=x86-64-v4"
           fi
           cargo build --verbose --release
       - name: Prepare artifacts

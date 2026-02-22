@@ -5,7 +5,9 @@ publish = false
 edition = "2024"
 
 # IMPORTANT: disable lto when running
-# CARGO_PROFILE_RELEASE_LTO=false cargo +nightly fuzz run decoder
+# cargo +nightly fuzz run decoder_java
+
+[workspace]
 
 [package.metadata]
 cargo-fuzz = true

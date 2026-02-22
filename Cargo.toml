@@ -7,7 +7,6 @@ members = [
     "pumpkin-inventory",
     "pumpkin-macros/",
     "pumpkin-protocol/",
-    "pumpkin-protocol/fuzz",
     "pumpkin-world",
     "pumpkin/",
     "pumpkin-data",

@@ -3,6 +3,7 @@ resolver = "3"
 members = [
     "pumpkin-api-macros",
     "pumpkin-config",
+    "pumpkin-core",
     "pumpkin-util",
     "pumpkin-inventory",
     "pumpkin-macros/",
@@ -143,6 +144,7 @@ pkcs8 = "=0.11.0-rc.11"
 proc-macro2 = "1.0"
 pumpkin-codecs = { path = "pumpkin-codecs" }
 pumpkin-config = { path = "pumpkin-config" }
+pumpkin-core = { path = "pumpkin-core" }
 pumpkin-data = { path = "pumpkin-data" }
 pumpkin-inventory = { path = "pumpkin-inventory" }
 pumpkin-macros = { path = "pumpkin-macros" }

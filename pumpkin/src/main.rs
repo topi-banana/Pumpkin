@@ -1,57 +1,34 @@
-// Don't warn on event sending macros
-#![recursion_limit = "512"]
-#![expect(unused_labels)]
-
 #[cfg(target_os = "wasi")]
 compile_error!("Compiling for WASI targets is not supported!");
 
 use pumpkin_data::packet::CURRENT_MC_VERSION;
+use std::sync::OnceLock;
 use std::{
     backtrace::{Backtrace, BacktraceStatus},
-    io::{self},
+    io,
     panic::PanicHookInfo,
     process::exit,
-    sync::{Arc, LazyLock, OnceLock, atomic::Ordering},
+    sync::atomic::Ordering,
     thread::{self, ThreadId},
+    time::Instant,
 };
 #[cfg(not(unix))]
 use tokio::signal::ctrl_c;
 #[cfg(unix)]
 use tokio::signal::unix::{SignalKind, signal};
 
-use pumpkin::{
-    CRASH_REPORT, SERVER_EXIT_CODE, SERVER_IS_STOPPING,
+use pumpkin_config::{AdvancedConfiguration, BasicConfiguration, LoadConfiguration};
+use pumpkin_core::{
+    CRASH_REPORT, PumpkinServer, SERVER_EXIT_CODE, SERVER_IS_STOPPING,
     crash::{CrashReport, FullBacktrace},
     data::VanillaData,
-    stop_or_exit_server,
+    init_logger, stop_or_exit_server, stop_server,
 };
-use pumpkin::{LoggerOption, PumpkinServer, SHOULD_STOP, STOP_INTERRUPT, stop_server};
-
-use pumpkin_config::{AdvancedConfiguration, BasicConfiguration, LoadConfiguration};
 use pumpkin_util::text::{
     TextComponent,
     color::{Color, NamedColor},
 };
-use std::time::Instant;
 use tracing::{debug, info, warn};
-
-// Setup some tokens to allow us to identify which event is for which socket.
-
-pub mod block;
-pub mod command;
-pub mod crash;
-pub mod data;
-pub mod entity;
-pub mod error;
-pub mod item;
-pub mod logging;
-pub mod net;
-pub mod plugin;
-pub mod server;
-pub mod world;
-
-pub static LOGGER_IMPL: LazyLock<Arc<OnceLock<LoggerOption>>> =
-    LazyLock::new(|| Arc::new(OnceLock::new()));
 
 const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -82,7 +59,7 @@ async fn main() {
 
     let vanilla_data = VanillaData::load();
 
-    pumpkin::init_logger(&advanced_config);
+    init_logger(&advanced_config);
 
     info!(
         "{}",
@@ -176,6 +153,7 @@ async fn main() {
 
     exit(SERVER_EXIT_CODE.load(Ordering::Acquire));
 }
+
 fn print_support_links_and_warning() {
     warn!(
         "{}",

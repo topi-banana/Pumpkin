@@ -54,6 +54,7 @@
                 ./pumpkin
                 ./pumpkin-api-macros
                 ./pumpkin-config
+                ./pumpkin-core
                 ./pumpkin-data
                 ./pumpkin-inventory
                 ./pumpkin-macros

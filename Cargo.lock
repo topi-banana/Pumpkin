@@ -2828,11 +2828,53 @@ dependencies = [
 name = "pumpkin"
 version = "0.1.0-dev+26.1"
 dependencies = [
+ "console-subscriber",
+ "pumpkin-config",
+ "pumpkin-core",
+ "pumpkin-data",
+ "pumpkin-util",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "pumpkin-api-macros"
+version = "0.1.0-dev+26.1"
+dependencies = [
+ "proc-macro-error2",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "pumpkin-codecs"
+version = "0.1.0-dev+26.1"
+dependencies = [
+ "either",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "pumpkin-config"
+version = "0.1.0-dev+26.1"
+dependencies = [
+ "pumpkin-util",
+ "serde",
+ "toml 1.1.2+spec-1.1.0",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
+name = "pumpkin-core"
+version = "0.1.0-dev+26.1"
+dependencies = [
  "arc-swap",
  "base64 0.22.1",
  "bitflags 2.11.1",
  "bytes",
- "console-subscriber",
  "crossbeam",
  "flate2",
  "futures",
@@ -2876,36 +2918,6 @@ dependencies = [
  "wasmparser 0.247.0",
  "wasmtime",
  "wasmtime-wasi",
-]
-
-[[package]]
-name = "pumpkin-api-macros"
-version = "0.1.0-dev+26.1"
-dependencies = [
- "proc-macro-error2",
- "proc-macro2",
- "quote",
- "syn",
-]
-
-[[package]]
-name = "pumpkin-codecs"
-version = "0.1.0-dev+26.1"
-dependencies = [
- "either",
- "serde_json",
- "tracing",
-]
-
-[[package]]
-name = "pumpkin-config"
-version = "0.1.0-dev+26.1"
-dependencies = [
- "pumpkin-util",
- "serde",
- "toml 1.1.2+spec-1.1.0",
- "tracing",
- "uuid",
 ]
 
 [[package]]

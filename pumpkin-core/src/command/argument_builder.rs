@@ -51,7 +51,7 @@ impl Default for CommonArgumentBuilder {
 ///
 /// This can be imported directly without a prefix, or imported with the `argument_builder::` prefix. Here's an example of usage:
 /// ```
-/// use pumpkin::command::argument_builder::command;
+/// use pumpkin_core::command::argument_builder::command;
 ///
 /// let builder = command("foo", "A test command");
 /// ```
@@ -70,7 +70,7 @@ pub fn command(
 ///
 /// This can be imported directly without a prefix, or imported with the `argument_builder::` prefix. Here's an example of usage:
 /// ```
-/// use pumpkin::command::argument_builder::literal;
+/// use pumpkin_core::command::argument_builder::literal;
 ///
 /// let builder = literal("bar");
 /// ```
@@ -85,7 +85,7 @@ pub fn literal(literal: impl Into<Cow<'static, str>>) -> LiteralArgumentBuilder 
 ///
 /// This can be imported directly without a prefix, or imported with the `argument_builder::` prefix. Here's an example of usage:
 /// ```
-/// use pumpkin::command::{
+/// use pumpkin_core::command::{
 ///     argument_builder::argument,
 ///     argument_types::core::integer::IntegerArgumentType
 /// };

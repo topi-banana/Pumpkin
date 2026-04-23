@@ -136,8 +136,8 @@ impl CommandContext<'_> {
     /// A simple example that takes two arguments specified from the node
     /// and returns their sum as the status output of the `Executor`:
     /// ```
-    /// use pumpkin::command::context::command_context::CommandContext;
-    /// use pumpkin::command::node::{CommandExecutor, CommandExecutorResult};
+    /// use pumpkin_core::command::context::command_context::CommandContext;
+    /// use pumpkin_core::command::node::{CommandExecutor, CommandExecutorResult};
     ///
     /// struct Executor;
     /// impl CommandExecutor for Executor {

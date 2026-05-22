@@ -39,7 +39,7 @@ use pumpkin_protocol::{
     ser::{NetworkWriteExt, ReadingError, WritingError},
 };
 use pumpkin_util::text::TextComponent;
-use pumpkin_util::version::MinecraftVersion;
+use pumpkin_util::version::JavaMinecraftVersion;
 use tokio::{
     io::{BufReader, BufWriter},
     net::{
@@ -60,6 +60,7 @@ pub mod config;
 pub mod handshake;
 pub mod login;
 pub mod play;
+pub mod recipe_helper;
 pub mod status;
 
 use crate::entity::player::Player;
@@ -69,7 +70,7 @@ use crate::{error::PumpkinError, net::EncryptionError, server::Server};
 
 pub struct JavaClient {
     pub id: u64,
-    pub version: AtomicCell<MinecraftVersion>,
+    pub version: AtomicCell<JavaMinecraftVersion>,
     /// The client's game profile information.
     pub gameprofile: Mutex<Option<GameProfile>>,
     /// The client's configuration settings, Optional
@@ -272,6 +273,13 @@ impl JavaClient {
         self.enqueue_packet_data(buf.into()).await;
     }
 
+    pub fn try_enqueue_packet<P: ClientPacket>(&self, packet: &P) {
+        let mut buf = Vec::new();
+        let writer = &mut buf;
+        self.write_packet(packet, writer).unwrap();
+        self.try_enqueue_packet_data(buf.into());
+    }
+
     /// Queues a clientbound packet to be sent to the connected client. Queued chunks are sent
     /// in-order to the client
     ///
@@ -290,6 +298,30 @@ impl JavaClient {
                     "Failed to add packet to the outgoing packet queue for client {}: {}",
                     self.id, err
                 );
+            }
+        }
+    }
+
+    pub fn try_enqueue_packet_data(&self, packet_data: Bytes) {
+        if let Err(err) = self
+            .outgoing_packet_queue_send
+            .try_send(OutgoingPacket::normal(packet_data))
+        {
+            match err {
+                tokio::sync::mpsc::error::TrySendError::Full(_) => {
+                    debug!(
+                        "Failed to add packet to the outgoing packet queue for client {}: channel full",
+                        self.id
+                    );
+                }
+                tokio::sync::mpsc::error::TrySendError::Closed(_) => {
+                    if !self.close_token.is_cancelled() {
+                        error!(
+                            "Failed to add packet to the outgoing packet queue for client {}: channel closed",
+                            self.id
+                        );
+                    }
+                }
             }
         }
     }
@@ -377,7 +409,7 @@ impl JavaClient {
 
     pub fn write_packet_for_version<P: ClientPacket>(
         packet: &P,
-        version: MinecraftVersion,
+        version: JavaMinecraftVersion,
         mut write: impl Write,
     ) -> Result<(), WritingError> {
         let version_number = P::to_id(version);
@@ -394,7 +426,7 @@ impl JavaClient {
 
     pub fn serialize_packet_for_version<P: ClientPacket>(
         packet: &P,
-        version: MinecraftVersion,
+        version: JavaMinecraftVersion,
     ) -> Result<Bytes, WritingError> {
         let mut packet_buf = Vec::new();
 
@@ -657,6 +689,14 @@ impl JavaClient {
                 self.handle_plugin_message(SPluginMessage::read(payload, &version)?)
                     .await;
             }
+            id if id
+                == pumpkin_protocol::java::server::config::SCustomClickAction::to_id(version) =>
+            {
+                let _packet = pumpkin_protocol::java::server::config::SCustomClickAction::read(
+                    payload, &version,
+                )?;
+                warn!("CustomClickAction in config state not yet supported");
+            }
             id if id == SAcknowledgeFinishConfig::to_id(version) => {
                 return Ok(Some(self.handle_config_acknowledged(server).await));
             }
@@ -906,8 +946,21 @@ impl JavaClient {
                     .await;
             }
             id if id == SPlaceRecipe::to_id(version) => {
-                self.handle_place_recipe(player, SPlaceRecipe::read(payload, &version)?)
-                    .await;
+                let packet = SPlaceRecipe::read(payload, &version)?;
+                self.handle_place_recipe(server, player, packet).await;
+            }
+            id if id
+                == pumpkin_protocol::java::server::play::SCustomClickAction::to_id(version) =>
+            {
+                let packet = pumpkin_protocol::java::server::play::SCustomClickAction::read(
+                    payload, &version,
+                )?;
+                let event = crate::plugin::api::events::player::custom_click_action::CustomClickActionEvent::new(
+                    player.clone(),
+                    packet.action_id.clone(),
+                    packet.payload.map(Bytes::from),
+                );
+                server.plugin_manager.fire(event).await;
             }
             id if id == SSelectTrade::to_id(version) => {
                 self.handle_select_trade(player, SSelectTrade::read(payload, &version)?)

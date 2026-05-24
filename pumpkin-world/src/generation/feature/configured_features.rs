@@ -68,7 +68,7 @@ use super::features::{
     waterlogged_vegetation_patch::WaterloggedVegetationPatchFeature,
     weeping_vines::WeepingVinesFeature,
 };
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 pub static CONFIGURED_FEATURES: LazyLock<

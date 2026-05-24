@@ -13,14 +13,14 @@ fn bench_full_chunk_generation(c: &mut Criterion) {
     let seed = Seed(42);
     let block_registry = Arc::new(BlockRegistry);
     let world_gen = get_world_gen(seed, dimension.clone());
-    let biome_mixer_seed = hash_seed(world_gen.random_config.seed);
+    let biome_mixer_seed = hash_seed(seed.0);
 
     c.bench_function("full_chunk_generation", |b| {
         b.iter(|| {
             let chunk = generate_single_chunk(
                 black_box(&dimension),
                 black_box(biome_mixer_seed),
-                black_box(&world_gen),
+                black_box(&*world_gen),
                 black_box(block_registry.as_ref()),
                 black_box(0),
                 black_box(0),
@@ -45,7 +45,7 @@ impl WorldPortalExt for BlockRegistry {
 
     fn spawn_mobs_for_chunk_generation(
         &self,
-        _cache: &mut dyn pumpkin_world::generation::proto_chunk::GenerationCache,
+        _cache: &mut dyn pumpkin_world::chunk_system::generation_cache::GenerationCache,
         _biome: &'static pumpkin_data::chunk::Biome,
         _chunk_x: i32,
         _chunk_z: i32,

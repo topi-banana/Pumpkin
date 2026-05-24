@@ -16,7 +16,6 @@ use pumpkin_data::world::WorldEvent;
 use pumpkin_data::{Block, BlockDirection};
 use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::math::vector3::Vector3;
-use pumpkin_world::generation::generator::structure_finder::find_nearest_structure;
 use pumpkin_world::world::BlockFlags;
 
 use crate::entity::player::Player;
@@ -136,15 +135,9 @@ impl ItemBehaviour for EnderEyeItem {
 }
 
 fn find_stronghold(world: &Arc<World>, origin: BlockPos) -> Option<BlockPos> {
-    let level = &world.level;
-    let generator = &level.world_gen;
-    let seed = level.seed.0;
-
-    find_nearest_structure(
+    world.level.world_gen.find_nearest_structure(
         origin,
         &[&StructureSet::get("strongholds").unwrap().placement],
         100, // max search radius in chunks, matches vanilla default
-        seed as i64,
-        &generator.global_structure_cache,
     )
 }

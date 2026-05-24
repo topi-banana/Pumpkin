@@ -10,7 +10,7 @@ use pumpkin_util::{
 };
 
 use super::TrunkPlacer;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::{
     generation::{
         block_state_provider::BlockStateProvider,

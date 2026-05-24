@@ -9,7 +9,7 @@ use pumpkin_util::{
 
 use crate::generation::feature::features::spring_feature::BlockWrapper;
 use crate::{
-    block::BlockStateCodec, generation::proto_chunk::GenerationCache, world::WorldPortalExt,
+    block::BlockStateCodec, chunk_system::generation_cache::GenerationCache, world::WorldPortalExt,
 };
 use pumpkin_util::random::RandomImpl;
 use std::cmp::Ordering;

@@ -4,7 +4,8 @@ use pumpkin_util::{
     random::RandomGenerator,
 };
 
-use crate::generation::{noise::WATER_BLOCK, proto_chunk::GenerationCache};
+use crate::chunk_system::generation_cache::GenerationCache;
+use crate::generation::noise::WATER_BLOCK;
 
 pub struct DesertWellFeature;
 

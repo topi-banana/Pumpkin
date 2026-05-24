@@ -19,7 +19,7 @@ use pumpkin_util::math::vector3::Vector3;
 use pumpkin_util::random::xoroshiro128::Xoroshiro;
 use pumpkin_util::random::{RandomImpl, get_seed};
 use pumpkin_world::chunk::{ChunkData, ChunkHeightmapType};
-use pumpkin_world::generation::proto_chunk::GenerationCache;
+use pumpkin_world::chunk_system::generation_cache::GenerationCache;
 use rand::seq::IndexedRandom;
 use rand::{RngExt, rng};
 use std::fmt;

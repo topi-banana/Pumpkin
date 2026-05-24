@@ -6,7 +6,7 @@ use crate::biome::BiomeSupplier;
 use crate::generation::biome_coords;
 use crate::generation::noise::perlin::DoublePerlinNoiseSampler;
 use crate::generation::noise::router::multi_noise_sampler::MultiNoiseSampler;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use blending_data::BlendingData;
 use pumpkin_data::chunk::Biome;
 use pumpkin_data::noise_parameter::DoublePerlinNoiseParameters;

@@ -18,7 +18,7 @@ use random_spread::RandomSpreadFoliagePlacer;
 use spruce::SpruceFoliagePlacer;
 
 use super::{TreeFeature, TreeNode};
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 pub mod acacia;
 pub mod blob;

@@ -5,7 +5,7 @@ use pumpkin_util::{
     random::{RandomGenerator, RandomImpl},
 };
 
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 /// The three mob types that can appear in a dungeon spawner.
 ///

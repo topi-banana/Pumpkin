@@ -4,7 +4,7 @@ use pumpkin_util::{
     random::{RandomGenerator, RandomImpl},
 };
 
-use crate::{generation::proto_chunk::GenerationCache, world::WorldPortalExt};
+use crate::{chunk_system::generation_cache::GenerationCache, world::WorldPortalExt};
 
 const LAVA_SEA_LEVEL: i32 = 32; // TODO: use getSeaLevel() instead of hardcoding this
 const CLUSTERED_REACH: i32 = 5;

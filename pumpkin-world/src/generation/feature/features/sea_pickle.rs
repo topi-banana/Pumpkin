@@ -1,4 +1,4 @@
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use pumpkin_data::{
     Block, BlockState,
     block_properties::{BlockProperties, SeaPickleLikeProperties},

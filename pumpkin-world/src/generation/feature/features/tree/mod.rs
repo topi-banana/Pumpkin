@@ -7,7 +7,7 @@ use root::RootPlacer;
 
 use trunk::TrunkPlacer;
 
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::{block_state_provider::BlockStateProvider, feature::size::FeatureSize};
 use crate::world::WorldPortalExt;
 

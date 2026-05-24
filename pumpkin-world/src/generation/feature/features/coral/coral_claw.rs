@@ -1,4 +1,4 @@
-use crate::{generation::proto_chunk::GenerationCache, world::WorldPortalExt};
+use crate::{chunk_system::generation_cache::GenerationCache, world::WorldPortalExt};
 use pumpkin_data::{BlockDirection, tag};
 use pumpkin_util::{
     math::position::BlockPos,

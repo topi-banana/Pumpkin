@@ -5,7 +5,7 @@ use pumpkin_util::{
 };
 
 use crate::generation::block_state_provider::BlockStateProvider;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 pub struct AttachedToLogsTreeDecorator {
     pub probability: f32,

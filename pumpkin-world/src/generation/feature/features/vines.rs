@@ -1,7 +1,7 @@
 use pumpkin_data::{Block, BlockDirection, BlockState, block_properties::BlockProperties};
 use pumpkin_util::{math::position::BlockPos, random::RandomGenerator};
 
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 pub struct VinesFeature;

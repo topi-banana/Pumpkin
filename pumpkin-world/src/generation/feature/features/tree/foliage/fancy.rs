@@ -5,7 +5,7 @@ use pumpkin_util::random::RandomGenerator;
 
 use super::{FoliagePlacer, LeaveValidator};
 use crate::generation::feature::features::tree::TreeNode;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 pub struct LargeOakFoliagePlacer {
     pub height: i32,

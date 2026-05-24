@@ -11,10 +11,10 @@ use pumpkin_util::{
 use tracing::debug;
 
 use crate::generation::structure::structures::stronghold::StrongholdPieceType;
+use crate::height_limit::HeightLimitView;
 use crate::{
     ProtoChunk,
     generation::{
-        height_limit::HeightLimitView,
         positions::chunk_pos::{start_block_x, start_block_z},
         structure::piece::StructurePieceType,
     },

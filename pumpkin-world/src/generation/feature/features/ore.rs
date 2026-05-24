@@ -6,7 +6,7 @@ use pumpkin_util::{
     random::{RandomGenerator, RandomImpl},
 };
 
-use crate::{block::RawBlockState, generation::proto_chunk::GenerationCache};
+use crate::{block::RawBlockState, chunk_system::generation_cache::GenerationCache};
 use crate::{generation::rule::RuleTest, world::WorldPortalExt};
 
 pub struct OreFeature {

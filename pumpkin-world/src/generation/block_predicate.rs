@@ -5,7 +5,7 @@ use pumpkin_data::{Block, BlockDirection, BlockState};
 use pumpkin_util::math::{position::BlockPos, vector3::Vector3};
 
 use crate::block::RawBlockState;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::{block::BlockStateCodec, world::WorldPortalExt};
 
 pub enum BlockPredicate {

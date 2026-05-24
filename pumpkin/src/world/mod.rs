@@ -4,7 +4,7 @@ use pumpkin_data::attributes::Attributes;
 use pumpkin_data::chunk::Biome;
 use pumpkin_protocol::bedrock::client::level_event::{CLevelEvent, LevelEvent};
 use pumpkin_protocol::codec::data_component::data_to_proto_sound;
-use pumpkin_world::generation::proto_chunk::GenerationCache;
+use pumpkin_world::chunk_system::generation_cache::GenerationCache;
 use std::sync::atomic::Ordering::Relaxed;
 use std::sync::{Arc, Weak};
 use std::{

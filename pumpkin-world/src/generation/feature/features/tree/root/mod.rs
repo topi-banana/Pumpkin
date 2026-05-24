@@ -1,7 +1,7 @@
 use mangrove::MangroveRootPlacer;
 use pumpkin_util::{math::position::BlockPos, random::RandomGenerator};
 
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 pub mod mangrove;
 

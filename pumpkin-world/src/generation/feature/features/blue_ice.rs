@@ -4,7 +4,7 @@ use pumpkin_util::{
     random::{RandomGenerator, RandomImpl},
 };
 
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 const SEA_LEVEL: i32 = 63; // TODO: use getSeaLevel() instead of hardcoding
 

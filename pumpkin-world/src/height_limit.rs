@@ -1,7 +1,3 @@
-use crate::ProtoChunk;
-
-use super::section_coords;
-
 pub trait HeightLimitView {
     fn height(&self) -> u16;
 
@@ -25,11 +21,11 @@ pub trait HeightLimitView {
     }
 
     fn bottom_section_coord(&self) -> i8 {
-        section_coords::block_to_section(self.bottom_y() as i32) as i8
+        (self.bottom_y() as i32 >> 4) as i8
     }
 
     fn top_section_coord(&self) -> u16 {
-        section_coords::block_to_section(self.top_y() as i32 - 1) as u16 + 1
+        ((self.top_y() as i32 - 1) >> 4) as u16 + 1
     }
 
     fn out_of_height(&self, height: i16) -> bool {
@@ -37,7 +33,7 @@ pub trait HeightLimitView {
     }
 
     fn section_index(&self, y: i32) -> usize {
-        self.section_coord_to_index(section_coords::block_to_section(y))
+        self.section_coord_to_index(y >> 4)
     }
 
     fn section_coord_to_index(&self, coord: i32) -> usize {
@@ -46,15 +42,5 @@ pub trait HeightLimitView {
 
     fn section_index_to_coord(&self, index: usize) -> i32 {
         index as i32 + self.bottom_section_coord() as i32
-    }
-}
-
-impl HeightLimitView for ProtoChunk {
-    fn height(&self) -> u16 {
-        self.height()
-    }
-
-    fn bottom_y(&self) -> i8 {
-        self.bottom_y()
     }
 }

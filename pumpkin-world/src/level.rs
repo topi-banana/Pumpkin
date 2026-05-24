@@ -1,7 +1,7 @@
 use crate::chunk::format::linear::LinearV2File;
 use crate::chunk::format::pump::PumpFile;
 use crate::chunk_system::{ChunkListener, ChunkLoading, GenerationSchedule, LevelChannel};
-use crate::generation::generator::VanillaGenerator;
+use crate::generator::Generator;
 use crate::lighting::DynamicLightEngine;
 use crate::{
     BlockStateId,
@@ -12,7 +12,6 @@ use crate::{
         io::{Dirtiable, FileIO, LoadedData, file_manager::ChunkFileManager},
         palette::has_random_ticking_fluid,
     },
-    generation::get_world_gen,
     tick::{OrderedTick, ScheduledTick, TickPriority},
     world::WorldPortalExt,
 };
@@ -20,7 +19,6 @@ use arc_swap::ArcSwap;
 use dashmap::{DashMap, Entry};
 use pumpkin_config::{chunk::ChunkConfig, lighting::LightingEngineConfig, world::LevelConfig};
 use pumpkin_data::biome::Biome;
-use pumpkin_data::dimension::Dimension;
 use pumpkin_data::{Block, block_properties::has_random_ticks, fluid::Fluid};
 use pumpkin_util::math::{position::BlockPos, vector2::Vector2};
 use pumpkin_util::world_seed::Seed;
@@ -79,7 +77,7 @@ pub struct Level {
     pub chunk_saver: Arc<dyn FileIO<Data = SyncChunk>>,
     entity_saver: Arc<dyn FileIO<Data = SyncEntityChunk>>,
 
-    pub world_gen: Arc<VanillaGenerator>,
+    pub world_gen: Arc<dyn Generator>,
 
     /// Handles runtime lighting updates
     pub light_engine: DynamicLightEngine,
@@ -129,7 +127,7 @@ impl Level {
         level_config: &LevelConfig,
         root_folder: PathBuf,
         seed: i64,
-        dimension: Dimension,
+        world_gen: Arc<dyn Generator>,
         gen_pool: Option<Arc<rayon::ThreadPool>>,
     ) -> Arc<Self> {
         let region_folder = root_folder.join("region");
@@ -145,7 +143,6 @@ impl Level {
         });
 
         let seed = Seed(seed as u64);
-        let world_gen = get_world_gen(seed, dimension).into();
 
         let chunk_saver: Arc<dyn FileIO<Data = SyncChunk>> = match &level_config.chunk {
             ChunkConfig::Linear => Arc::new(ChunkFileManager::<LinearV2File<ChunkData>>::new(())),

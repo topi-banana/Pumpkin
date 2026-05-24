@@ -6,7 +6,7 @@ use pumpkin_util::{
 
 use crate::generation::block_state_provider::BlockStateProvider;
 use crate::generation::feature::features::tree::TreeFeature;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 pub struct AboveRootPlacement {
     pub above_root_provider: BlockStateProvider,

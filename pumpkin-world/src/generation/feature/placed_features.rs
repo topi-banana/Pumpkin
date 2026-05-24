@@ -14,7 +14,7 @@ use pumpkin_util::random::{RandomGenerator, RandomImpl};
 use crate::block::RawBlockState;
 use crate::generation::block_predicate::BlockPredicate;
 use crate::generation::height_provider::HeightProvider;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 use super::configured_features::{CONFIGURED_FEATURES, ConfiguredFeature};

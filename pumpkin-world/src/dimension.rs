@@ -3,6 +3,7 @@ use std::{path::PathBuf, sync::Arc};
 use pumpkin_config::world::LevelConfig;
 use pumpkin_data::dimension::Dimension;
 
+use crate::generator::Generator;
 use crate::level::Level;
 
 #[must_use]
@@ -11,6 +12,7 @@ pub fn into_level(
     level_config: &LevelConfig,
     mut base_directory: PathBuf,
     seed: i64,
+    world_gen: Arc<dyn Generator>,
     gen_pool: Option<Arc<rayon::ThreadPool>>,
 ) -> Arc<Level> {
     if dimension == Dimension::OVERWORLD {
@@ -19,5 +21,5 @@ pub fn into_level(
     } else if dimension == Dimension::THE_END {
         base_directory.push("DIM1");
     }
-    Level::from_root_folder(level_config, base_directory, seed, dimension, gen_pool)
+    Level::from_root_folder(level_config, base_directory, seed, world_gen, gen_pool)
 }

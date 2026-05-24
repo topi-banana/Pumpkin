@@ -14,7 +14,7 @@ use crate::generation::feature::features::tree::trunk::{
     forking::ForkingTrunkPlacer, giant::GiantTrunkPlacer, mega_jungle::MegaJungleTrunkPlacer,
     upwards_branching::UpwardsBranchingTrunkPlacer,
 };
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 pub mod bending;

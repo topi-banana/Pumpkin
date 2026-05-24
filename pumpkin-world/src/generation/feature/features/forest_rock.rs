@@ -1,4 +1,4 @@
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 use pumpkin_data::BlockState;
 use pumpkin_data::tag;
 use pumpkin_util::{

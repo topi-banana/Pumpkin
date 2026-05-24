@@ -1,9 +1,9 @@
 use pumpkin_util::math::{int_provider::IntProvider, position::BlockPos};
 use pumpkin_util::random::RandomGenerator;
 
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::{
     block_predicate::BlockPredicate, block_state_provider::BlockStateProvider,
-    proto_chunk::GenerationCache,
 };
 use crate::world::WorldPortalExt;
 

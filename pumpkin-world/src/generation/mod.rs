@@ -7,7 +7,6 @@ mod block_state_provider;
 pub mod carver;
 mod feature;
 pub mod generator;
-pub mod height_limit;
 pub mod height_provider;
 pub mod noise;
 pub mod positions;
@@ -24,8 +23,10 @@ use pumpkin_util::{
     world_seed::Seed,
 };
 
+use crate::generator::Generator;
+
 #[must_use]
-pub fn get_world_gen(seed: Seed, dimension: Dimension) -> Box<VanillaGenerator> {
+pub fn get_world_gen(seed: Seed, dimension: Dimension) -> Box<dyn Generator> {
     // TODO decide which WorldGenerator to pick based on config.
     Box::new(VanillaGenerator::new(seed, dimension))
 }

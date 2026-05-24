@@ -3,7 +3,7 @@ use pumpkin_util::{math::position::BlockPos, random::RandomGenerator};
 
 use super::{FoliagePlacer, LeaveValidator};
 use crate::generation::feature::features::tree::TreeNode;
-use crate::generation::proto_chunk::GenerationCache;
+use crate::chunk_system::generation_cache::GenerationCache;
 
 pub struct AcaciaFoliagePlacer;
 

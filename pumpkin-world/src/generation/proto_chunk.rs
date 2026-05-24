@@ -3,7 +3,6 @@ use std::sync::Arc;
 use pumpkin_data::block_properties::is_air;
 use pumpkin_data::chunk::DoublePerlinNoiseParameters;
 use pumpkin_data::dimension::Dimension;
-use pumpkin_data::fluid::{Fluid, FluidState};
 use pumpkin_data::structures::{
     Structure, StructureKeys, StructurePlacementType, StructureSet, WeightedEntry,
 };
@@ -35,7 +34,8 @@ use crate::biome::{BiomeSupplier, MultiNoiseBiomeSupplier, end::TheEndBiomeSuppl
 use crate::chunk::format::LightContainer;
 use crate::chunk::{ChunkData, ChunkHeightmapType, ChunkLight};
 use crate::chunk_system::StagedChunkEnum;
-use crate::generation::height_limit::HeightLimitView;
+use crate::chunk_system::generation_cache::GenerationCache;
+use crate::height_limit::HeightLimitView;
 use crate::generation::noise::aquifer_sampler::{FluidLevel, FluidLevelSamplerImpl};
 use crate::generation::noise::perlin::DoublePerlinNoiseSampler;
 use crate::generation::noise::router::multi_noise_sampler::MultiNoiseSamplerBuilderOptions;
@@ -63,33 +63,6 @@ enum ActiveSupplier {
     Overworld(MultiNoiseBiomeSupplier),
     Nether(MultiNoiseBiomeSupplier),
     End(TheEndBiomeSupplier),
-}
-
-pub trait GenerationCache: HeightLimitView + BlockAccessor {
-    fn get_center_chunk_mut(&mut self) -> &mut ProtoChunk;
-    fn get_center_chunk(&self) -> &ProtoChunk;
-
-    fn get_chunk_mut(&mut self, chunk_x: i32, chunk_z: i32) -> Option<&mut ProtoChunk>;
-    fn get_chunk(&self, chunk_x: i32, chunk_z: i32) -> Option<&ProtoChunk>;
-
-    fn try_get_proto_chunk(&self, chunk_x: i32, chunk_z: i32) -> Option<&ProtoChunk>;
-
-    fn get_block_state(&self, pos: &Vector3<i32>) -> RawBlockState;
-    fn get_fluid_and_fluid_state(&self, position: &Vector3<i32>) -> (Fluid, FluidState);
-    fn set_block_state(&mut self, pos: &Vector3<i32>, block_state: &BlockState);
-    fn add_block_entity(&mut self, pos: &Vector3<i32>, nbt: NbtCompound);
-    fn top_motion_blocking_block_height_exclusive(&self, x: i32, z: i32) -> i32;
-    fn top_motion_blocking_block_no_leaves_height_exclusive(&self, x: i32, z: i32) -> i32;
-    fn get_top_y(&self, heightmap: &HeightMap, x: i32, z: i32) -> i32;
-    fn top_block_height_exclusive(&self, x: i32, z: i32) -> i32;
-    fn ocean_floor_height_exclusive(&self, x: i32, z: i32) -> i32;
-    fn is_air(&self, local_pos: &Vector3<i32>) -> bool;
-    fn get_biome_for_terrain_gen(&self, x: i32, y: i32, z: i32) -> &'static Biome;
-    fn get_blending_data(
-        &self,
-        chunk_x: i32,
-        chunk_z: i32,
-    ) -> Option<&crate::generation::blender::blending_data::BlendingData>;
 }
 
 const AIR_BLOCK: Block = Block::AIR;
@@ -208,8 +181,8 @@ impl TerrainCache {
 
 impl ProtoChunk {
     #[must_use]
-    pub fn new(x: i32, z: i32, generator: &super::generator::VanillaGenerator) -> Self {
-        let dimension = &generator.dimension;
+    pub fn new(x: i32, z: i32, generator: &dyn crate::generator::Generator) -> Self {
+        let dimension = generator.dimension();
         let height = dimension.logical_height as u16;
         let section_count = (height as usize) / 16;
 
@@ -217,8 +190,8 @@ impl ProtoChunk {
         Self {
             x,
             z,
-            default_block: generator.default_block,
-            biome_mixer_seed: generator.biome_mixer_seed,
+            default_block: generator.default_block(),
+            biome_mixer_seed: generator.biome_mixer_seed(),
             flat_block_map: vec![0; CHUNK_AREA * height as usize].into_boxed_slice(),
             flat_biome_map: vec![
                 Biome::PLAINS.id;
@@ -263,7 +236,7 @@ impl ProtoChunk {
     #[must_use]
     pub fn from_chunk_data(
         chunk_data: &ChunkData,
-        generator: &super::generator::VanillaGenerator,
+        generator: &dyn crate::generator::Generator,
     ) -> Self {
         let mut proto_chunk = Self::new(chunk_data.x, chunk_data.z, generator);
 
@@ -1382,5 +1355,15 @@ impl BlockAccessor for ProtoChunk {
     fn get_block_and_state(&self, position: &BlockPos) -> (&'static Block, &'static BlockState) {
         let id = self.get_block_state(&position.0);
         BlockState::from_id_with_block(id.0)
+    }
+}
+
+impl HeightLimitView for ProtoChunk {
+    fn height(&self) -> u16 {
+        self.height()
+    }
+
+    fn bottom_y(&self) -> i8 {
+        self.bottom_y()
     }
 }

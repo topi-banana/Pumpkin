@@ -4,19 +4,24 @@ use pumpkin_data::dimension::Dimension;
 use pumpkin_data::noise_router::{
     END_BASE_NOISE_ROUTER, NETHER_BASE_NOISE_ROUTER, OVERWORLD_BASE_NOISE_ROUTER,
 };
+use pumpkin_data::structures::{StructurePlacement, StructurePlacementCalculator, StructureSet};
+use pumpkin_util::math::position::BlockPos;
+use rustc_hash::FxHashMap;
 
 use super::noise::router::proto_noise_router::ProtoNoiseRouters;
+use crate::ProtoChunk;
+use crate::chunk_system::generation_cache::Cache;
+use crate::generation::generator::structure_finder::find_nearest_structure;
 use crate::generation::proto_chunk::TerrainCache;
 use crate::generation::{GlobalRandomConfig, Seed};
+use crate::generator::Generator;
+use crate::world::WorldPortalExt;
 
 pub mod structure_finder;
 
 pub trait GeneratorInit {
     fn new(seed: Seed, dimension: Dimension) -> Self;
 }
-
-use pumpkin_data::structures::{StructurePlacementCalculator, StructureSet};
-use rustc_hash::FxHashMap;
 
 pub struct VanillaGenerator {
     pub random_config: GlobalRandomConfig,
@@ -32,6 +37,75 @@ pub struct VanillaGenerator {
     pub global_structure_cache: crate::generation::structure::placement::GlobalStructureCache,
     pub structure_calculator: StructurePlacementCalculator,
     pub structure_allowed_biomes: FxHashMap<usize, Vec<u16>>,
+}
+
+impl Generator for VanillaGenerator {
+    fn dimension(&self) -> &Dimension {
+        &self.dimension
+    }
+
+    fn seed(&self) -> u64 {
+        self.random_config.seed
+    }
+
+    fn default_block(&self) -> &'static BlockState {
+        self.default_block
+    }
+
+    fn biome_mixer_seed(&self) -> i64 {
+        self.biome_mixer_seed
+    }
+
+    fn step_biomes(&self, chunk: &mut ProtoChunk) {
+        chunk.step_to_biomes(self);
+    }
+
+    fn step_noise(&self, chunk: &mut ProtoChunk) {
+        chunk.step_to_noise(self);
+    }
+
+    fn step_surface(&self, chunk: &mut ProtoChunk) {
+        chunk.step_to_surface(self);
+    }
+
+    fn step_carvers(&self, chunk: &mut ProtoChunk) {
+        chunk.step_to_carvers(self);
+    }
+
+    fn set_structure_starts(&self, chunk: &mut ProtoChunk) {
+        chunk.set_structure_starts(self);
+    }
+
+    fn set_structure_references(&self, chunk: &mut ProtoChunk) {
+        chunk.set_structure_references(self);
+    }
+
+    fn generate_features_and_structure(
+        &self,
+        cache: &mut Cache,
+        block_registry: &dyn WorldPortalExt,
+    ) {
+        ProtoChunk::generate_features_and_structure(cache, block_registry, &self.random_config);
+    }
+
+    fn spawn_mobs(&self, cache: &mut Cache, block_registry: &dyn WorldPortalExt) {
+        ProtoChunk::spawn_mobs(cache, block_registry);
+    }
+
+    fn find_nearest_structure(
+        &self,
+        origin: BlockPos,
+        placements: &[&StructurePlacement],
+        max_search_radius: i32,
+    ) -> Option<BlockPos> {
+        find_nearest_structure(
+            origin,
+            placements,
+            max_search_radius,
+            self.random_config.seed as i64,
+            &self.global_structure_cache,
+        )
+    }
 }
 
 impl GeneratorInit for VanillaGenerator {

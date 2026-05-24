@@ -40,7 +40,7 @@ pub trait GenerationCache: HeightLimitView + BlockAccessor {
         &self,
         chunk_x: i32,
         chunk_z: i32,
-    ) -> Option<&crate::generation::blender::blending_data::BlendingData>;
+    ) -> Option<&crate::blending_data::BlendingData>;
 }
 
 pub struct Cache {
@@ -337,7 +337,7 @@ impl GenerationCache for Cache {
         &self,
         chunk_x: i32,
         chunk_z: i32,
-    ) -> Option<&crate::generation::blender::blending_data::BlendingData> {
+    ) -> Option<&crate::blending_data::BlendingData> {
         let dx = chunk_x - self.x;
         let dz = chunk_z - self.z;
 

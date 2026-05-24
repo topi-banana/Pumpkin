@@ -1,9 +1,8 @@
 pub mod canyon;
 pub mod cave;
-pub mod mask;
 
 use crate::ProtoChunk;
-use crate::generation::generator::VanillaGenerator;
+use crate::generator::Generator;
 use pumpkin_data::carver::{CANYON, CAVE, CAVE_EXTRA_UNDERGROUND, NETHER_CAVE};
 use pumpkin_data::carver::{CarverAdditionalConfig, CarverConfig};
 use pumpkin_util::math::vector2::Vector2;
@@ -21,7 +20,7 @@ pub trait Carver {
     );
 }
 
-pub fn carve(chunk: &mut ProtoChunk, generator: &VanillaGenerator) {
+pub fn carve(chunk: &mut ProtoChunk, generator: &dyn Generator) {
     // Vanilla applyCarvers uses a range of 8 chunks (17x17 area)
     let radius = 8;
     let chunk_x = chunk.x;
@@ -31,9 +30,10 @@ pub fn carve(chunk: &mut ProtoChunk, generator: &VanillaGenerator) {
     let overworld_carvers = [&CAVE, &CAVE_EXTRA_UNDERGROUND, &CANYON];
     let nether_carvers = [&NETHER_CAVE];
 
-    let carvers_to_use = if generator.dimension == pumpkin_data::dimension::Dimension::OVERWORLD {
+    let carvers_to_use = if generator.dimension() == &pumpkin_data::dimension::Dimension::OVERWORLD
+    {
         &overworld_carvers[..]
-    } else if generator.dimension == pumpkin_data::dimension::Dimension::THE_NETHER {
+    } else if generator.dimension() == &pumpkin_data::dimension::Dimension::THE_NETHER {
         &nether_carvers[..]
     } else {
         &[]
@@ -52,11 +52,11 @@ pub fn carve(chunk: &mut ProtoChunk, generator: &VanillaGenerator) {
             // maintain the random seed logic.
             for (index, &config) in carvers_to_use.iter().enumerate() {
                 let seed = get_carver_seed(
-                    generator.random_config.seed + index as u64,
+                    generator.seed() + index as u64,
                     carver_x,
                     carver_z,
                 );
-                let mut carver_random = if generator.settings.legacy_random_source {
+                let mut carver_random = if generator.settings().legacy_random_source {
                     RandomGenerator::Legacy(
                         pumpkin_util::random::legacy_rand::LegacyRand::from_seed(seed),
                     )
@@ -75,7 +75,7 @@ pub fn carve(chunk: &mut ProtoChunk, generator: &VanillaGenerator) {
                             //     &mut carver_random,
                             //     &chunk_pos,
                             //     &carver_chunk_pos,
-                            //     generator.settings.legacy_random_source,
+                            //     generator.settings().legacy_random_source,
                             // );
                         }
                         CarverAdditionalConfig::Canyon(_) => {
@@ -85,7 +85,7 @@ pub fn carve(chunk: &mut ProtoChunk, generator: &VanillaGenerator) {
                                 &mut carver_random,
                                 &chunk_pos,
                                 &carver_chunk_pos,
-                                generator.settings.legacy_random_source,
+                                generator.settings().legacy_random_source,
                             );
                         }
                     }

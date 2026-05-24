@@ -26,10 +26,10 @@ use pumpkin_data::entity::EntityType;
 use pumpkin_util::permission::{PermissionManager, PermissionRegistry};
 use pumpkin_util::text::color::NamedColor;
 use pumpkin_world::dimension::into_level;
-use pumpkin_world::generation::get_world_gen;
 use pumpkin_world::generator::Generator;
 use pumpkin_world::world::WorldPortalExt;
 use pumpkin_util::world_seed::Seed;
+use pumpkin_worldgen::get_world_gen;
 use tracing::{debug, error, info, warn};
 
 use crate::command::CommandSender;
@@ -295,8 +295,7 @@ impl Server {
                         .to_pretty_console()
                 );
                 let world_gen: Arc<dyn Generator> =
-                    Arc::from(get_world_gen(Seed(seed as u64), dim.clone())
-                        as Box<dyn Generator>);
+                    Arc::from(get_world_gen(Seed(seed as u64), dim.clone()));
                 let level = into_level(dim.clone(), &config, path, seed, world_gen, Some(pool));
                 let world = Arc::new(World::load(level.clone(), l_info, dim, registry, weak));
                 let portal: Arc<dyn WorldPortalExt> = Arc::new(WorldPortal(world.clone()));
@@ -392,8 +391,7 @@ impl Server {
 
             // TODO: gen_pool should be reused
             let world_gen: Arc<dyn Generator> =
-                Arc::from(get_world_gen(Seed(seed as u64), dimension.clone())
-                    as Box<dyn Generator>);
+                Arc::from(get_world_gen(Seed(seed as u64), dimension.clone()));
             let level = pumpkin_world::dimension::into_level(
                 dimension.clone(),
                 &config,

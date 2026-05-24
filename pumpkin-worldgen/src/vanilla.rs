@@ -6,18 +6,18 @@ use pumpkin_data::noise_router::{
 };
 use pumpkin_data::structures::{StructurePlacement, StructurePlacementCalculator, StructureSet};
 use pumpkin_util::math::position::BlockPos;
+use pumpkin_util::world_seed::Seed;
+use pumpkin_world::ProtoChunk;
+use pumpkin_world::chunk_system::generation_cache::Cache;
+use pumpkin_world::generation::GlobalRandomConfig;
+use pumpkin_world::generation::noise::router::proto_noise_router::ProtoNoiseRouters;
+use pumpkin_world::generation::proto_chunk::TerrainCache;
+use pumpkin_world::generation::structure::placement::GlobalStructureCache;
+use pumpkin_world::generator::Generator;
+use pumpkin_world::world::WorldPortalExt;
 use rustc_hash::FxHashMap;
 
-use super::noise::router::proto_noise_router::ProtoNoiseRouters;
-use crate::ProtoChunk;
-use crate::chunk_system::generation_cache::Cache;
-use crate::generation::generator::structure_finder::find_nearest_structure;
-use crate::generation::proto_chunk::TerrainCache;
-use crate::generation::{GlobalRandomConfig, Seed};
-use crate::generator::Generator;
-use crate::world::WorldPortalExt;
-
-pub mod structure_finder;
+use crate::structure_finder::find_nearest_structure;
 
 pub trait GeneratorInit {
     fn new(seed: Seed, dimension: Dimension) -> Self;
@@ -34,7 +34,7 @@ pub struct VanillaGenerator {
 
     pub default_block: &'static BlockState,
 
-    pub global_structure_cache: crate::generation::structure::placement::GlobalStructureCache,
+    pub global_structure_cache: GlobalStructureCache,
     pub structure_calculator: StructurePlacementCalculator,
     pub structure_allowed_biomes: FxHashMap<usize, Vec<u16>>,
 }
@@ -54,6 +54,34 @@ impl Generator for VanillaGenerator {
 
     fn biome_mixer_seed(&self) -> i64 {
         self.biome_mixer_seed
+    }
+
+    fn settings(&self) -> &'static GenerationSettings {
+        self.settings
+    }
+
+    fn random_config(&self) -> &GlobalRandomConfig {
+        &self.random_config
+    }
+
+    fn terrain_cache(&self) -> &TerrainCache {
+        &self.terrain_cache
+    }
+
+    fn base_router(&self) -> &ProtoNoiseRouters {
+        &self.base_router
+    }
+
+    fn structure_calculator(&self) -> &StructurePlacementCalculator {
+        &self.structure_calculator
+    }
+
+    fn structure_allowed_biomes(&self) -> &FxHashMap<usize, Vec<u16>> {
+        &self.structure_allowed_biomes
+    }
+
+    fn global_structure_cache(&self) -> &GlobalStructureCache {
+        &self.global_structure_cache
     }
 
     fn step_biomes(&self, chunk: &mut ProtoChunk) {
@@ -129,14 +157,11 @@ impl GeneratorInit for VanillaGenerator {
 
         let default_block = settings.default_block;
         let base_router = ProtoNoiseRouters::generate(&base, &random_config);
-        let biome_mixer_seed = crate::biome::hash_seed(seed.0);
+        let biome_mixer_seed = pumpkin_world::biome::hash_seed(seed.0);
 
         let mut structure_allowed_biomes = FxHashMap::default();
         for (i, set) in StructureSet::ALL.iter().enumerate() {
-            structure_allowed_biomes.insert(
-                i,
-                crate::generation::proto_chunk::ProtoChunk::get_allowed_biomes(set),
-            );
+            structure_allowed_biomes.insert(i, ProtoChunk::get_allowed_biomes(set));
         }
 
         Self {
@@ -147,8 +172,7 @@ impl GeneratorInit for VanillaGenerator {
             biome_mixer_seed,
             terrain_cache,
             default_block,
-            global_structure_cache:
-                crate::generation::structure::placement::GlobalStructureCache::new(),
+            global_structure_cache: GlobalStructureCache::new(),
             structure_calculator: StructurePlacementCalculator::new(seed.0 as i64),
             structure_allowed_biomes,
         }

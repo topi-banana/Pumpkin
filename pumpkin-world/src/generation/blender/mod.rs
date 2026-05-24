@@ -1,13 +1,11 @@
-pub mod blending_data;
-
 use std::f64;
 
 use crate::biome::BiomeSupplier;
+use crate::blending_data::{self, BlendingData};
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::biome_coords;
 use crate::generation::noise::perlin::DoublePerlinNoiseSampler;
 use crate::generation::noise::router::multi_noise_sampler::MultiNoiseSampler;
-use crate::chunk_system::generation_cache::GenerationCache;
-use blending_data::BlendingData;
 use pumpkin_data::chunk::Biome;
 use pumpkin_data::noise_parameter::DoublePerlinNoiseParameters;
 use pumpkin_util::math::vector3::Vector3;

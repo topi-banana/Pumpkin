@@ -3,8 +3,7 @@ use pumpkin_data::structures::{
     StructurePlacementType,
 };
 use pumpkin_util::math::{floor_div, position::BlockPos};
-
-use crate::generation::structure::placement::{
+use pumpkin_world::generation::structure::placement::{
     GlobalStructureCache, get_structure_chunk_in_region,
 };
 

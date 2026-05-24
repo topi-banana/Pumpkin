@@ -6,7 +6,6 @@ mod block_predicate;
 mod block_state_provider;
 pub mod carver;
 mod feature;
-pub mod generator;
 pub mod height_provider;
 pub mod noise;
 pub mod positions;
@@ -16,20 +15,7 @@ pub mod rule;
 pub mod structure;
 mod surface;
 
-use generator::{GeneratorInit, VanillaGenerator};
-use pumpkin_data::dimension::Dimension;
-use pumpkin_util::{
-    random::xoroshiro128::{Xoroshiro, XoroshiroSplitter},
-    world_seed::Seed,
-};
-
-use crate::generator::Generator;
-
-#[must_use]
-pub fn get_world_gen(seed: Seed, dimension: Dimension) -> Box<dyn Generator> {
-    // TODO decide which WorldGenerator to pick based on config.
-    Box::new(VanillaGenerator::new(seed, dimension))
-}
+use pumpkin_util::random::xoroshiro128::{Xoroshiro, XoroshiroSplitter};
 
 pub struct GlobalRandomConfig {
     pub seed: u64,

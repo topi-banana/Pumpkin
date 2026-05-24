@@ -1,5 +1,5 @@
 [package]
-name = "pumpkin-world"
+name = "pumpkin-worldgen"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -10,14 +10,13 @@ pumpkin-nbt.workspace = true
 pumpkin-util.workspace = true
 pumpkin-config.workspace = true
 pumpkin-data = { workspace = true, features = ["default"] }
+pumpkin-world.workspace = true
 
 futures.workspace = true
-
 bytes.workspace = true
 
 tokio = { workspace = true, features = [
     "macros",
-    # Maybe remove this in the future
     "rt-multi-thread",
     "sync",
     "io-std",
@@ -38,7 +37,6 @@ arc-swap.workspace = true
 
 dashmap.workspace = true
 
-# Compression
 flate2.workspace = true
 lz4-java-wrc.workspace = true
 ruzstd.workspace = true
@@ -47,9 +45,6 @@ xxhash-rust = { version = "0.8", features = ["xxh64"] }
 itertools.workspace = true
 enum_dispatch.workspace = true
 rayon.workspace = true
-
-# thread_local.workspace = true
-# lru.workspace = true
 
 tokio-util = { workspace = true, features = ["rt"] }
 rand.workspace = true
@@ -60,16 +55,19 @@ crossfire.workspace = true
 [dev-dependencies]
 criterion = { workspace = true, features = ["html_reports", "async_tokio"] }
 temp-dir.workspace = true
-# Deserialize NaN and Inf
 serde_json5.workspace = true
 
-#[[bench]]
-#name = "chunk_io"
-#harness = false
+[[bench]]
+name = "chunk"
+harness = false
 
+[[bench]]
+name = "chunk_gen"
+harness = false
 
-# [lints]
-# workspace = true
+[[bench]]
+name = "noise_router"
+harness = false
 
 [package.metadata.cargo-machete]
 ignored = ["serde_json"]

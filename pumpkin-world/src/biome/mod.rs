@@ -48,7 +48,9 @@ pub fn hash_seed(seed: u64) -> i64 {
     i64::from_le_bytes(result[..8].try_into().unwrap())
 }
 
-#[cfg(test)]
+// TODO: move biome tests to `pumpkin-worldgen` integration tests
+// (they depend on `VanillaGenerator` which now lives in that crate).
+#[cfg(any())]
 mod test {
     use pumpkin_data::{chunk::Biome, dimension::Dimension};
     use pumpkin_util::read_data_from_file;

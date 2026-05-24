@@ -3,10 +3,10 @@ use pumpkin_data::{
     chunk_gen_settings::GenerationSettings, dimension::Dimension,
     noise_router::OVERWORLD_BASE_NOISE_ROUTER,
 };
-use pumpkin_world::{
-    GlobalRandomConfig, ProtoNoiseRouters, bench_create_and_populate_biome,
-    bench_create_and_populate_noise, bench_create_and_populate_noise_with_surface,
-    generation::proto_chunk::TerrainCache,
+use pumpkin_world::{GlobalRandomConfig, ProtoNoiseRouters, generation::proto_chunk::TerrainCache};
+use pumpkin_worldgen::{
+    bench_create_and_populate_biome, bench_create_and_populate_noise,
+    bench_create_and_populate_noise_with_surface,
 };
 
 fn bench_terrain_gen(c: &mut Criterion) {

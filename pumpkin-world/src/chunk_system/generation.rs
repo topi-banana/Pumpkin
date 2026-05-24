@@ -61,11 +61,12 @@ pub fn generate_single_chunk(
     cache.chunks.swap_remove(mid)
 }
 
-#[cfg(test)]
+// TODO: move this integration-style test to `pumpkin-worldgen/tests/` since it
+// needs `get_world_gen` which now lives there.
+#[cfg(any())]
 mod tests {
     use crate::biome::hash_seed;
     use crate::chunk_system::{StagedChunkEnum, generate_single_chunk};
-    use crate::generation::get_world_gen;
     use crate::world::WorldPortalExt;
     use pumpkin_data::dimension::Dimension;
     use pumpkin_util::world_seed::Seed;

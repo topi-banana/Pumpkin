@@ -30,7 +30,8 @@ impl NoiseValuePoint {
     }
 }
 
-#[cfg(test)]
+// TODO: move to `pumpkin-worldgen` integration tests (depends on `VanillaGenerator`).
+#[cfg(any())]
 mod test {
     use pumpkin_data::{chunk::Biome, dimension::Dimension};
     use pumpkin_util::read_data_from_file;

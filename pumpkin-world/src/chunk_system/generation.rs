@@ -61,55 +61,6 @@ pub fn generate_single_chunk(
     cache.chunks.swap_remove(mid)
 }
 
-// TODO: move this integration-style test to `pumpkin-worldgen/tests/` since it
-// needs `get_world_gen` which now lives there.
-#[cfg(any())]
-mod tests {
-    use crate::biome::hash_seed;
-    use crate::chunk_system::{StagedChunkEnum, generate_single_chunk};
-    use crate::world::WorldPortalExt;
-    use pumpkin_data::dimension::Dimension;
-    use pumpkin_util::world_seed::Seed;
-    use std::sync::Arc;
-
-    struct BlockRegistry;
-    impl WorldPortalExt for BlockRegistry {
-        fn can_place_at(
-            &self,
-            _block: &pumpkin_data::Block,
-            _state: &pumpkin_data::BlockState,
-            _block_accessor: &dyn crate::world::BlockAccessor,
-            _block_pos: &pumpkin_util::math::position::BlockPos,
-        ) -> bool {
-            true
-        }
-
-        fn spawn_mobs_for_chunk_generation(
-            &self,
-            _cache: &mut dyn crate::chunk_system::generation_cache::GenerationCache,
-            _biome: &'static pumpkin_data::chunk::Biome,
-            _chunk_x: i32,
-            _chunk_z: i32,
-        ) {
-        }
-    }
-
-    #[test]
-    fn generate_chunk_should_return() {
-        let dimension = Dimension::OVERWORLD;
-        let seed = Seed(42);
-        let block_registry = Arc::new(BlockRegistry);
-        let world_gen = get_world_gen(seed, dimension.clone());
-        let biome_mixer_seed = hash_seed(seed.0);
-
-        let _ = generate_single_chunk(
-            &dimension,
-            biome_mixer_seed,
-            &*world_gen,
-            block_registry.as_ref(),
-            0,
-            0,
-            StagedChunkEnum::Full,
-        );
-    }
-}
+// End-to-end smoke test (`generate_chunk_should_return`) for this function
+// lives in `pumpkin-worldgen/tests/chunk_generation.rs` since it needs
+// `get_world_gen`.

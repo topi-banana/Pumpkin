@@ -15,9 +15,9 @@ pub mod wit;
 
 #[derive(Error, Debug)]
 pub enum PluginInitError {
-    #[error("Engine creation failed")]
+    #[error("Engine creation failed: {0:#}")]
     EngineCreationFailed(wasmtime::Error),
-    #[error("Failed to setup linker")]
+    #[error("Failed to setup linker: {0:#}")]
     LinkerSetupFailed(wasmtime::Error),
     #[error("plugin API version mismatch")]
     ApiVersionMismatch,

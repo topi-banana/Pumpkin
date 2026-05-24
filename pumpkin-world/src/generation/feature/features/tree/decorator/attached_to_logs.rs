@@ -4,8 +4,8 @@ use pumpkin_util::{
     random::{RandomGenerator, RandomImpl},
 };
 
-use crate::generation::block_state_provider::BlockStateProvider;
 use crate::chunk_system::generation_cache::GenerationCache;
+use crate::generation::block_state_provider::BlockStateProvider;
 
 pub struct AttachedToLogsTreeDecorator {
     pub probability: f32,

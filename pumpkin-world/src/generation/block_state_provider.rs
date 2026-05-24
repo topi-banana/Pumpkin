@@ -11,8 +11,8 @@ use pumpkin_util::{
 };
 
 use super::noise::perlin::DoublePerlinNoiseSampler;
-use crate::generation::block_predicate::BlockPredicate;
 use crate::chunk_system::generation_cache::GenerationCache;
+use crate::generation::block_predicate::BlockPredicate;
 use crate::world::WorldPortalExt;
 
 pub enum BlockStateProvider {

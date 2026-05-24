@@ -75,7 +75,8 @@ fn wide_area_surface() {
             let calculated_biome = chunk.get_biome(biome_x, biome_y, biome_z);
 
             assert_eq!(
-                biome_id, calculated_biome.id,
+                biome_id,
+                calculated_biome.id,
                 "Expected {:?} was {:?} at {},{},{} ({},{})",
                 Biome::from_id(biome_id),
                 calculated_biome,
@@ -141,7 +142,8 @@ fn sample_multinoise_biome() {
         let calculated_biome = MultiNoiseBiomeSupplier::OVERWORLD.biome(x, y, z, &mut sampler);
 
         assert_eq!(
-            biome_id, calculated_biome.id,
+            biome_id,
+            calculated_biome.id,
             "Expected {:?} was {:?} at {},{},{}",
             Biome::from_id(biome_id),
             calculated_biome,

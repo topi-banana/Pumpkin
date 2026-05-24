@@ -4,8 +4,8 @@ use pumpkin_util::math::square_f32;
 use pumpkin_util::random::RandomGenerator;
 
 use super::{FoliagePlacer, LeaveValidator};
-use crate::generation::feature::features::tree::TreeNode;
 use crate::chunk_system::generation_cache::GenerationCache;
+use crate::generation::feature::features::tree::TreeNode;
 
 pub struct LargeOakFoliagePlacer {
     pub height: i32,

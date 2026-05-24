@@ -25,10 +25,10 @@ use pumpkin_data::dimension::Dimension;
 use pumpkin_data::entity::EntityType;
 use pumpkin_util::permission::{PermissionManager, PermissionRegistry};
 use pumpkin_util::text::color::NamedColor;
+use pumpkin_util::world_seed::Seed;
 use pumpkin_world::dimension::into_level;
 use pumpkin_world::generator::Generator;
 use pumpkin_world::world::WorldPortalExt;
-use pumpkin_util::world_seed::Seed;
 use pumpkin_worldgen::get_world_gen;
 use tracing::{debug, error, info, warn};
 

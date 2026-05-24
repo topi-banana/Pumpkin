@@ -8,6 +8,8 @@ use pumpkin_data::{
 };
 use pumpkin_util::math::vector2::Vector2;
 use pumpkin_util::world_seed::Seed;
+use pumpkin_world::ProtoChunk;
+use pumpkin_world::generation::GlobalRandomConfig;
 use pumpkin_world::generation::biome_coords;
 use pumpkin_world::generation::noise::aquifer_sampler::FluidLevel;
 use pumpkin_world::generation::noise::router::multi_noise_sampler::{
@@ -20,9 +22,7 @@ use pumpkin_world::generation::noise::router::surface_height_sampler::{
 use pumpkin_world::generation::noise::{CHUNK_DIM, ChunkNoiseGenerator};
 use pumpkin_world::generation::positions::chunk_pos;
 use pumpkin_world::generation::proto_chunk::{StandardChunkFluidLevelSampler, TerrainCache};
-use pumpkin_world::generation::GlobalRandomConfig;
 use pumpkin_world::generator::Generator;
-use pumpkin_world::ProtoChunk;
 
 use crate::vanilla::{GeneratorInit, VanillaGenerator};
 

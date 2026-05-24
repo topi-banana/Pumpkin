@@ -183,7 +183,10 @@ pub async fn io_write_work(recv: AsyncRx<Vec<(ChunkPos, Chunk)>>, level: Arc<Lev
                 Chunk::Level(chunk) => vec.push((pos, chunk)),
                 Chunk::Proto(chunk) => {
                     let mut temp = Chunk::Proto(chunk);
-                    temp.upgrade_to_level_chunk(level.world_gen.dimension(), &level.lighting_config);
+                    temp.upgrade_to_level_chunk(
+                        level.world_gen.dimension(),
+                        &level.lighting_config,
+                    );
                     let Chunk::Level(chunk) = temp else { panic!() };
                     vec.push((pos, chunk));
                 }

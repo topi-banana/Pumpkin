@@ -4,9 +4,9 @@ use pumpkin_util::{
     random::{RandomGenerator, RandomImpl},
 };
 
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::block_state_provider::BlockStateProvider;
 use crate::generation::feature::features::tree::TreeFeature;
-use crate::chunk_system::generation_cache::GenerationCache;
 
 pub struct AboveRootPlacement {
     pub above_root_provider: BlockStateProvider,

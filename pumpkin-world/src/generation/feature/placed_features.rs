@@ -12,9 +12,9 @@ use pumpkin_util::math::vector3::Vector3;
 use pumpkin_util::random::{RandomGenerator, RandomImpl};
 
 use crate::block::RawBlockState;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::block_predicate::BlockPredicate;
 use crate::generation::height_provider::HeightProvider;
-use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 use super::configured_features::{CONFIGURED_FEATURES, ConfiguredFeature};

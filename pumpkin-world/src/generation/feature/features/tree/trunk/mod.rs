@@ -8,13 +8,13 @@ use pumpkin_util::{
 use straight::StraightTrunkPlacer;
 
 use super::{TreeFeature, TreeNode};
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::block_state_provider::BlockStateProvider;
 use crate::generation::feature::features::tree::trunk::{
     bending::BendingTrunkPlacer, cherry::CherryTrunkPlacer, dark_oak::DarkOakTrunkPlacer,
     forking::ForkingTrunkPlacer, giant::GiantTrunkPlacer, mega_jungle::MegaJungleTrunkPlacer,
     upwards_branching::UpwardsBranchingTrunkPlacer,
 };
-use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 pub mod bending;

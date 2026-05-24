@@ -3,9 +3,9 @@ use pumpkin_util::math::position::BlockPos;
 use pumpkin_util::random::RandomGenerator;
 
 use super::TrunkPlacer;
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::block_state_provider::BlockStateProvider;
 use crate::generation::feature::features::tree::TreeNode;
-use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 pub struct StraightTrunkPlacer;

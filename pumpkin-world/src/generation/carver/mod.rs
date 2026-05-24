@@ -51,11 +51,7 @@ pub fn carve(chunk: &mut ProtoChunk, generator: &dyn Generator) {
             // In vanilla, carvers are per-biome. Here we use the hardcoded list but
             // maintain the random seed logic.
             for (index, &config) in carvers_to_use.iter().enumerate() {
-                let seed = get_carver_seed(
-                    generator.seed() + index as u64,
-                    carver_x,
-                    carver_z,
-                );
+                let seed = get_carver_seed(generator.seed() + index as u64, carver_x, carver_z);
                 let mut carver_random = if generator.settings().legacy_random_source {
                     RandomGenerator::Legacy(
                         pumpkin_util::random::legacy_rand::LegacyRand::from_seed(seed),

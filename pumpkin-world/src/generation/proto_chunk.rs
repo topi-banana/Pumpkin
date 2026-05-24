@@ -35,7 +35,6 @@ use crate::chunk::format::LightContainer;
 use crate::chunk::{ChunkData, ChunkHeightmapType, ChunkLight};
 use crate::chunk_system::StagedChunkEnum;
 use crate::chunk_system::generation_cache::GenerationCache;
-use crate::height_limit::HeightLimitView;
 use crate::generation::noise::aquifer_sampler::{FluidLevel, FluidLevelSamplerImpl};
 use crate::generation::noise::perlin::DoublePerlinNoiseSampler;
 use crate::generation::noise::router::multi_noise_sampler::MultiNoiseSamplerBuilderOptions;
@@ -49,6 +48,7 @@ use crate::generation::structure::structures::{
 };
 use crate::generation::structure::try_generate_structure;
 use crate::generation::surface::rule::try_apply_material_rule;
+use crate::height_limit::HeightLimitView;
 use crate::{
     BlockStateId,
     block::RawBlockState,
@@ -225,10 +225,7 @@ impl ProtoChunk {
                     .map(|_| LightContainer::new_empty(0))
                     .collect(),
             },
-            carving_mask: crate::carving_mask::CarvingMask::new(
-                height as i32,
-                dimension.min_y,
-            ),
+            carving_mask: crate::carving_mask::CarvingMask::new(height as i32, dimension.min_y),
             blending_data: None,
             pending_block_entities: Vec::new(),
         }

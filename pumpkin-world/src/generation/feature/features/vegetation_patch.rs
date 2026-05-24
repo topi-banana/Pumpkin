@@ -5,9 +5,9 @@ use pumpkin_util::{
     random::{RandomGenerator, RandomImpl},
 };
 
+use crate::chunk_system::generation_cache::GenerationCache;
 use crate::generation::block_predicate::BlockPredicate;
 use crate::generation::block_state_provider::BlockStateProvider;
-use crate::chunk_system::generation_cache::GenerationCache;
 use crate::world::WorldPortalExt;
 
 pub struct VegetationPatchFeature {

@@ -1,5 +1,3 @@
-use std::string::FromUtf8Error;
-
 use bytes::{BufMut, BytesMut};
 use thiserror::Error;
 
@@ -14,6 +12,7 @@ pub enum ServerboundPacket {
 }
 
 impl ServerboundPacket {
+    #[must_use]
     pub const fn from_i32(n: i32) -> Self {
         match n {
             //  3 => Self::Auth,
@@ -34,6 +33,7 @@ pub enum ClientboundPacket {
 }
 
 impl ClientboundPacket {
+    #[must_use]
     pub fn write_buf(self, id: i32, body: &str) -> BytesMut {
         // let len = outgoing.len() as u64;
         let mut buf = BytesMut::new();
@@ -58,7 +58,7 @@ pub enum PacketError {
     #[error("Missing packet lull terminator")]
     MissingNullTerminator,
     #[error("Invalid packet string body")]
-    InvalidBody(FromUtf8Error),
+    InvalidBody(std::str::Utf8Error),
 }
 
 #[derive(Debug)]
@@ -66,7 +66,7 @@ pub enum PacketError {
 pub struct Packet {
     id: i32,
     ptype: ServerboundPacket,
-    body: String,
+    body: Box<str>,
 }
 
 impl Packet {
@@ -108,8 +108,9 @@ impl Packet {
         }
 
         let payload = &incoming[body_start..body_end];
-        let body = String::from_utf8(payload.to_vec()).map_err(PacketError::InvalidBody)?;
-
+        let body = std::str::from_utf8(payload)
+            .map_err(PacketError::InvalidBody)?
+            .into();
         incoming.drain(0..total_packet_len);
 
         Ok(Some(Self {
@@ -119,14 +120,17 @@ impl Packet {
         }))
     }
 
+    #[must_use]
     pub fn get_body(&self) -> &str {
         &self.body
     }
 
+    #[must_use]
     pub const fn get_type(&self) -> ServerboundPacket {
         self.ptype
     }
 
+    #[must_use]
     pub const fn get_id(&self) -> i32 {
         self.id
     }

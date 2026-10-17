@@ -574,8 +574,8 @@ impl ChunkData {
                         let prop_vec = props.to_props();
                         if !prop_vec.is_empty() {
                             let mut props_comp = NbtCompound::new();
-                            for (k, v) in prop_vec {
-                                props_comp.put_string(k, v.to_string());
+                            for p in prop_vec {
+                                props_comp.put_string(p.key_str(), p.value_str().to_string());
                             }
                             comp.put_compound("Properties", props_comp);
                         }
@@ -1185,10 +1185,10 @@ mod tests {
 
         let repeater_state = Block::REPEATER
             .from_properties(&[
-                ("facing", "north"),
-                ("delay", "2"),
-                ("locked", "false"),
-                ("powered", "false"),
+                pumpkin_data::Property::Facing(pumpkin_data::block_properties::Facing::North),
+                pumpkin_data::Property::Delay(2),
+                pumpkin_data::Property::Locked(false),
+                pumpkin_data::Property::Powered(false),
             ])
             .to_state_id(&Block::REPEATER);
         assert_eq!(result[1], repeater_state);

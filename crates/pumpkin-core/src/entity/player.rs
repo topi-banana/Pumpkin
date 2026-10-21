@@ -404,6 +404,7 @@ pub enum SpamType {
 /// Center chunk and levels of the view and simulation tickets a player holds.
 pub type HeldChunkTickets = (Vector2<i32>, Option<i8>, Option<i8>);
 
+#[repr(C)]
 pub struct Player {
     /// The underlying living entity object that represents the player.
     pub living_entity: LivingEntity,
@@ -6020,53 +6021,7 @@ impl Player {
             )
         };
 
-        if i32::from(sync_id) != packet.sync_id.0 {
-            return;
-        }
-
-        if self.gamemode.load() == GameMode::Spectator {
-            let screen_handler_arc = self
-                .current_screen_handler
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone();
-            screen_handler_arc
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .sync_state();
-            return;
-        }
-
-        if !can_use {
-            warn!(
-                "Player {} interacted with invalid menu {:?}",
-                self.gameprofile.name, window_type
-            );
-            return;
-        }
-
         let slot = packet.slot;
-
-        if !is_slot_valid {
-            warn!(
-                "Player {} clicked invalid slot index: {}, available slots: {}",
-                self.gameprofile.name, slot, available_slots
-            );
-            return;
-        }
-
-        let cancel_screen = || {
-            let screen_handler_arc = self
-                .current_screen_handler
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .clone();
-            screen_handler_arc
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner)
-                .cancel();
-        };
-
         let raw_slot = slot; // For now raw_slot == slot, as we don't have separate view/inventory indexing yet
         let hotbar_button = if matches!(packet.mode, SlotActionType::Swap) {
             packet.button
@@ -6108,6 +6063,66 @@ impl Player {
                 }
             }
             SlotActionType::PickupAll => ClickType::DoubleClick,
+        };
+
+        if i32::from(sync_id) != packet.sync_id.0 {
+            send_cancellable_blocking! {{
+                server;
+                InventoryClickEvent::new(
+                    self,
+                    window_type,
+                    click_type,
+                    slot,
+                    raw_slot,
+                    None,
+                    cursor_item,
+                    i32::from(hotbar_button),
+                );
+                'after: {}
+                'cancelled: {}
+            }}
+            return;
+        }
+
+        if self.gamemode.load() == GameMode::Spectator {
+            let screen_handler_arc = self
+                .current_screen_handler
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone();
+            screen_handler_arc
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .sync_state();
+            return;
+        }
+
+        if !can_use {
+            warn!(
+                "Player {} interacted with invalid menu {:?}",
+                self.gameprofile.name, window_type
+            );
+            return;
+        }
+
+        if !is_slot_valid {
+            warn!(
+                "Player {} clicked invalid slot index: {}, available slots: {}",
+                self.gameprofile.name, slot, available_slots
+            );
+            return;
+        }
+
+        let cancel_screen = || {
+            let screen_handler_arc = self
+                .current_screen_handler
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .clone();
+            screen_handler_arc
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .cancel();
         };
 
         send_cancellable_blocking! {{

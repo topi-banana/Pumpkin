@@ -2,6 +2,7 @@
 
 pub mod actor_event;
 pub mod animate;
+pub mod block_actor_data;
 pub mod block_pick_request;
 pub mod client_cache_blob_status;
 pub mod client_cache_status;
@@ -32,6 +33,7 @@ pub mod text;
 
 pub use actor_event::*;
 pub use animate::*;
+pub use block_actor_data::*;
 pub use block_pick_request::*;
 pub use client_cache_blob_status::*;
 pub use client_cache_status::*;
